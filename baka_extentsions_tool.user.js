@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.2
+// @version     1.3
 // @grant       none
 // ==/UserScript==
 
@@ -24,9 +24,21 @@
         return number;
     }
     
+    var currentTimeFormat = 0;
     var formatTime = function (t) {
         t = new Date(t*1000 + 1000*60*60*3)
-        return pad(t.getUTCHours()) + ':' + pad(t.getUTCMinutes()) + ':' + pad(t.getUTCSeconds());
+        var h = pad(t.getUTCHours()), m = pad(t.getUTCMinutes()), s = pad(t.getUTCSeconds())
+        switch(currentTimeFormat % 3) {
+            case 0: return  h+':'+m+':'+s+' ';
+            case 1: return  h+':'+m+' ';
+            case 2: return '';
+        }
+    }
+    var reformatTime = function() {
+        currentTimeFormat ++
+        var l = document.getElementsByClassName("time");
+        for(var i = 0; i < l.length; i++)
+            l.item(i).textContent = formatTime(l.item(i).getAttribute("T"))
     }
 
     var nononame = function (n) {
@@ -94,13 +106,13 @@
             var time_ = document.createElement('span')
             time_.className = "time"
             time_.textContent = formatTime(time)
+            time_.setAttribute("T", time)
             d.appendChild(time_)
-            d.appendChild(document.createTextNode(" "))
         }
 
         if(name != "") {
             var name_ = document.createElement('a')
-            name_.href = "#"
+            name_.href = "javascript:void(0)"
             name_.className = "name"
             name_.onclick = clickName
             name_.textContent = name
@@ -117,7 +129,7 @@
 
         if(button !== undefined) {
             var button_ = document.createElement('a')
-            button_.href = "#"
+            button_.href = "javascript:void(0)"
             button_.onclick = button[1]
             button_.textContent = button[0]
             d.appendChild(document.createTextNode(" "))
@@ -163,6 +175,7 @@
                 switch(e.keyCode) {
                     case 9: g('carea').focus(); return false;
                     case 49: hider(); return true;
+                    case 50: reformatTime(); return true;
                     case 81: repeat = 1; return true;
                 }
             }
