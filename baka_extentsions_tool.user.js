@@ -1,194 +1,187 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @include     http://agar.io/
-// @grant       GM_xmlhttpRequest
-// @grant       unsafeWindow
-// @run-at      document-end
+// @include     http://agar.io/*
+// @grant       none
 // ==/UserScript==
 
-function main() {
-	g = function(id) {return document.getElementById(id);}
+(function() {
+    var g = function(id) {return document.getElementById(id);}
+    var chatactive = false;
 
-	reqc = 0
-	acc = '3a32aebd068d46be842fcb125868b059e37ba425efc2733a90f72622d27d1eaad238fa2e7da24ad72434b'
-	callback = {}
-	chatactive = 0
-	qactive = 0
-	rskipc = 0
-	ishidden = 0
+    var join = function(l) {
+        if (l.length == 0)
+            return "";
+        if (l.length == 1)
+            return l[0];
+        return l.slice(0, -1).join(", ") + " и " + l[l.length-1]
+    }
 
-	q = function (m, q, ret) {
-		var script = document.createElement('script')
-		script.id = reqc
-		script.src = 'https://api.vk.com/method/' + m + '?https=1&access_token=' + acc + '&' + q + '&callback=callback[' + reqc +']'
-		callback[reqc] = (function(reqc, ret) {return function(r) {
-			//console.log('q ', r)
-			if (typeof ret == 'function') ret(r)
-			else console.log('ret is not a function', ret)
-			g(reqc).remove()
-		 }} (reqc, ret))
-		document.getElementsByTagName("head")[0].appendChild(script)
-		reqc++
-	}
+    var nononame = function (n) {
+        return n === "" ?  "Безымянная Сырна" : n
+    }
 
-	im = {
-		guid: 0,
-		load: function() {
-			q('messages.getHistory', 'count=200&user_id=288367682', im.draw)
-		},
-		draw: function(r) {
-			if (r.error_code)
-				if (r.error_code == 14)
-					if (rskipc < 5) {rskipc++; return setTimeout(im.load, 500);}
-					else console.log('imload 5 error', r)
-				else console.log('imload error', r)
-			else {
-				r = r['response']
-				var box = g('msgsbox')
-				for (var i = 1; i < r.length; i++) {
-					var msg = document.createElement('div')
-					msg.innerHTML = (r[i].body.indexOf('|') != -1 ? r[i].body.substr(0, r[i].body.indexOf('|')) + ': ' + r[i].body.substr(r[i].body.indexOf('|') + 1) : r[i].body)
-					box.insertBefore(msg, box.firstChild)
-				}
-				g('msgsbox').lastChild.scrollIntoView()
-				rskipc = 0
-			}
-		},
-		send: function() {
-			params = 'user_id=288367682' + '&guid=' + im.guid + '&message=' + encodeURIComponent(g('nick').value + '|' + g('carea').value)
-			ret = function(r) {
-				if (r.error_code)
-					if (r.error_code == 14)
-						if (rskipc < 5) {rskipc++; return setTimeout(im.send, 500);}
-						else console.log('imsend 5 error', r)
-					else console.log('imsend error', r)
-				else g('carea').value = ''
-			}
-			im.guid = Date.now()
-			q('messages.send', params, ret)
-		}
-	}
+    var connectChat = function () {
+        var reconnect = function(e) {
+            e = e || window.event;e = e.target || e.srcElement;
+            e.parentNode.removeChild(e)
+            connectChat()
+        }
+        var wsUri = "ws://89.31.114.117:8000/";
+        websocket = new WebSocket(wsUri);
+        websocket.onopen = function(evt) { console.log(evt); };
+        websocket.onclose = function(evt) { console.log(evt); addLine(0, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect]); };
+        websocket.onerror = function(evt) { console.log(evt); addLine(0, "", "Ошибка вебсокета"); };
+        websocket.onmessage = function(evt) {
+            var d = JSON.parse(evt.data)
+            d.f = nononame(d.f)
+            switch(d.t) {
+                case "names":
+                    {
+                        var names = d.names.filter(function(n) { return n !== "" })
+                        var nonames = d.names.length - names.length;
+                        var iHaveNoName = g('nick').value === ""
+                        if(nonames == 0);
+                        else if(nonames == 1)
+                            names.push("одна безымянная Сырна" + (iHaveNoName?" (это ты)":""));
+                        else if(nonames <= 4)
+                            names.push(nonames + " безымянных Сырны" + (iHaveNoName?" (включая тебя)":""));
+                        else
+                            names.push(nonames + " безымянных Сырн" + (iHaveNoName?" (включая тебя)":""));
+                        addLine(0, "", "В чате " + join(names) + ".")
+                    }
+                    break;
+                case "message":
+                    addLine(d.T, d.f, d.text)
+                    break;
+                case "name":
+                    addLine(d.T, "", d.f + " теперь " + nononame(d.name))
+                    break;
+                case "join":
+                    addLine(d.T, "", d.f + " заходит")
+                    break;
+                case "leave":
+                    addLine(d.T, "", d.f + " выходит")
+                    break;
+            }
+        }
+    }
 
-	lpconnect = function () {
-		var ret = function(r) {
-			if (r.error_code)
-				if (r.error_code == 14)
-					if (rskipc < 5) {rskipc++; return setTimeout(lpconnect, 500);}
-					else console.log('lpconnect 5 error', r)
-				else console.log('lpconnect error', r)
-			else {
-				window.lpi = r.response
-				g('lpltrigger').click()
-			}
-		}
-		q('messages.getLongPollServer', 'use_ssl=1', ret)
-	}
+    var clickName = function (e) {
+        e = e || window.event;e = e.target || e.srcElement;
+        var ca = document.getElementById('carea')
+        ca.value = e.textContent + ": " + ca.value
+        ca.focus()
+        return false
+    }
 
-	www = function () {
-		dkd({keyCode: 87})
-		dku({keyCode: 87})
-		if (qactive) window.qtimeout = setTimeout(www, 100)
-	}
-	
-	hider = function () {
-		ishidden = !ishidden
-		g('cbox').style.display = (ishidden ? 'none' : '')
-	}
+    var addLine = function (time, name, text, button) {
+        var d = document.createElement('div')
 
-	function init() {
-		im.load()
-		lpconnect()
+        if(name != "") {
+            var name_ = document.createElement('a')
+            name_.href = "#"
+            name_.className = "name"
+            name_.onclick = clickName
+            name_.textContent = name
+            d.appendChild(name_)
+            d.appendChild(document.createTextNode(": "))
+        }
 
-		g('carea').onfocus = function () {
-			chatactive = 1
-			g('cbox').style.opacity = '0.6'
-			g('cbox').style.borderLeft = '2px solid black'
-		}
-		g('carea').onblur = function () {
-			chatactive = 0
-			g('cbox').style.opacity = '0.5'
-			g('cbox').style.borderLeft = ''
-		}
+        var text_ = document.createElement('span')
+        text_.textContent = text
+        if (name != "" && text.indexOf(nononame(g('nick').value)) > -1)
+            text_.className = "higlight";
 
-		//keyjeck
-		window.dkd = window.onkeydown
-		window.dku = window.onkeyup
-		window.onkeydown = function (e) {
-			if (chatactive) if (e.keyCode != 27) return true; else {g('carea').blur(); return false;}
-			if (e.keyCode == 49) return hider()
-			switch (e.keyCode) {
-				case 9:
-					g('carea').focus()
-					return false
-				case 81:
-					qactive = 1
-					www()
-					break
-			}
-			dkd(e)
-		}
-		console.log(window.onkeydown, dkd)
-		window.onkeyup = function (e) {
-			if (!chatactive) {
-				switch (e.keyCode) {
-					case 81:
-						console.log('81up')
-						clearTimeout(window.qtimeout)
-						qactive = 0
-				}
-				dku(e)
-			}
-		}
-	}
+        d.appendChild(text_)
 
-	window.addEventListener('load', init)
-}
+        if(button !== undefined) {
+            var button_ = document.createElement('a')
+            button_.href = "#"
+            button_.onclick = button[1]
+            button_.textContent = button[0]
+            d.appendChild(document.createTextNode(" "))
+            d.appendChild(button_)
+        }
 
+        var msgbox = document.getElementById('msgsbox')
+        msgbox.appendChild(d)
+        msgbox.lastChild.scrollIntoView()
+    }
 
-function init() {
-	var stl = document.createElement('style')
-	stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white; font-weight:bold;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto;}'
-	document.body.appendChild(stl)
+    var send = function (a) {
+        websocket.send(JSON.stringify(a))
+    }
 
-	var cbox = document.createElement('div')
-	cbox.id = 'cbox'
-	cbox.innerHTML = '<div id="msgsbox"></div><div id="cform"><form onsubmit="im.send(); return false;"><input id="carea"></input></div><div id="lpltrigger"></div>'
-	document.body.appendChild(cbox)
-	
-	document.getElementById('lpltrigger').addEventListener('click', lploop)
+    var submit = function(e) {
+        var ca = document.getElementById('carea')
+        if(ca.value != "") {
+            var m = {t: "message", text: ca.value, f: document.getElementById('nick').value}
+            send(m)
+            ca.value = ""
+        }
+        return false
+    }
 
-	var script = document.createElement('script');
-	script.appendChild (document.createTextNode('('+ main +')();'));
-	(document.body || document.head || document.documentElement).appendChild(script);
-}
+    var handleKeys = function () {
+        var ishidden = false
+        var hider = function () {
+            ishidden = !ishidden
+            g('cbox').style.display = (ishidden ? 'none' : '')
+        }
 
+        var olddown = window.onkeydown, oldup = window.onkeyup;
+        var repeat = 0;
+        window.onkeydown = function(e) {
+            if (chatactive)
+                if (e.keyCode == 27 || e.keyCode == 9) {
+                    g('carea').blur();
+                    return false;
+                } else return true;
 
+            if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
+                switch(e.keyCode) {
+                    case 9: g('carea').focus(); return false;
+                    case 49: hider(); return true;
+                    case 81: repeat = 1; return true;
+                }
+            }
+            return olddown(e);
+        };
+        window.onkeyup = function(e) {
+            switch(e.keyCode) {
+                case 81: repeat = 0;break;
+                default: return oldup(e)
+            }
+        };	
+        var k = {keyCode: 87};
+        setInterval(function() {
+            if (!repeat) return;
+            olddown(k);oldup(k);
+        }, 50)
+    }
 
-function lploop() {
-	r = unsafeWindow.lpi
-	//console.log('used ts', r.ts)
-	GM_xmlhttpRequest({
-		method: "GET",
-		url: 'http://' + r.server + '?act=a_check&key=' + r.key + '&ts='+ r.ts + '&wait=10&mode=2',
-		onload: function(ups) {
-			eval('ups = ' + ups.responseText)
-			if (unsafeWindow.lpi.ts != ups.ts) {
-				//console.log('-new ts', ups.ts, unsafeWindow.lpi.ts, ups)
-				unsafeWindow.lpi.ts = ups.ts
-				ups = ups.updates
-				for (var i = 0; i < ups.length; i++) {
-					if (ups[i][0] == 4) {
-						var msg = document.createElement('div')
-						//msg.innerHTML = ups[i][6]
-						msg.innerHTML = (ups[i][6].indexOf('|') != -1 ? ups[i][6].substr(0, ups[i][6].indexOf('|')) + ': ' + ups[i][6].substr(ups[i][6].indexOf('|') + 1) : ups[i][6])
-						document.getElementById('msgsbox').appendChild(msg)
-					}
-				}
-				document.getElementById('msgsbox').lastChild.scrollIntoView()
-			}
-			lploop()
-		}
-	})
-}
+    var init = function() {
+        var stl = document.createElement('style')
+        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto;} #cbox .name {color: #AAA;} .higlight {color: #faa}'
+        document.body.appendChild(stl)
 
-init()
+        var cbox = document.createElement('div')
+        cbox.id = 'cbox'
+        cbox.innerHTML = '<div id="msgsbox"></div><div id="cform"><form id="form"><input id="carea" autocomplete="off"></input></div><div id="lpltrigger"></div>'
+        document.body.appendChild(cbox)
+
+        g('form').onsubmit = submit
+        g('carea').onfocus = function () {
+            chatactive = true
+            g('cbox').style.opacity = '0.6'
+        }
+        g('carea').onblur = function () {
+            chatactive = false
+            g('cbox').style.opacity = '0.5'
+        }
+        handleKeys()
+        connectChat()
+    }
+
+    window.addEventListener('load', init)
+})()
