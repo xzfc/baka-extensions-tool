@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
+// @version     1.2
 // @grant       none
 // ==/UserScript==
 
@@ -14,6 +15,18 @@
         if (l.length == 1)
             return l[0];
         return l.slice(0, -1).join(", ") + " и " + l[l.length-1]
+    }
+    
+    var pad = function(number) {
+        if (number < 10) {
+            return '0' + number;
+        }
+        return number;
+    }
+    
+    var formatTime = function (t) {
+        t = new Date(t*1000 + 1000*60*60*3)
+        return pad(t.getUTCHours()) + ':' + pad(t.getUTCMinutes()) + ':' + pad(t.getUTCSeconds());
     }
 
     var nononame = function (n) {
@@ -47,7 +60,7 @@
                             names.push(nonames + " безымянных Сырны" + (iHaveNoName?" (включая тебя)":""));
                         else
                             names.push(nonames + " безымянных Сырн" + (iHaveNoName?" (включая тебя)":""));
-                        addLine(0, "", "В чате " + join(names) + ".")
+                        addLine(d.T, "", "В чате " + join(names) + ".")
                     }
                     break;
                 case "message":
@@ -76,6 +89,14 @@
 
     var addLine = function (time, name, text, button) {
         var d = document.createElement('div')
+        
+        if(time !== undefined) {
+            var time_ = document.createElement('span')
+            time_.className = "time"
+            time_.textContent = formatTime(time)
+            d.appendChild(time_)
+            d.appendChild(document.createTextNode(" "))
+        }
 
         if(name != "") {
             var name_ = document.createElement('a')
@@ -162,7 +183,7 @@
 
     var init = function() {
         var stl = document.createElement('style')
-        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto;} #cbox .name {color: #AAA;} .higlight {color: #faa}'
+        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto;} #cbox .name {color: #AAA;} #cbox .higlight {color: #faa} #cbox .time {font-size: 70%; color: #777;}'
         document.body.appendChild(stl)
 
         var cbox = document.createElement('div')
