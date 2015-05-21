@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.3
+// @version     1.4
 // @grant       none
 // ==/UserScript==
 
@@ -91,6 +91,27 @@
         }
     }
 
+    var topScreenshot = function() {
+        var canvas = document.getElementById("canvas")
+        var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
+
+        var top_canvas = document.createElement("canvas")
+        top_canvas.width = 220
+        top_canvas.height = 320
+        top_canvas.getContext('2d').putImageData(data, 0, 0)
+        return top_canvas.toDataURL()
+    }
+
+    var downloadTopScreenshot = function() {
+        var a = document.createElement('a')
+        a.setAttribute('download', 'top.png')
+        a.setAttribute('href', topScreenshot())
+        a.style.display = 'none'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+    }
+    
     var clickName = function (e) {
         e = e || window.event;e = e.target || e.srcElement;
         var ca = document.getElementById('carea')
@@ -159,7 +180,14 @@
         var ishidden = false
         var hider = function () {
             ishidden = !ishidden
-            g('cbox').style.display = (ishidden ? 'none' : '')
+            g('cbox').style.visibility = (ishidden ? 'hidden' : '')
+        }
+        
+        var defaultPosition = true
+        var move = function () {
+            defaultPosition = !defaultPosition
+            g('cbox').style.bottom = g('cbox').style.right = (defaultPosition ? '0' : '')
+            g('cbox').style.top = g('cbox').style.left = (defaultPosition ? '' : '0')
         }
 
         var olddown = window.onkeydown, oldup = window.onkeyup;
@@ -170,12 +198,18 @@
                     g('carea').blur();
                     return false;
                 } else return true;
+            
+            if (e.ctrlKey && e.keyCode === 83) {
+                downloadTopScreenshot();
+                return false;
+            }
 
             if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
                     case 9: g('carea').focus(); return false;
                     case 49: hider(); return true;
                     case 50: reformatTime(); return true;
+                    case 51: move(); return true;
                     case 81: repeat = 1; return true;
                 }
             }
@@ -196,12 +230,13 @@
 
     var init = function() {
         var stl = document.createElement('style')
-        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto;} #cbox .name {color: #AAA;} #cbox .higlight {color: #faa} #cbox .time {font-size: 70%; color: #777;}'
+        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto; word-wrap: break-word;} #cbox .name {color: #AAA;} #cbox .higlight {color: #faa} #cbox .time {font-size: 70%; color: #777;}'
         document.body.appendChild(stl)
 
         var cbox = document.createElement('div')
         cbox.id = 'cbox'
-        cbox.innerHTML = '<div id="msgsbox"></div><div id="cform"><form id="form"><input id="carea" autocomplete="off"></input></div><div id="lpltrigger"></div>'
+        cbox.innerHTML = '<div id="msgsbox"></div>' +
+            '<div id="cform"><form id="form"><input id="carea" autocomplete="off"></input></form></div>'
         document.body.appendChild(cbox)
 
         g('form').onsubmit = submit
