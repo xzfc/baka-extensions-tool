@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.4
+// @version     1.5
 // @grant       none
 // ==/UserScript==
 
 (function() {
     var g = function(id) {return document.getElementById(id);}
     var chatactive = false;
+    var myName = "";
 
     var join = function(l) {
         if (l.length == 0)
@@ -44,6 +45,16 @@
     var nononame = function (n) {
         return n === "" ?  "Безымянная Сырна" : n
     }
+    
+    var chatUsersCount = 0
+    var setChatUsersCount = function (add, value) {
+        if (add)
+            chatUsersCount += value;
+        else
+            chatUsersCount = value;
+        
+        g("chat_users").textContent = (chatUsersCount >= 0) ? chatUsersCount : "#"
+    }
 
     var connectChat = function () {
         var reconnect = function(e) {
@@ -54,11 +65,10 @@
         var wsUri = "ws://89.31.114.117:8000/";
         websocket = new WebSocket(wsUri);
         websocket.onopen = function(evt) { console.log(evt); };
-        websocket.onclose = function(evt) { console.log(evt); addLine(0, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect]); };
-        websocket.onerror = function(evt) { console.log(evt); addLine(0, "", "Ошибка вебсокета"); };
+        websocket.onclose = function(evt) { console.log(evt); addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect]);setChatUsersCount(false, -1) };
+        websocket.onerror = function(evt) { console.log(evt); addLine(undefined, "", "Ошибка вебсокета"); };
         websocket.onmessage = function(evt) {
             var d = JSON.parse(evt.data)
-            d.f = nononame(d.f)
             switch(d.t) {
                 case "names":
                     {
@@ -73,19 +83,24 @@
                         else
                             names.push(nonames + " безымянных Сырн" + (iHaveNoName?" (включая тебя)":""));
                         addLine(d.T, "", "В чате " + join(names) + ".")
+                        setChatUsersCount(false, d.names.length)
                     }
                     break;
                 case "message":
-                    addLine(d.T, d.f, d.text)
+                    addLine(d.T, nononame(d.f), d.text)
                     break;
                 case "name":
-                    addLine(d.T, "", d.f + " теперь " + nononame(d.name))
+                    addLine(d.T, "", nononame(d.f) + " теперь " + nononame(d.name))
                     break;
                 case "join":
-                    addLine(d.T, "", d.f + " заходит")
+                    if (d.f !== "")
+                        addLine(d.T, "", d.f + " заходит");
+                    setChatUsersCount(true, +1)
                     break;
                 case "leave":
-                    addLine(d.T, "", d.f + " выходит")
+                    if (d.f !== "")
+                        addLine(d.T, "", d.f + " выходит");
+                    setChatUsersCount(true, -1)
                     break;
             }
         }
@@ -227,16 +242,39 @@
             olddown(k);oldup(k);
         }, 50)
     }
+    
+    var handleSetNick = function() {
+        var oldSetNick = setNick
+        setNick = function(n) {
+            if (n !== myName) {
+                myName = n
+                var m = {t: "name", "name": n, "f": n}
+                send(m)
+            }
+            oldSetNick(n)
+        }
+    }
 
     var init = function() {
         var stl = document.createElement('style')
-        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; height:250px; opacity:0.5; color:white;} #carea {width:100%; color:black; height: 30px;} #msgsbox {height: 220px; overflow: auto; word-wrap: break-word;} #cbox .name {color: #AAA;} #cbox .higlight {color: #faa} #cbox .time {font-size: 70%; color: #777;}'
+        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; opacity:0.5; color:white;} ' +
+            '#carea { width: 100%; color: black}' +
+            '#form {margin: 0;}' +
+            '#msgsbox { overflow: auto; word-wrap: break-word; width:100%; height: 100%; max-height: 250px; }' +
+            '#msgsbox .name {color: #AAA;}' +
+            '#msgsbox .higlight {color: #faa}' +
+            '#msgsbox .time {font-size: 70%; color: #777;}';
         document.body.appendChild(stl)
 
-        var cbox = document.createElement('div')
+        var cbox = document.createElement('table')
+        cbox.cellpadding = cbox.cellspacing = 0
         cbox.id = 'cbox'
-        cbox.innerHTML = '<div id="msgsbox"></div>' +
-            '<div id="cform"><form id="form"><input id="carea" autocomplete="off"></input></form></div>'
+        cbox.innerHTML = '<tr><td colspan="2"><div id="msgsbox"></div></td></tr>' +
+            '<tr height="0">' + 
+            '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></input></form></td>' +
+            '<td id="chat_users"></td>' +
+            '</tr>'
+
         document.body.appendChild(cbox)
 
         g('form').onsubmit = submit
@@ -248,9 +286,15 @@
             chatactive = false
             g('cbox').style.opacity = '0.5'
         }
+        handleSetNick()
         handleKeys()
         connectChat()
     }
 
-    window.addEventListener('load', init)
+    var wait = function() {
+        if (!window.onkeydown || !window.onkeyup || !setNick)
+            return setTimeout(wait, 100);
+        init()
+    }
+    wait()
 })()
