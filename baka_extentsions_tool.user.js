@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.5
+// @version     1.6
 // @grant       none
 // ==/UserScript==
 
@@ -9,6 +9,10 @@
     var g = function(id) {return document.getElementById(id);}
     var chatactive = false;
     var myName = "";
+    var wsUri = "ws://89.31.114.117:8000/";
+    var quickTemplates = [["Покорми", "Не корми"],
+                          ["Взорви колючку", "Пульни колючку"],
+                          ["Возьми мои ошмётки", "Не бери мои ошмётки"]];
 
     var join = function(l) {
         if (l.length == 0)
@@ -41,6 +45,29 @@
         for(var i = 0; i < l.length; i++)
             l.item(i).textContent = formatTime(l.item(i).getAttribute("T"))
     }
+    
+    var chatHidden = false
+    var chatHider = function () {
+        chatHidden = !chatHidden
+        g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
+        updateNotification()
+    }
+    
+    var unreadCount = 0
+    var updateNotification = function() {
+        var n = g("notification")
+        if (!chatHidden) {
+            unreadCount = 0
+            n.style.visibility =  'hidden'
+        } else {        
+            if(unreadCount) {
+                n.textContent = unreadCount
+                n.style.visibility =  ''
+            } else {
+                n.style.visibility =  'hidden'
+            }
+        }
+    }
 
     var nononame = function (n) {
         return n === "" ?  "Безымянная Сырна" : n
@@ -62,11 +89,16 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
-        var wsUri = "ws://89.31.114.117:8000/";
         websocket = new WebSocket(wsUri);
-        websocket.onopen = function(evt) { console.log(evt); };
-        websocket.onclose = function(evt) { console.log(evt); addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect]);setChatUsersCount(false, -1) };
-        websocket.onerror = function(evt) { console.log(evt); addLine(undefined, "", "Ошибка вебсокета"); };
+        websocket.onopen = function(evt) {
+            send({t: "name", "name": myName})
+        }
+        websocket.onclose = function(evt) {
+            addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect])
+            setChatUsersCount(false, -1)
+            unreadCount += 1;updateNotification()
+        }
+        websocket.onerror = function(evt) { addLine(undefined, "", "Ошибка вебсокета"); };
         websocket.onmessage = function(evt) {
             var d = JSON.parse(evt.data)
             switch(d.t) {
@@ -88,6 +120,11 @@
                     break;
                 case "message":
                     addLine(d.T, nononame(d.f), d.text)
+                    unreadCount += 1;updateNotification()
+                    break;
+                case "quick":
+                    addLine(d.T, nononame(d.f), "[" + d.text + "]")
+                    unreadCount += 1;updateNotification()
                     break;
                 case "name":
                     addLine(d.T, "", nononame(d.f) + " теперь " + nononame(d.name))
@@ -183,21 +220,23 @@
 
     var submit = function(e) {
         var ca = document.getElementById('carea')
+        
         if(ca.value != "") {
-            var m = {t: "message", text: ca.value, f: document.getElementById('nick').value}
-            send(m)
+            var n = document.getElementById('nick')
+            if (myName != n.value) {
+                myName = n.value
+                send({t: "name", name:myName})
+            }
+            if(ca.value == "/names")
+                send({t:"names"});
+            else
+                send({t: "message", text: ca.value})
             ca.value = ""
         }
         return false
     }
 
     var handleKeys = function () {
-        var ishidden = false
-        var hider = function () {
-            ishidden = !ishidden
-            g('cbox').style.visibility = (ishidden ? 'hidden' : '')
-        }
-        
         var defaultPosition = true
         var move = function () {
             defaultPosition = !defaultPosition
@@ -207,7 +246,21 @@
 
         var olddown = window.onkeydown, oldup = window.onkeyup;
         var repeat = 0;
+        var extended = false;
         window.onkeydown = function(e) {
+            if(extended) {
+                if(e.keyCode == 16) return false;
+                var cmd = quickTemplates[e.keyCode - 49]
+                if (cmd !== undefined) {
+                    cmd = cmd[e.shiftKey?1:0];
+                    if (cmd !== undefined)
+                        send({t:"quick", text:cmd});
+                }
+                quickHint.style.visibility = 'hidden'
+                extended = false;
+                return false;
+            }
+            
             if (chatactive)
                 if (e.keyCode == 27 || e.keyCode == 9) {
                     g('carea').blur();
@@ -222,9 +275,10 @@
             if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
                     case 9: g('carea').focus(); return false;
-                    case 49: hider(); return true;
+                    case 49: chatHider(); return true;
                     case 50: reformatTime(); return true;
                     case 51: move(); return true;
+                    case 52: extended = true; quickHint.style.visibility = ''; return true;
                     case 81: repeat = 1; return true;
                 }
             }
@@ -248,8 +302,7 @@
         setNick = function(n) {
             if (n !== myName) {
                 myName = n
-                var m = {t: "name", "name": n, "f": n}
-                send(m)
+                send({t: "name", "name": myName})
             }
             oldSetNick(n)
         }
@@ -257,13 +310,16 @@
 
     var init = function() {
         var stl = document.createElement('style')
-        stl.innerHTML = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; opacity:0.5; color:white;} ' +
+        stl.textContent = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; opacity:0.5; color:white;} ' +
             '#carea { width: 100%; color: black}' +
             '#form {margin: 0;}' +
-            '#msgsbox { overflow: auto; word-wrap: break-word; width:100%; height: 100%; max-height: 250px; }' +
+            '#msgsbox { overflow: auto; word-wrap: break-word; width:100%; height: 250px; }' +
             '#msgsbox .name {color: #AAA;}' +
             '#msgsbox .higlight {color: #faa}' +
-            '#msgsbox .time {font-size: 70%; color: #777;}';
+            '#msgsbox .time {font-size: 70%; color: #777;}'+
+            '#notification {background: red; position:fixed; z-index:100; bottom:5px;right:5px;opacity:0.5;color:white}'+
+            '#quickHint {background: #777; position:fixed; z-index:120; top:0; left:0; color:white;}'+
+            '#quickHint .key {font-weight: bold;margin-right: 1em;}';
         document.body.appendChild(stl)
 
         var cbox = document.createElement('table')
@@ -273,9 +329,36 @@
             '<tr height="0">' + 
             '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></input></form></td>' +
             '<td id="chat_users"></td>' +
-            '</tr>'
-
+            '</tr>';
         document.body.appendChild(cbox)
+        
+        var notification = document.createElement('div')
+        notification.id = "notification"
+        document.body.appendChild(notification)
+        
+        var quickHint = document.createElement('div')
+        quickHint.id = "quickHint"
+        var addQuickHint = function (key, text) {
+            var line = document.createElement('div')
+            
+            var key_ = document.createElement('span')
+            key_.textContent = key
+            key_.className = 'key'
+            line.appendChild(key_)
+            
+            var text_ = document.createElement('span')
+            text_.textContent = text
+            text_.className = 'text'
+            line.appendChild(text_)
+            
+            quickHint.appendChild(line)
+        }
+        for(var i = 0; i < quickTemplates.length; i++) {
+            addQuickHint(1+i, quickTemplates[i][0])
+            addQuickHint("Shift + " + (1+i), quickTemplates[i][1])
+        }
+        quickHint.style.visibility = 'hidden'
+        document.body.appendChild(quickHint)
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
@@ -286,13 +369,18 @@
             chatactive = false
             g('cbox').style.opacity = '0.5'
         }
+        
+        g("chat_users").onclick = function() { send({t:'names'}) }
+        
         handleSetNick()
         handleKeys()
         connectChat()
+        notification.onmousemove = cbox.onmousemove = g("canvas").onmousemove
+        notification.onclick = chatHider
     }
 
     var wait = function() {
-        if (!window.onkeydown || !window.onkeyup || !setNick)
+        if (!window.onkeydown || !window.onkeyup || !setNick || !g("canvas").onmousemove)
             return setTimeout(wait, 100);
         init()
     }
