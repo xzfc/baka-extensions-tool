@@ -1,18 +1,19 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.7
+// @version     1.8
 // @grant       none
 // ==/UserScript==
 
 (function() {
-    var g = function(id) {return document.getElementById(id);}
-    var chatactive = false;
-    var myName = "";
+    var g = function(id) {return document.getElementById(id)}
+    var chatactive = false
+    var myName = ""
     var wsUri = "ws://89.31.114.117:8000/";
     var quickTemplates = [["Покорми", "Не корми"],
                           ["Взорви колючку", "Пульни колючку"],
-                          ["Возьми мои ошмётки", "Не бери мои ошмётки"]];
+                          ["Возьми мои ошмётки", "Не бери мои ошмётки"]]
+    var allyName = /([⑨Ø]|^Умничка$|^Rika Nippa$|^HakureiのMiko$|^H-hauau Q\.Q$|^Reimu$)/
 
     var join = function(l) {
         if (l.length == 0)
@@ -23,13 +24,12 @@
     }
     
     var pad = function(number) {
-        if (number < 10) {
+        if (number < 10)
             return '0' + number;
-        }
-        return number;
+        return number
     }
     
-    var currentTimeFormat = 0;
+    var currentTimeFormat = 0
     var formatTime = function (t) {
         t = new Date(t*1000 + 1000*60*60*3)
         var h = pad(t.getUTCHours()), m = pad(t.getUTCMinutes()), s = pad(t.getUTCSeconds())
@@ -308,8 +308,8 @@
     }
     
     var handleSetNick = function() {
-        var oldSetNick = setNick
-        setNick = function(n) {
+        var oldSetNick = window.setNick
+        window.setNick = function(n) {
             if (n !== myName) {
                 myName = n
                 send({t: "name", "name": myName})
@@ -334,13 +334,13 @@
                     v:c.isVirus?1:0}
         })
         var top = a.top.map(function(x){return [x.id, x.name]})
-        send({t:'map', all:cells, my:a.myCells, top:top})
+        send({t:'map', all:cells, my:a.myCells, top:top, reply:mapHidden?1:0})
     }
     
     var sendMapThread = function() {
         if (window.agar === undefined)
             return addLine(undefined, "", "Карты не будет :<");
-        setInterval(sendMap, 500)
+        setInterval(sendMap, 1000)
     }
     
     var drawMap = function(data) {
@@ -348,21 +348,34 @@
             return;
         var map = document.getElementById("map")
         var context = map.getContext('2d')
-        context.clearRect ( 0 , 0 , canvas.width, canvas.height )
+        
+        context.clearRect(0 , 0, canvas.width, canvas.height)
+        context.globalAlpha = 0.5
+        context.fillStyle = "#777"
+        context.fillRect(0 , 0, canvas.width, canvas.height)
         var scale = 256/11180
-        for(var i = 0; i < data.length; i++) {
+        var i
+        
+        context.globalAlpha = .4
+        for(i = 0; i < data.length; i++) {
+            var a = data[i].a, m = window.agar.myCells.indexOf(data[i].i) > -1, t = allyName.test(data[i].n)
+            if(a || m || t) {
+                context.fillStyle = m ? "#fff" : (a ? "#000" :  "#00f")
+                context.beginPath()
+                context.arc(data[i].x * scale, data[i].y * scale, data[i].s*scale+4, 0, 2 * Math.PI, false)
+                context.fill()
+            }
+        }
+        
+        context.lineWidth = 2
+        for(i = 0; i < data.length; i++) {
             context.beginPath()
             context.arc(data[i].x * scale, data[i].y * scale, data[i].s*scale, 0, 2 * Math.PI, false)
             context.globalAlpha = 1
             context.fillStyle = data[i].c
             context.fill()
-            context.lineWidth = 2
             if(data[i].v) {
                 context.strokeStyle = "#ff0000"
-            } else if(data[i].a) {
-                context.globalAlpha = .4
-                context.lineWidth = 8
-                context.strokeStyle = "#000000"
             } else {
                 context.globalAlpha = .1
                 context.strokeStyle = "#000000"
@@ -447,12 +460,12 @@
         handleKeys()
         connectChat()
         sendMapThread();mapHider()
-        notification.onmousemove = cbox.onmousemove = g("canvas").onmousemove
+        map.onmousemove = notification.onmousemove = cbox.onmousemove = g("canvas").onmousemove
         notification.onclick = chatHider
     }
 
     var wait = function() {
-        if (!window.onkeydown || !window.onkeyup || !setNick || !g("canvas").onmousemove)
+        if (!window.onkeydown || !window.onkeyup || !window.setNick || !g("canvas").onmousemove)
             return setTimeout(wait, 100);
         init()
     }
