@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.6
+// @version     1.7
 // @grant       none
 // ==/UserScript==
 
@@ -51,6 +51,12 @@
         chatHidden = !chatHidden
         g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
         updateNotification()
+    }
+    
+    var mapHidden = false
+    var mapHider = function () {
+        mapHidden = !mapHidden
+        g('map').style.visibility = (mapHidden ? 'hidden' : '')
     }
     
     var unreadCount = 0
@@ -129,6 +135,9 @@
                 case "name":
                     addLine(d.T, "", nononame(d.f) + " теперь " + nononame(d.name))
                     break;
+                case "map":
+                    drawMap(d.data)
+                    break
                 case "join":
                     if (d.f !== "")
                         addLine(d.T, "", d.f + " заходит");
@@ -279,6 +288,7 @@
                     case 50: reformatTime(); return true;
                     case 51: move(); return true;
                     case 52: extended = true; quickHint.style.visibility = ''; return true;
+                    case 53: mapHider(); return true;
                     case 81: repeat = 1; return true;
                 }
             }
@@ -307,6 +317,60 @@
             oldSetNick(n)
         }
     }
+    
+    var sendMap = function() {
+        var a = window.agar
+        if (a.allCells === undefined || a.myCells === undefined || a.top === undefined)
+            return;
+        var cells = a.allCells.filter(function(c){
+            return c.size >= 32 || a.myCells.indexOf(c.id) > -1
+        }).map(function(c){
+            return {x:c.x,
+                    y:c.y,
+                    i:c.id,
+                    n:c.name,
+                    c:c.color,
+                    s:c.size,
+                    v:c.isVirus?1:0}
+        })
+        var top = a.top.map(function(x){return [x.id, x.name]})
+        send({t:'map', all:cells, my:a.myCells, top:top})
+    }
+    
+    var sendMapThread = function() {
+        if (window.agar === undefined)
+            return addLine(undefined, "", "Карты не будет :<");
+        setInterval(sendMap, 500)
+    }
+    
+    var drawMap = function(data) {
+        if (mapHidden)
+            return;
+        var map = document.getElementById("map")
+        var context = map.getContext('2d')
+        context.clearRect ( 0 , 0 , canvas.width, canvas.height )
+        var scale = 256/11180
+        for(var i = 0; i < data.length; i++) {
+            context.beginPath()
+            context.arc(data[i].x * scale, data[i].y * scale, data[i].s*scale, 0, 2 * Math.PI, false)
+            context.globalAlpha = 1
+            context.fillStyle = data[i].c
+            context.fill()
+            context.lineWidth = 2
+            if(data[i].v) {
+                context.strokeStyle = "#ff0000"
+            } else if(data[i].a) {
+                context.globalAlpha = .4
+                context.lineWidth = 8
+                context.strokeStyle = "#000000"
+            } else {
+                context.globalAlpha = .1
+                context.strokeStyle = "#000000"
+            }
+            context.stroke()
+        }
+    }
+    window.sendMap = sendMap
 
     var init = function() {
         var stl = document.createElement('style')
@@ -319,7 +383,8 @@
             '#msgsbox .time {font-size: 70%; color: #777;}'+
             '#notification {background: red; position:fixed; z-index:100; bottom:5px;right:5px;opacity:0.5;color:white}'+
             '#quickHint {background: #777; position:fixed; z-index:120; top:0; left:0; color:white;}'+
-            '#quickHint .key {font-weight: bold;margin-right: 1em;}';
+            '#quickHint .key {font-weight: bold;margin-right: 1em;}'+
+            '#map {position: fixed; bottom: 5px; left: 5px; z-index:100; border: 1px black solid;}';
         document.body.appendChild(stl)
 
         var cbox = document.createElement('table')
@@ -359,6 +424,12 @@
         }
         quickHint.style.visibility = 'hidden'
         document.body.appendChild(quickHint)
+        
+        var map = document.createElement("canvas")
+        map.id = "map"
+        map.width = 256
+        map.height = 256
+        document.body.appendChild(map)
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
@@ -375,6 +446,7 @@
         handleSetNick()
         handleKeys()
         connectChat()
+        sendMapThread();mapHider()
         notification.onmousemove = cbox.onmousemove = g("canvas").onmousemove
         notification.onclick = chatHider
     }
