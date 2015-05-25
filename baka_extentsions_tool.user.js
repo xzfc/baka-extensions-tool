@@ -1,21 +1,24 @@
 // ==UserScript==
 // @name        Baka extensions tool
 // @include     http://agar.io/*
-// @version     1.8
+// @version     1.9
 // @grant       none
 // ==/UserScript==
 
 (function() {
-    var g = function(id) {return document.getElementById(id)}
-    var chatactive = false
-    var myName = ""
-    var wsUri = "ws://89.31.114.117:8000/";
+    var wsUri = "ws://89.31.114.117:8000/"
     var quickTemplates = [["Покорми", "Не корми"],
                           ["Взорви колючку", "Пульни колючку"],
                           ["Возьми мои ошмётки", "Не бери мои ошмётки"]]
-    var allyName = /([⑨Ø]|^Умничка$|^Rika Nippa$|^HakureiのMiko$|^H-hauau Q\.Q$|^Reimu$)/
+    var allyName = /([⑨Ø]|^Умничка$|^Rika Nippa$|^HakureiのMiko$|^H-hauau Q\.Q$|^Reimu$|^Сырно не дура$|^Alice M\.$)/
+    function nononame(n) { return n || "Безымянная Сырна" }
+    
+    function g(id) {return document.getElementById(id)}
+    var myName = ""
+    var chatactive = false
+    var serverRestart = false
 
-    var join = function(l) {
+    function join(l) {
         if (l.length == 0)
             return "";
         if (l.length == 1)
@@ -23,14 +26,9 @@
         return l.slice(0, -1).join(", ") + " и " + l[l.length-1]
     }
     
-    var pad = function(number) {
-        if (number < 10)
-            return '0' + number;
-        return number
-    }
-    
     var currentTimeFormat = 0
-    var formatTime = function (t) {
+    function formatTime(t) {
+        function pad(number) { return (number < 10) ? '0' + number : number }
         t = new Date(t*1000 + 1000*60*60*3)
         var h = pad(t.getUTCHours()), m = pad(t.getUTCMinutes()), s = pad(t.getUTCSeconds())
         switch(currentTimeFormat % 3) {
@@ -39,7 +37,7 @@
             case 2: return '';
         }
     }
-    var reformatTime = function() {
+    function reformatTime() {
         currentTimeFormat ++
         var l = document.getElementsByClassName("time");
         for(var i = 0; i < l.length; i++)
@@ -47,20 +45,20 @@
     }
     
     var chatHidden = false
-    var chatHider = function () {
+    function chatHider() {
         chatHidden = !chatHidden
         g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
         updateNotification()
     }
     
     var mapHidden = false
-    var mapHider = function () {
+    function mapHider() {
         mapHidden = !mapHidden
         g('map').style.visibility = (mapHidden ? 'hidden' : '')
     }
     
     var unreadCount = 0
-    var updateNotification = function() {
+    function updateNotification() {
         var n = g("notification")
         if (!chatHidden) {
             unreadCount = 0
@@ -74,13 +72,9 @@
             }
         }
     }
-
-    var nononame = function (n) {
-        return n === "" ?  "Безымянная Сырна" : n
-    }
     
     var chatUsersCount = 0
-    var setChatUsersCount = function (add, value) {
+    function setChatUsersCount(add, value) {
         if (add)
             chatUsersCount += value;
         else
@@ -89,7 +83,7 @@
         g("chat_users").textContent = (chatUsersCount >= 0) ? chatUsersCount : "#"
     }
 
-    var connectChat = function () {
+    function connectChat() {
         var reconnect = function(e) {
             e = e || window.event;e = e.target || e.srcElement;
             e.parentNode.removeChild(e)
@@ -97,11 +91,17 @@
         }
         websocket = new WebSocket(wsUri);
         websocket.onopen = function(evt) {
+            send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
             send({t: "name", "name": myName})
         }
         websocket.onclose = function(evt) {
-            addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect])
             setChatUsersCount(false, -1)
+            if (serverRestart) {
+                serverRestart = false
+                return setTimeout(connectChat, 500)
+            } else {
+                addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect])
+            }
             unreadCount += 1;updateNotification()
         }
         websocket.onerror = function(evt) { addLine(undefined, "", "Ошибка вебсокета"); };
@@ -148,11 +148,15 @@
                         addLine(d.T, "", d.f + " выходит");
                     setChatUsersCount(true, -1)
                     break;
+                case "restart":
+                    addLine(d.T, "", "Сейчас сервер будет перезапущен")
+                    serverRestart = true
+                    break;
             }
         }
     }
 
-    var topScreenshot = function() {
+    function topScreenshot() {
         var canvas = document.getElementById("canvas")
         var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
 
@@ -163,7 +167,7 @@
         return top_canvas.toDataURL()
     }
 
-    var downloadTopScreenshot = function() {
+    function downloadTopScreenshot() {
         var a = document.createElement('a')
         a.setAttribute('download', 'top.png')
         a.setAttribute('href', topScreenshot())
@@ -173,7 +177,7 @@
         document.body.removeChild(a)
     }
     
-    var clickName = function (e) {
+    function clickName(e) {
         e = e || window.event;e = e.target || e.srcElement;
         var ca = document.getElementById('carea')
         ca.value = e.textContent + ": " + ca.value
@@ -181,8 +185,9 @@
         return false
     }
 
-    var addLine = function (time, name, text, button) {
+    function addLine(time, name, text, button) {
         var d = document.createElement('div')
+        var addrRe = /(ws:\/\/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:443)/
         
         if(time !== undefined) {
             var time_ = document.createElement('span')
@@ -203,9 +208,22 @@
         }
 
         var text_ = document.createElement('span')
-        text_.textContent = text
         if (name != "" && text.indexOf(nononame(g('nick').value)) > -1)
             text_.className = "higlight";
+        var split = text.split(addrRe)
+        for (var i = 0; i < split.length; i++) {
+            var node
+            console.log()
+            if(i%2 == 0) {
+                node = document.createTextNode(split[i])
+            } else {
+                node = document.createElement('a')
+                node.textContent = split[i]
+                node.href = "javascript:void(0)"
+                node.onclick = window.connect.bind(undefined, split[i])
+            }
+            d.appendChild(node)
+        }
 
         d.appendChild(text_)
 
@@ -223,11 +241,13 @@
         msgbox.lastChild.scrollIntoView()
     }
 
-    var send = function (a) {
-        websocket.send(JSON.stringify(a))
+    function send(a) {
+        if(websocket.readyState == 1)
+            websocket.send(JSON.stringify(a))
     }
+    window.send = send
 
-    var submit = function(e) {
+    function submit(e) {
         var ca = document.getElementById('carea')
         
         if(ca.value != "") {
@@ -241,11 +261,12 @@
             else
                 send({t: "message", text: ca.value})
             ca.value = ""
+            ca.blur()
         }
         return false
     }
 
-    var handleKeys = function () {
+    function handleKeys() {
         var defaultPosition = true
         var move = function () {
             defaultPosition = !defaultPosition
@@ -307,7 +328,7 @@
         }, 50)
     }
     
-    var handleSetNick = function() {
+    function handleSetNick() {
         var oldSetNick = window.setNick
         window.setNick = function(n) {
             if (n !== myName) {
@@ -318,10 +339,13 @@
         }
     }
     
-    var sendMap = function() {
+    function sendMap() {
         var a = window.agar
-        if (a.allCells === undefined || a.myCells === undefined || a.top === undefined)
-            return;
+        if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined) {
+            if (!mapHidden)
+                send({t:'map', reply:1});
+            return
+        }
         var cells = a.allCells.filter(function(c){
             return c.size >= 32 || a.myCells.indexOf(c.id) > -1
         }).map(function(c){
@@ -334,20 +358,21 @@
                     v:c.isVirus?1:0}
         })
         var top = a.top.map(function(x){return [x.id, x.name]})
-        send({t:'map', all:cells, my:a.myCells, top:top, reply:mapHidden?1:0})
+        send({t:'map', all:cells, my:a.myCells, top:top, reply:mapHidden?0:1})
     }
     
-    var sendMapThread = function() {
+    function sendMapThread() {
         if (window.agar === undefined)
-            return addLine(undefined, "", "Карты не будет :<");
+            addLine(undefined, "", "Карта отправляться не будет :<");
         setInterval(sendMap, 1000)
     }
     
-    var drawMap = function(data) {
+    function drawMap(data) {
         if (mapHidden)
             return;
         var map = document.getElementById("map")
         var context = map.getContext('2d')
+        var myCells = ((window.agar || {}).myCells) || []
         
         context.clearRect(0 , 0, canvas.width, canvas.height)
         context.globalAlpha = 0.5
@@ -358,7 +383,7 @@
         
         context.globalAlpha = .4
         for(i = 0; i < data.length; i++) {
-            var a = data[i].a, m = window.agar.myCells.indexOf(data[i].i) > -1, t = allyName.test(data[i].n)
+            var a = data[i].a, m = myCells.indexOf(data[i].i) > -1, t = allyName.test(data[i].n)
             if(a || m || t) {
                 context.fillStyle = m ? "#fff" : (a ? "#000" :  "#00f")
                 context.beginPath()
@@ -385,7 +410,7 @@
     }
     window.sendMap = sendMap
 
-    var init = function() {
+    function init() {
         var stl = document.createElement('style')
         stl.textContent = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; opacity:0.5; color:white;} ' +
             '#carea { width: 100%; color: black}' +
@@ -464,7 +489,7 @@
         notification.onclick = chatHider
     }
 
-    var wait = function() {
+    function wait() {
         if (!window.onkeydown || !window.onkeyup || !window.setNick || !g("canvas").onmousemove)
             return setTimeout(wait, 100);
         init()
