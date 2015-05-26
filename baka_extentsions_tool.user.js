@@ -200,7 +200,7 @@
 
     function addLine(time, name, text, button) {
         var d = document.createElement('div')
-        var addrRe = /(ws:\/\/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:443)/
+        var addrRe = /(ws:\/\/\d+\.\d+\.\d+\.\d+:\d+)/
         
         if(time !== undefined) {
             var time_ = document.createElement('span')
