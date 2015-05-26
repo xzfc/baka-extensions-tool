@@ -1,27 +1,40 @@
 // ==UserScript==
 // @name        Baka extensions tool
+// @version     1.10
+// @namespace   baka-extensions-tool
+// @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
-// @version     1.9
 // @grant       none
 // ==/UserScript==
 
 (function() {
-    var wsUri = "ws://89.31.114.117:8000/"
-    var quickTemplates = [["Покорми", "Не корми"],
-                          ["Взорви колючку", "Пульни колючку"],
-                          ["Возьми мои ошмётки", "Не бери мои ошмётки"]]
-    var allyName = /([⑨Ø]|^Умничка$|^Rika Nippa$|^HakureiのMiko$|^H-hauau Q\.Q$|^Reimu$|^Сырно не дура$|^Alice M\.$)/
-    function nononame(n) { return n || "Безымянная Сырна" }
-    
-    function g(id) {return document.getElementById(id)}
+    setConf({wsUri: "ws://89.31.114.117:8000/",
+             quickTemplates: [["Покорми", "Не корми"],
+                              ["Взорви колючку", "Пульни колючку"],
+                              ["Возьми мои ошмётки", "Не бери мои ошмётки"]],
+             allyNameRe: /[⑨Ø]/,
+             allyNames: [ "Умничка", "Rika Nippa", "HakureiのMiko", "H-hauau Q.Q", "Reimu", "Сырно не дура", "Alice M."]
+            })
     var myName = ""
     var chatactive = false
     var serverRestart = false
 
+    function nononame(n) { return n || "Безымянная Сырна" }
+    function isAlly(name) { return window.bakaconf.allyNameRe.test(name) || (window.bakaconf.allyNames.indexOf(name) > -1) }
+    function g(id) {return document.getElementById(id)}
+    
+    function setConf(defaults) {
+        if(window.bakaconf === undefined)
+            window.bakaconf = {};
+        for(var i in defaults)
+            if (window.bakaconf[i] === undefined)
+                window.bakaconf[i] = defaults[i];
+    }
+
     function join(l) {
-        if (l.length == 0)
+        if (l.length === 0)
             return "";
-        if (l.length == 1)
+        if (l.length === 1)
             return l[0];
         return l.slice(0, -1).join(", ") + " и " + l[l.length-1]
     }
@@ -84,12 +97,12 @@
     }
 
     function connectChat() {
-        var reconnect = function(e) {
+        function reconnectButton(e) {
             e = e || window.event;e = e.target || e.srcElement;
             e.parentNode.removeChild(e)
             connectChat()
         }
-        websocket = new WebSocket(wsUri);
+        websocket = new WebSocket(window.bakaconf.wsUri)
         websocket.onopen = function(evt) {
             send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
             send({t: "name", "name": myName})
@@ -100,7 +113,7 @@
                 serverRestart = false
                 return setTimeout(connectChat, 500)
             } else {
-                addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnect])
+                addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnectButton])
             }
             unreadCount += 1;updateNotification()
         }
@@ -213,7 +226,6 @@
         var split = text.split(addrRe)
         for (var i = 0; i < split.length; i++) {
             var node
-            console.log()
             if(i%2 == 0) {
                 node = document.createTextNode(split[i])
             } else {
@@ -222,9 +234,8 @@
                 node.href = "javascript:void(0)"
                 node.onclick = window.connect.bind(undefined, split[i])
             }
-            d.appendChild(node)
+            text_.appendChild(node)
         }
-
         d.appendChild(text_)
 
         if(button !== undefined) {
@@ -246,6 +257,17 @@
             websocket.send(JSON.stringify(a))
     }
     window.send = send
+    
+    function sendAddr() {
+        if(window.agar === undefined ||
+           window.agar.ws === undefined ||
+           window.agar.top === undefined ||
+           window.agar.top.length === 0)
+            return false;
+        var top = agar.top.map(function(x){return (x.name||"An unnamed cell")}).join(", ")
+        send({t: "message", text: window.agar.ws + " " + "Топ: " + top})
+        return true
+    }
 
     function submit(e) {
         var ca = document.getElementById('carea')
@@ -256,10 +278,20 @@
                 myName = n.value
                 send({t: "name", name:myName})
             }
-            if(ca.value == "/names")
-                send({t:"names"});
-            else
+            if(ca.value[0] == "/") {
+                switch(ca.value) {
+                    case "/names":
+                        send({t:"names"}); break;
+                    case "/addr":
+                        sendAddr(); break;
+                    default:
+                        addLine(undefined, "", "Команды чата:")
+                        addLine(undefined, "", "/names — получить список сырн в чате")
+                        addLine(undefined, "", "/addr — отправить текущий севрер и топ (требуется expose)")
+                }
+            } else {
                 send({t: "message", text: ca.value})
+            }
             ca.value = ""
             ca.blur()
         }
@@ -274,32 +306,32 @@
             g('cbox').style.top = g('cbox').style.left = (defaultPosition ? '' : '0')
         }
 
-        var olddown = window.onkeydown, oldup = window.onkeyup;
-        var repeat = 0;
-        var extended = false;
+        var olddown = window.onkeydown, oldup = window.onkeyup
+        var repeat = 0
+        var extended = false
         window.onkeydown = function(e) {
             if(extended) {
                 if(e.keyCode == 16) return false;
-                var cmd = quickTemplates[e.keyCode - 49]
+                var cmd = window.bakaconf.quickTemplates[e.keyCode - 49]
                 if (cmd !== undefined) {
                     cmd = cmd[e.shiftKey?1:0];
                     if (cmd !== undefined)
                         send({t:"quick", text:cmd});
                 }
                 quickHint.style.visibility = 'hidden'
-                extended = false;
-                return false;
+                extended = false
+                return false
             }
             
             if (chatactive)
                 if (e.keyCode == 27 || e.keyCode == 9) {
-                    g('carea').blur();
-                    return false;
+                    g('carea').blur()
+                    return false
                 } else return true;
             
             if (e.ctrlKey && e.keyCode === 83) {
-                downloadTopScreenshot();
-                return false;
+                downloadTopScreenshot()
+                return false
             }
 
             if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
@@ -383,7 +415,9 @@
         
         context.globalAlpha = .4
         for(i = 0; i < data.length; i++) {
-            var a = data[i].a, m = myCells.indexOf(data[i].i) > -1, t = allyName.test(data[i].n)
+            var a = data[i].a
+            var m = myCells.indexOf(data[i].i) > -1
+            var t = isAlly(data[i].n)
             if(a || m || t) {
                 context.fillStyle = m ? "#fff" : (a ? "#000" :  "#00f")
                 context.beginPath()
@@ -412,17 +446,17 @@
 
     function init() {
         var stl = document.createElement('style')
-        stl.textContent = '#cbox {background: black; position:fixed; z-index:100; bottom:0; right:0; width:400px; opacity:0.5; color:white;} ' +
+        stl.textContent = '#cbox {background: black; position:fixed; z-index:205; bottom:0; right:0; width:400px; opacity:0.5; color:white;} ' +
             '#carea { width: 100%; color: black}' +
             '#form {margin: 0;}' +
-            '#msgsbox { overflow: auto; word-wrap: break-word; width:100%; height: 250px; }' +
+            '#msgsbox { overflow: auto; word-wrap: break-word; width:400px; height: 250px; }' +
             '#msgsbox .name {color: #AAA;}' +
             '#msgsbox .higlight {color: #faa}' +
             '#msgsbox .time {font-size: 70%; color: #777;}'+
-            '#notification {background: red; position:fixed; z-index:100; bottom:5px;right:5px;opacity:0.5;color:white}'+
+            '#notification {background: red; position:fixed; z-index:205; bottom:5px;right:5px;opacity:0.5;color:white}'+
             '#quickHint {background: #777; position:fixed; z-index:120; top:0; left:0; color:white;}'+
             '#quickHint .key {font-weight: bold;margin-right: 1em;}'+
-            '#map {position: fixed; bottom: 5px; left: 5px; z-index:100; border: 1px black solid;}';
+            '#map {position: fixed; bottom: 5px; left: 5px; z-index:205; border: 1px black solid;}';
         document.body.appendChild(stl)
 
         var cbox = document.createElement('table')
@@ -456,9 +490,9 @@
             
             quickHint.appendChild(line)
         }
-        for(var i = 0; i < quickTemplates.length; i++) {
-            addQuickHint(1+i, quickTemplates[i][0])
-            addQuickHint("Shift + " + (1+i), quickTemplates[i][1])
+        for(var i = 0; i < window.bakaconf.quickTemplates.length; i++) {
+            addQuickHint(1+i, window.bakaconf.quickTemplates[i][0])
+            addQuickHint("Shift + " + (1+i), window.bakaconf.quickTemplates[i][1])
         }
         quickHint.style.visibility = 'hidden'
         document.body.appendChild(quickHint)
@@ -484,7 +518,7 @@
         handleSetNick()
         handleKeys()
         connectChat()
-        sendMapThread();mapHider()
+        sendMapThread()
         map.onmousemove = notification.onmousemove = cbox.onmousemove = g("canvas").onmousemove
         notification.onclick = chatHider
     }
