@@ -13,7 +13,7 @@
                               ["Взорви колючку", "Пульни колючку"],
                               ["Возьми мои ошмётки", "Не бери мои ошмётки"]],
              allyNameRe: /[⑨Ø]/,
-             allyNames: [ "Умничка", "Rika Nippa", "HakureiのMiko", "H-hauau Q.Q", "Reimu", "Сырно не дура", "Alice M."]
+             allyNames: [ "Умничка", "Rika Nippa", "HakureiのMiko", "H-hauau Q.Q", "Reimu", "Сырно не дура", "Alice M.", "DUKE NUKEM", "桜華さん", "Колчанька"]
             })
     var myName = ""
     var chatactive = false
