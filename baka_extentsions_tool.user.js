@@ -161,6 +161,10 @@
                         addLine(d.T, "", d.f + " выходит");
                     setChatUsersCount(true, -1)
                     break;
+                case "ping":
+                    d.t = 'pong'
+                    send(d)
+                    break;
                 case "restart":
                     addLine(d.T, "", "Сейчас сервер будет перезапущен")
                     serverRestart = true
