@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.11
+// @version     1.11.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -389,7 +389,7 @@
     
     function sendMap() {
         var a = window.agar
-        if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined) {
+        if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || a.ws === "") {
             if (!mapHidden)
                 send({t:'map', reply:1});
             return
