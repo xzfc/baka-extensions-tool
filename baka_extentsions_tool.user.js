@@ -19,7 +19,7 @@
     var chatactive = false
     var serverRestart = false
 
-    function nononame(n) { return n || "Безымянная Сырна" }
+    var defaultName = "Безымянная сырно"
     function isAlly(name) { return window.bakaconf.allyNameRe.test(name) || (window.bakaconf.allyNames.indexOf(name) > -1) }
     function g(id) {return document.getElementById(id)}
     
@@ -32,13 +32,19 @@
     }
 
     function join(l) {
-        if (l.length === 0)
-            return "";
-        if (l.length === 1)
-            return l[0];
-        return l.slice(0, -1).join(", ") + " и " + l[l.length-1]
+        if(l.length <= 1)
+            return l
+        result = []
+        for(var i = 0; i < l.length; i++) {
+            result.push(l[i])
+            if(i < l.length-2)
+                result.push(", ")
+            else if(i == l.length-2)
+                result.push(" и ")
+        }
+        return result
     }
-    
+
     var currentTimeFormat = 0
     function formatTime(t) {
         function pad(number) { return (number < 10) ? '0' + number : number }
@@ -113,52 +119,49 @@
                 serverRestart = false
                 return setTimeout(connectChat, 500)
             } else {
-                addLine(undefined, "", "Вебсокет закрыт", ["переподключиться к вебсокету", reconnectButton])
+                addLine({message:["Вебсокет закрыт. ", aButton("переподключиться к вебсокету", reconnectButton)]})
             }
             unreadCount += 1;updateNotification()
         }
-        websocket.onerror = function(evt) { addLine(undefined, "", "Ошибка вебсокета"); };
+        websocket.onerror = function(evt) { addLine({message:"Ошибка вебсокета"}) }
         websocket.onmessage = function(evt) {
             var d = JSON.parse(evt.data)
             switch(d.t) {
                 case "names":
-                    {
-                        var names = d.names.filter(function(n) { return n !== "" })
-                        var nonames = d.names.length - names.length;
-                        var iHaveNoName = g('nick').value === ""
-                        if(nonames == 0);
-                        else if(nonames == 1)
-                            names.push("одна безымянная Сырна" + (iHaveNoName?" (это ты)":""));
-                        else if(nonames <= 4)
-                            names.push(nonames + " безымянных Сырны" + (iHaveNoName?" (включая тебя)":""));
-                        else
-                            names.push(nonames + " безымянных Сырн" + (iHaveNoName?" (включая тебя)":""));
-                        addLine(d.T, "", "В чате " + join(names) + ".")
-                        setChatUsersCount(false, d.names.length)
-                    }
+                    d.names = d.names.map(function(n) { return typeof n == "string" ? n : n.name })
+                    var namesList = d.names.filter(function(n) { return n !== "" }).map(aName)
+                    var nonameCount = d.names.length - namesList.length
+                    var iHaveNoName = g('nick').value === ""
+                    if(nonameCount === 0) / * do nothing * /;
+                    else if(nonameCount === 1)
+                        namesList.push("одна безымянная сырно" + (iHaveNoName?" (это ты)":""))
+                    else
+                        namesList.push(nonameCount + " безымянных сырно" + (iHaveNoName?" (включая тебя)":""))
+                    addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
+                    setChatUsersCount(false, d.names.length)
                     break;
                 case "message":
-                    addLine(d.T, nononame(d.f), d.text)
+                    addLine({time:d.T, sender:d.f, message:formatMessage(d.text)})
                     unreadCount += 1;updateNotification()
                     break;
                 case "quick":
-                    addLine(d.T, nononame(d.f), "[" + d.text + "]")
+                    addLine({time:d.T, sender:d.f, message:"[" + d.text + "]"})
                     unreadCount += 1;updateNotification()
                     break;
                 case "name":
-                    addLine(d.T, "", nononame(d.f) + " теперь " + nononame(d.name))
+                    addLine({time:d.T, message: [aName(d.f), " теперь ", aName(d.name), "."]})
                     break;
                 case "map":
                     drawMap(d.data)
-                    break
+                    break;
                 case "join":
                     if (d.f !== "")
-                        addLine(d.T, "", d.f + " заходит");
+                        addLine({time:d.T, message: [aName(d.f), " заходит."]});
                     setChatUsersCount(true, +1)
                     break;
                 case "leave":
                     if (d.f !== "")
-                        addLine(d.T, "", d.f + " выходит");
+                        addLine({time:d.T, message: [aName(d.f), " выходит."]});
                     setChatUsersCount(true, -1)
                     break;
                 case "ping":
@@ -166,7 +169,7 @@
                     send(d)
                     break;
                 case "restart":
-                    addLine(d.T, "", "Сейчас сервер будет перезапущен")
+                    addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
                     serverRestart = true
                     break;
             }
@@ -202,53 +205,59 @@
         return false
     }
 
-    function addLine(time, name, text, button) {
-        var d = document.createElement('div')
+    function aButton(text, action, className) {
+        var a = document.createElement('a')
+        a.href = "javascript:void(0)"
+        if (className)
+            a.className = className
+        a.onclick = action
+        a.textContent = text
+        return a
+    }
+
+    function aName(name) {
+        return aButton(name||defaultName, clickName, "name")
+    }
+
+    function formatMessage(text) {
         var addrRe = /(ws:\/\/\d+\.\d+\.\d+\.\d+:\d+)/
+        var i, node, result = text.split(addrRe)
+        if (text.indexOf(g('nick').value||defaultName) > -1)
+            result.higlight = true
+        for (i = 1; i < result.length; i += 2)
+            result[i] = aButton(result[i], window.connect.bind(undefined, result[i]))
+        return result
+    }
+
+    function addLine(p) {
+        var d = document.createElement('div')
         
-        if(time !== undefined) {
-            var time_ = document.createElement('span')
-            time_.className = "time"
-            time_.textContent = formatTime(time)
-            time_.setAttribute("T", time)
-            d.appendChild(time_)
+        if(p.time !== undefined) {
+            var time = document.createElement('span')
+            time.className = "time"
+            time.textContent = formatTime(p.time)
+            time.setAttribute("T", time)
+            d.appendChild(time)
         }
 
-        if(name != "") {
-            var name_ = document.createElement('a')
-            name_.href = "javascript:void(0)"
-            name_.className = "name"
-            name_.onclick = clickName
-            name_.textContent = name
-            d.appendChild(name_)
+        if(p.sender !== undefined) {
+            d.appendChild(aName(p.sender))
             d.appendChild(document.createTextNode(": "))
         }
 
-        var text_ = document.createElement('span')
-        if (name != "" && text.indexOf(nononame(g('nick').value)) > -1)
-            text_.className = "higlight";
-        var split = text.split(addrRe)
-        for (var i = 0; i < split.length; i++) {
-            var node
-            if(i%2 == 0) {
-                node = document.createTextNode(split[i])
-            } else {
-                node = document.createElement('a')
-                node.textContent = split[i]
-                node.href = "javascript:void(0)"
-                node.onclick = window.connect.bind(undefined, split[i])
-            }
-            text_.appendChild(node)
-        }
-        d.appendChild(text_)
-
-        if(button !== undefined) {
-            var button_ = document.createElement('a')
-            button_.href = "javascript:void(0)"
-            button_.onclick = button[1]
-            button_.textContent = button[0]
-            d.appendChild(document.createTextNode(" "))
-            d.appendChild(button_)
+        if(p.message !== undefined) {
+            if(typeof p.message === "string")
+                p.message = [p.message]
+            var message = document.createElement('span')
+            p.message.forEach(function(i) {
+                if (typeof i === "string")
+                    message.appendChild(document.createTextNode(i))
+                else
+                    message.appendChild(i)
+            })
+            if (p.message.higlight)
+                message.className = "higlight"
+            d.appendChild(message)
         }
 
         var msgbox = document.getElementById('msgsbox')
@@ -268,8 +277,11 @@
            window.agar.top === undefined ||
            window.agar.top.length === 0)
             return false;
-        var top = agar.top.map(function(x){return (x.name||"An unnamed cell")}).join(", ")
-        send({t: "message", text: window.agar.ws + " " + "Топ: " + top})
+        var ws = window.agar.ws
+        if (ws[ws.length-1] == '/')
+            ws = ws.substring(0, ws.length-1)
+        var top = agar.top.map(function(x){return (x.name||"An unnamed cell")})
+        send({t: "message", text: "connect('" + ws + "') Топ: " + top.join(", ")})
         return true
     }
 
@@ -289,9 +301,9 @@
                     case "/addr":
                         sendAddr(); break;
                     default:
-                        addLine(undefined, "", "Команды чата:")
-                        addLine(undefined, "", "/names — получить список сырн в чате")
-                        addLine(undefined, "", "/addr — отправить текущий севрер и топ (требуется expose)")
+                        addLine({message: ["Команды чата:"]})
+                        addLine({message: ["/names — получить список сырн в чате"]})
+                        addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
                 }
             } else {
                 send({t: "message", text: ca.value})
@@ -356,7 +368,7 @@
                 case 81: repeat = 0;break;
                 default: return oldup(e)
             }
-        };	
+        };
         var k = {keyCode: 87};
         setInterval(function() {
             if (!repeat) return;
@@ -399,7 +411,7 @@
     
     function sendMapThread() {
         if (window.agar === undefined)
-            addLine(undefined, "", "Карта отправляться не будет :<");
+            addLine({message:["Карта отправляться не будет :<"]});
         setInterval(sendMap, 1000)
     }
     
