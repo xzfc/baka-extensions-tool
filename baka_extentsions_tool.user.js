@@ -21,6 +21,7 @@
     var myName = ""
     var chatactive = false
     var serverRestart = false
+    var blackRibbon = true
 
     var defaultName = "Безымянная сырно"
     function g(id) {return document.getElementById(id)}
@@ -409,6 +410,7 @@
         })
         var top = a.top.map(function(x){return [x.id, x.name]})
         send({t:'map', all:cells, my:a.myCells, top:top, reply:mapHidden?0:1})
+        blackRibbon = false
     }
 
     function sendMapThread() {
@@ -434,6 +436,17 @@
         context.fillRect(0 , 0, canvas.width, canvas.height)
         var scale = 256/11180
         var i
+
+        if (blackRibbon) {
+            context.beginPath()
+            context.lineWidth = 32
+            context.strokeStyle = "#000"
+            context.beginPath();
+            context.moveTo(256-96-32,256+32);
+            context.lineTo(256+32,256-96-32);
+            context.stroke()
+            context.fill()
+        }
 
         context.globalAlpha = .4
         for(i = 0; i < data.length; i++) {
@@ -545,6 +558,7 @@
         sendMapThread()
         map.onmousemove = notification.onmousemove = cbox.onmousemove =
             g("canvas").onmousemove
+        map.onclick = function() { blackRibbon = false }
         notification.onclick = chatHider
     }
 
