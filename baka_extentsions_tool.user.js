@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.13
+// @version     1.13.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -21,9 +21,13 @@
                                "Reimu", "Rika Nippa", "Колчанька", "Сырно не дура",
                                "Умничка", "Хуйле", "桜華さん"]
                       },
-                 tuc:{names: /\[TUC\]/},
-                 pkb:{aura: "#ff0",
-                      names: /\bpkb\b/i}
+                 pkb: {aura: "#ff0",
+                       names: /\bpkb\b/i},
+                 fr: {names: /18-25|❶❽-?❷❺|①⑧-?②⑤/},
+                 eksi: {names: /ek[sşŞ\$]i/},
+                 eigth: {names: /ȣȣȣ|ȢȢȢ/},
+                 other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW)\]/,
+                                 /\b(MKB|MZK|FKS|MZDK|Mezdeke|met[uü]|odtü|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
              },
              myAura: "#fff",
              bakaAura: "#000",
