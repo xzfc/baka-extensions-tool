@@ -12,11 +12,21 @@
              quickTemplates: [["Покорми", "Не корми"],
                               ["Взорви колючку", "Пульни колючку"],
                               ["Возьми мои ошмётки", "Не бери мои ошмётки"]],
-             allyNameRe: /[⑨Ø]/,
-             allyNames: ["Alice M.", "DUKE NUKEM", "H-hauau Q.Q", "HakureiのMiko",
-                         "Kongo-san", "MarisaB", "OxykomaFan", "QRBG-Chan",
-                         "Reimu", "Rika Nippa", "Колчанька", "Сырно не дура",
-                         "Умничка", "Хуйле", "桜華さん"]
+             teams:{
+                 baka:{aura: "#00f",
+                       names: [/[⑨Ø]/,
+                               "Alice M.", "DUKE NUKEM", "H-hauau Q.Q", "HakureiのMiko",
+                               "Kongo-san", "MarisaB", "OxykomaFan", "QRBG-Chan",
+                               "Reimu", "Rika Nippa", "Колчанька", "Сырно не дура",
+                               "Умничка", "Хуйле", "桜華さん"]
+                      },
+                 tuc:{names: /\[TUC\]/},
+                 pkb:{aura: "#ff0",
+                      names: /\bpkb\b/i}
+             },
+             myAura: "#fff",
+             bakaAura: "#000",
+             defaultTeamAura: "#f00",
             })
     var myName = ""
     var chatactive = false
@@ -420,15 +430,27 @@
     }
 
     function drawMap(data) {
-        function isAlly(name) {
-            return window.bakaconf.allyNameRe.test(name) ||
-                (window.bakaconf.allyNames.indexOf(name) > -1)
-        }
         if (mapHidden)
             return
         var map = document.getElementById("map")
         var context = map.getContext('2d')
         var myCells = ((window.agar || {}).myCells) || []
+        var teams = window.bakaconf.teams
+        function getAura(cell) {
+            if(myCells.indexOf(cell.i) > -1)
+                return window.bakaconf.myAura
+            if(cell.a)
+                return window.bakaconf.bakaAura
+            for(var i in teams) {
+                var names = teams[i].names
+                if(names instanceof RegExp || typeof names === 'string')
+                    names = [names]
+                for(var j = 0; j < names.length; j++)
+                    if(names[j] === cell.n ||
+                       (names[j] instanceof RegExp && names[j].test(cell.n)))
+                        return teams[i].aura || window.bakaconf.defaultTeamAura
+            }
+        }
 
         context.clearRect(0 , 0, canvas.width, canvas.height)
         context.globalAlpha = 0.5
@@ -450,11 +472,9 @@
 
         context.globalAlpha = .4
         for(i = 0; i < data.length; i++) {
-            var a = data[i].a
-            var m = myCells.indexOf(data[i].i) > -1
-            var t = isAlly(data[i].n)
-            if(a || m || t) {
-                context.fillStyle = m ? "#fff" : (a ? "#000" :  "#00f")
+            var aura = getAura(data[i])
+            if(aura) {
+                context.fillStyle = aura
                 context.beginPath()
                 context.arc(data[i].x*scale, data[i].y*scale,
                             data[i].s*scale+4, 0, 2 * Math.PI, false)
