@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.13.1
+// @version     1.13.2
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -21,7 +21,7 @@
                                "Reimu", "Rika Nippa", "Колчанька", "Сырно не дура",
                                "Умничка", "Хуйле", "桜華さん"]
                       },
-                 pkb: {aura: "#ff0",
+                 pkb: {aura: "#AA5",
                        names: /\bpkb\b/i},
                  fr: {names: /18-25|❶❽-?❷❺|①⑧-?②⑤/},
                  eksi: {names: /ek[sşŞ\$]i/},
@@ -31,7 +31,7 @@
              },
              myAura: "#fff",
              bakaAura: "#000",
-             defaultTeamAura: "#f00",
+             defaultTeamAura: "#A55",
             })
     var myName = ""
     var chatactive = false
