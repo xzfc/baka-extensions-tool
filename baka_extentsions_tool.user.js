@@ -344,8 +344,12 @@
                 var cmd = window.bakaconf.quickTemplates[e.keyCode - 49]
                 if (cmd !== undefined) {
                     cmd = cmd[e.shiftKey?1:0]
-                    if (cmd !== undefined)
-                        send({t:"quick", text:cmd})
+                    if (cmd !== undefined) {
+                        var m = {t:"quick", text:cmd}
+                        if (window.agar !== undefined && window.agar.myCells !== undefined)
+                            m.cells = window.agar.myCells
+                        send(m)
+                    }
                 }
                 quickHint.style.visibility = 'hidden'
                 extended = false
