@@ -295,7 +295,8 @@
         if (ws[ws.length-1] == '/')
             ws = ws.substring(0, ws.length-1)
         var top = agar.top.map(function(x){return (x.name||"An unnamed cell")})
-        send({t: "message", text: "connect('" + ws + "') Топ: " + top.join(", ")})
+        send({t: "message", text: "connect('" + ws + "') Топ: " + top.join(", "), legacy: 1})
+        send({t: "addr", ws: window.agar.ws, top: window.agar.top})
         return true
     }
 
