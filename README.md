@@ -15,19 +15,19 @@
 ![миникарта](https://i.imgur.com/iBfcnE8.png)
 
 Цвет ауры:
-* Белый — игрок
-* Чёрный — другие пользователи скрипта
-* Синий — сырны (не использующие скрипт)
-* Другие цвета — другие известные команды
+* Белый — игрок.
+* Чёрный — другие пользователи скрипта.
+* Синий — сырны (не использующие скрипт).
+* Другие цвета — другие известные команды.
 
 ## Ø Установка Ø
 
-Качаешь [Tampermonkey] \(для Chrome) или [Greasemonkey] \(для Firefox), затем ставишь [baka_extentsions_tool.user.js] и [expose.user.js].
+Качаешь [Tampermonkey] \(для Chrome) или [Greasemonkey] \(для Firefox), затем ставишь [`baka_extentsions_tool.user.js`] и [`expose.user.js`].
 
 [Tampermonkey]: https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en
 [Greasemonkey]: https://addons.mozilla.org/en-Us/firefox/addon/greasemonkey/
-[baka_extentsions_tool.user.js]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
-[expose.user.js]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/expose.user.js
+[`baka_extentsions_tool.user.js`]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
+[`expose.user.js`]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/expose.user.js
 
 ## ♀ Горячие клавиши ♀
 
@@ -40,3 +40,9 @@
 * `4`: Меню быстрых сообщений.
 * `5`: Показать/скрыть карту.
 * `Ctrl+S`: сохранить скриншот топа.
+
+## ✘ Благодарности ✘
+
+Спасибо анониму с псевдонимом `devide by zer⑨` за первые версии скрипта чата и `JRobH` за [`agario_expose_cells.user.js`][original expose].
+
+[original expose]: https://gist.github.com/JRobH/818103d83d0b43c7492f
