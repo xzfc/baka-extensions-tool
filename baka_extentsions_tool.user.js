@@ -43,11 +43,17 @@
     function g(id) {return document.getElementById(id)}
 
     function setConf(defaults) {
-        if(window.bakaconf === undefined)
-            window.bakaconf = {}
+        function setDefault(record, field, value) {
+            if(record[field] === undefined && value !== undefined)
+                record[field] = value
+        }
+        setDefault(window, 'bakaconf', {})
         for(var i in defaults)
-            if (window.bakaconf[i] === undefined)
-                window.bakaconf[i] = defaults[i]
+            if (i != 'teams')
+                setDefault(window.bakaconf, i, defaults[i])
+        setDefault(window.bakaconf, 'teams', {})
+        for(var i in defaults.teams)
+            setDefault(window.bakaconf.teams, i, defaults.teams[i])
     }
 
     function join(l) {
