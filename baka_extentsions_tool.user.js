@@ -22,9 +22,9 @@
                                "Умничка", "Хуйле", "桜華さん"]
                       },
                  pkb: {aura: "#AA5",
-                       names: /\bpkb|ркб\b/i},
+                       names: /\b(pkb|ркб|ркв)\b/i},
                  fr: {names: /[1①❶][8⑧❽]-?[2②❷][5⑤❺]/},
-                 turkey: {names: /ek[sşŞ\$][iİ]|[iİ][╦T][µÜ]|[ʍm][εe][†t][uü]?|odt[uü]/},
+                 turkey: {names: /ek[sşŞ\$][iİ]|[iİ][╦T][µÜ]|[ʍm][εe][†t][υuü]|odt[uü]/},
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
                  other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW|AGU|T[iİ]T)\]/,
                                  /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
