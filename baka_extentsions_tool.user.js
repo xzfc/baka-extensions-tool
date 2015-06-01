@@ -33,6 +33,7 @@
              myAura: "#fff",
              bakaAura: "#000",
              defaultTeamAura: "#A55",
+             timeFormat: 0,
             })
     var myName = ""
     var chatactive = false
@@ -70,22 +71,15 @@
         return result
     }
 
-    var currentTimeFormat = 0
     function formatTime(t) {
         function pad(number) { return (number < 10) ? '0' + number : number }
         t = new Date(t*1000 + 1000*60*60*3)
         var h = pad(t.getUTCHours()), m = pad(t.getUTCMinutes()), s = pad(t.getUTCSeconds())
-        switch(currentTimeFormat % 3) {
+        switch(window.bakaconf.timeFormat % 3) {
         case 0: return  h+':'+m+':'+s+' '
         case 1: return  h+':'+m+' '
         case 2: return ''
         }
-    }
-    function reformatTime() {
-        currentTimeFormat ++
-        var l = document.getElementsByClassName("time")
-        for(var i = 0; i < l.length; i++)
-            l.item(i).textContent = formatTime(l.item(i).getAttribute("T"))
     }
 
     var chatHidden = false
@@ -270,7 +264,6 @@
             var time = document.createElement('span')
             time.className = "time"
             time.textContent = formatTime(p.time)
-            time.setAttribute("T", time)
             d.appendChild(time)
         }
 
@@ -395,7 +388,6 @@
                 switch(e.keyCode) {
                 case 9: g('carea').focus(); return false
                 case 49: chatHider(); return true
-                case 50: reformatTime(); return true
                 case 51: move(); return true
                 case 52: extended = true; quickHint.style.visibility = ''; return true
                 case 53: mapHider(); return true
