@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.13.2
+// @version     1.14
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -22,16 +22,18 @@
                                "Умничка", "Хуйле", "桜華さん"]
                       },
                  pkb: {aura: "#AA5",
-                       names: /\bpkb\b/i},
-                 fr: {names: /18-25|❶❽-?❷❺|①⑧-?②⑤/},
-                 eksi: {names: /ek[sşŞ\$]i/},
+                       names: /\b(pkb|ркб|ркв)\b/i},
+                 fr: {names: /[1①❶][8⑧❽]-?[2②❷][5⑤❺]/},
+                 turkey: {names: /ek[sşŞ\$][iİ]|[iİ][╦T][µÜ]|[ʍm][εe][†t][υuü]|odt[uü]/},
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
-                 other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW)\]/,
-                                 /\b(MKB|MZK|FKS|MZDK|Mezdeke|met[uü]|odtü|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
+                 other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW|AGU|T[iİ]T)\]/,
+                                 /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
              },
+             showOnlyBakaAura: false,
              myAura: "#fff",
              bakaAura: "#000",
              defaultTeamAura: "#A55",
+             timeFormat: 0,
             })
     var myName = ""
     var chatactive = false
@@ -42,11 +44,17 @@
     function g(id) {return document.getElementById(id)}
 
     function setConf(defaults) {
-        if(window.bakaconf === undefined)
-            window.bakaconf = {}
+        function setDefault(record, field, value) {
+            if(record[field] === undefined && value !== undefined)
+                record[field] = value
+        }
+        setDefault(window, 'bakaconf', {})
         for(var i in defaults)
-            if (window.bakaconf[i] === undefined)
-                window.bakaconf[i] = defaults[i]
+            if (i != 'teams')
+                setDefault(window.bakaconf, i, defaults[i])
+        setDefault(window.bakaconf, 'teams', {})
+        for(var i in defaults.teams)
+            setDefault(window.bakaconf.teams, i, defaults.teams[i])
     }
 
     function join(l) {
@@ -63,22 +71,15 @@
         return result
     }
 
-    var currentTimeFormat = 0
     function formatTime(t) {
         function pad(number) { return (number < 10) ? '0' + number : number }
         t = new Date(t*1000 + 1000*60*60*3)
         var h = pad(t.getUTCHours()), m = pad(t.getUTCMinutes()), s = pad(t.getUTCSeconds())
-        switch(currentTimeFormat % 3) {
+        switch(window.bakaconf.timeFormat % 3) {
         case 0: return  h+':'+m+':'+s+' '
         case 1: return  h+':'+m+' '
         case 2: return ''
         }
-    }
-    function reformatTime() {
-        currentTimeFormat ++
-        var l = document.getElementsByClassName("time")
-        for(var i = 0; i < l.length; i++)
-            l.item(i).textContent = formatTime(l.item(i).getAttribute("T"))
     }
 
     var chatHidden = false
@@ -126,6 +127,7 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
+        var reconnect = false
         websocket = new WebSocket(window.bakaconf.wsUri)
         websocket.onopen = function(evt) {
             send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
@@ -133,6 +135,10 @@
         }
         websocket.onclose = function(evt) {
             setChatUsersCount(false, -1)
+            if (reconnect) {
+                addLine({message:['Переподключаюсь~']})
+                return connectChat()
+            }
             if (serverRestart) {
                 serverRestart = false
                 return setTimeout(connectChat, 500)
@@ -142,6 +148,10 @@
             unreadCount += 1;updateNotification()
         }
         websocket.onerror = function(evt) { addLine({message:"Ошибка вебсокета"}) }
+        websocket.reconnect = function() {
+            reconnect = true
+            websocket.close()
+        }
         websocket.onmessage = function(evt) {
             var d = JSON.parse(evt.data)
             switch(d.t) {
@@ -159,6 +169,8 @@
                 setChatUsersCount(false, d.names.length)
                 break
             case "message":
+                if (d.legacy <= 1)
+                    break
                 addLine({time:d.T, sender:d.f, message:formatMessage(d.text)})
                 unreadCount += 1;updateNotification()
                 break
@@ -185,6 +197,10 @@
             case "ping":
                 d.t = 'pong'
                 send(d)
+                break
+            case "addr":
+                showAddr(d.T, d.ws, d.top)
+                unreadCount += 1;updateNotification()
                 break
             case "restart":
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
@@ -243,7 +259,7 @@
         if (text.indexOf(g('nick').value||defaultName) > -1)
             result.higlight = true
         for (i = 1; i < result.length; i += 2)
-            result[i] = aButton(result[i], window.connect.bind(undefined, result[i]))
+            result[i] = aButton(result[i], connector.connect.bind(undefined, result[i]))
         return result
     }
 
@@ -254,7 +270,6 @@
             var time = document.createElement('span')
             time.className = "time"
             time.textContent = formatTime(p.time)
-            time.setAttribute("T", time)
             d.appendChild(time)
         }
 
@@ -304,6 +319,88 @@
         return true
     }
 
+    var connector = {
+        connect: function(ws) {
+            this.stopAutoConnect()
+            window.connect(ws)
+        },
+        maxAttempts: 10,
+        autoConnect: function(ws, top, status) {
+            if (!this.checkExpose())
+                return this.connect(ws)
+            this.stopAutoConnect()
+            this.attempt = 0
+            this.ws = ws
+            this.top = top
+            this.status = status
+            this.autoConnectIteration()
+        },
+        autoConnectIteration: function() {
+            if (this.checkConnection())
+                return this.status.ok()
+            window.connect(this.ws)
+            this.status.trying(this.attempt, this.maxAttempts)
+            if (++this.attempt != this.maxAttempts)
+                this.timer = setTimeout(this.autoConnectIteration.bind(this), 5000)
+            else
+                return this.status.fail()
+        },
+        checkConnection: function() {
+            if (window.agar.ws !== this.ws)
+                return false
+            var top1 = window.agar.top, top2 = this.top
+            for (var i = 0; i < top1.length; i++)
+                for (var j = 0; j < top2.length; j++)
+                    if (top1[i].id === top2[j].id && top1[i].name === top2[j].name)
+                        return true
+            return false
+        },
+        checkExpose: function() {
+            return window.agar !== undefined &&
+                window.agar.ws !== undefined &&
+                window.agar.top !== undefined
+        },
+        stopAutoConnect: function() {
+            if (this.timer === undefined)
+                return
+            this.status.stop()
+            clearTimeout(this.timer)
+            this.timer = undefined
+        }
+    }
+
+    function showAddr(time, ws, top) {
+        var statusLine = document.createElement('span')
+        function setStatus(text) {
+            return (function() {
+                statusLine.textContent = text
+                aStop.textContent = ''
+            })
+        }
+        var status = {
+            ok: setStatus('[OK]'),
+            fail: setStatus('[FAIL]'),
+            trying: function(n, max) {
+                statusLine.textContent = '['+n+'/'+max+'...]'
+                aStop.textContent = 'stop'
+            },
+            stop: setStatus('')
+        }
+        var aConnect = aButton(ws, function() {
+            connector.autoConnect(ws, top, status)
+            return false
+        })
+        var aStop = aButton("", function() {
+            connector.stopAutoConnect()
+            return false
+        })
+        addLine({time:time, message:[
+            "connect(", aConnect ,")",
+            statusLine, aStop,
+            " Топ: " + top.map(function(x){return x.name}).join(", ")
+        ]})
+    }
+
     function submit(e) {
         var ca = document.getElementById('carea')
 
@@ -319,10 +416,13 @@
                     send({t:"names"}); break
                 case "/addr":
                     sendAddr(); break
+                case "/reconnect":
+                    websocket.reconnect(); break
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
                     addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
+                    addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                 }
             else
                 send({t: "message", text: ca.value})
@@ -376,7 +476,6 @@
                 switch(e.keyCode) {
                 case 9: g('carea').focus(); return false
                 case 49: chatHider(); return true
-                case 50: reformatTime(); return true
                 case 51: move(); return true
                 case 52: extended = true; quickHint.style.visibility = ''; return true
                 case 53: mapHider(); return true
@@ -452,6 +551,8 @@
             if(cell.a)
                 return window.bakaconf.bakaAura
             for(var i in teams) {
+                if(i !== 'baka' && window.bakaconf.showOnlyBakaAura)
+                    continue
                 var names = teams[i].names
                 if(names instanceof RegExp || typeof names === 'string')
                     names = [names]
