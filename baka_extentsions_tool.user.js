@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.14
+// @version     1.14.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -199,7 +199,7 @@
                 send(d)
                 break
             case "addr":
-                showAddr(d.T, d.ws, d.top)
+                showAddr(d.f, d.T, d.ws, d.top)
                 unreadCount += 1;updateNotification()
                 break
             case "restart":
@@ -259,7 +259,7 @@
         if (text.indexOf(g('nick').value||defaultName) > -1)
             result.higlight = true
         for (i = 1; i < result.length; i += 2)
-            result[i] = aButton(result[i], connector.connect.bind(undefined, result[i]))
+            result[i] = aButton(result[i], connector.connect.bind(connector, result[i]))
         return result
     }
 
@@ -369,7 +369,7 @@
         }
     }
 
-    function showAddr(time, ws, top) {
+    function showAddr(name, time, ws, top) {
         var statusLine = document.createElement('span')
         function setStatus(text) {
             return (function() {
@@ -394,7 +394,7 @@
             connector.stopAutoConnect()
             return false
         })
-        addLine({time:time, message:[
+        addLine({time:time, sender:name, message:[
             "connect(", aConnect ,")",
             statusLine, aStop,
             " Топ: " + top.map(function(x){return x.name}).join(", ")
