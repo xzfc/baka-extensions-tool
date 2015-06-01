@@ -133,6 +133,7 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
+        var reconnect = false
         websocket = new WebSocket(window.bakaconf.wsUri)
         websocket.onopen = function(evt) {
             send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
@@ -140,6 +141,10 @@
         }
         websocket.onclose = function(evt) {
             setChatUsersCount(false, -1)
+            if (reconnect) {
+                addLine({message:['Переподключаюсь~']})
+                return connectChat()
+            }
             if (serverRestart) {
                 serverRestart = false
                 return setTimeout(connectChat, 500)
@@ -149,6 +154,10 @@
             unreadCount += 1;updateNotification()
         }
         websocket.onerror = function(evt) { addLine({message:"Ошибка вебсокета"}) }
+        websocket.reconnect = function() {
+            reconnect = true
+            websocket.close()
+        }
         websocket.onmessage = function(evt) {
             var d = JSON.parse(evt.data)
             switch(d.t) {
@@ -326,10 +335,13 @@
                     send({t:"names"}); break
                 case "/addr":
                     sendAddr(); break
+                case "/reconnect":
+                    websocket.reconnect(); break
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
                     addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
+                    addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                 }
             else
                 send({t: "message", text: ca.value})
