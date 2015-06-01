@@ -29,6 +29,7 @@
                  other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW)\]/,
                                  /\b(MKB|MZK|FKS|MZDK|Mezdeke|met[uü]|odtü|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
              },
+             showOnlyBakaAura: false,
              myAura: "#fff",
              bakaAura: "#000",
              defaultTeamAura: "#A55",
@@ -452,6 +453,8 @@
             if(cell.a)
                 return window.bakaconf.bakaAura
             for(var i in teams) {
+                if(i !== 'baka' && window.bakaconf.showOnlyBakaAura)
+                    continue
                 var names = teams[i].names
                 if(names instanceof RegExp || typeof names === 'string')
                     names = [names]
