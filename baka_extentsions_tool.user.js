@@ -169,6 +169,8 @@
                 setChatUsersCount(false, d.names.length)
                 break
             case "message":
+                if (d.legacy <= 1)
+                    break
                 addLine({time:d.T, sender:d.f, message:formatMessage(d.text)})
                 unreadCount += 1;updateNotification()
                 break
@@ -195,6 +197,10 @@
             case "ping":
                 d.t = 'pong'
                 send(d)
+                break
+            case "addr":
+                showAddr(d.T, d.ws, d.top)
+                unreadCount += 1;updateNotification()
                 break
             case "restart":
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
@@ -253,7 +259,7 @@
         if (text.indexOf(g('nick').value||defaultName) > -1)
             result.higlight = true
         for (i = 1; i < result.length; i += 2)
-            result[i] = aButton(result[i], window.connect.bind(undefined, result[i]))
+            result[i] = aButton(result[i], connector.connect.bind(undefined, result[i]))
         return result
     }
 
@@ -311,6 +317,88 @@
         send({t: "message", text: "connect('" + ws + "') Топ: " + top.join(", "), legacy: 1})
         send({t: "addr", ws: window.agar.ws, top: window.agar.top})
         return true
+    }
+
+    var connector = {
+        connect: function(ws) {
+            this.stopAutoConnect()
+            window.connect(ws)
+        },
+        maxAttempts: 10,
+        autoConnect: function(ws, top, status) {
+            if (!this.checkExpose())
+                return this.connect(ws)
+            this.stopAutoConnect()
+            this.attempt = 0
+            this.ws = ws
+            this.top = top
+            this.status = status
+            this.autoConnectIteration()
+        },
+        autoConnectIteration: function() {
+            if (this.checkConnection())
+                return this.status.ok()
+            window.connect(this.ws)
+            this.status.trying(this.attempt, this.maxAttempts)
+            if (++this.attempt != this.maxAttempts)
+                this.timer = setTimeout(this.autoConnectIteration.bind(this), 5000)
+            else
+                return this.status.fail()
+        },
+        checkConnection: function() {
+            if (window.agar.ws !== this.ws)
+                return false
+            var top1 = window.agar.top, top2 = this.top
+            for (var i = 0; i < top1.length; i++)
+                for (var j = 0; j < top2.length; j++)
+                    if (top1[i].id === top2[j].id && top1[i].name === top2[j].name)
+                        return true
+            return false
+        },
+        checkExpose: function() {
+            return window.agar !== undefined &&
+                window.agar.ws !== undefined &&
+                window.agar.top !== undefined
+        },
+        stopAutoConnect: function() {
+            if (this.timer === undefined)
+                return
+            this.status.stop()
+            clearTimeout(this.timer)
+            this.timer = undefined
+        }
+    }
+
+    function showAddr(time, ws, top) {
+        var statusLine = document.createElement('span')
+        function setStatus(text) {
+            return (function() {
+                statusLine.textContent = text
+                aStop.textContent = ''
+            })
+        }
+        var status = {
+            ok: setStatus('[OK]'),
+            fail: setStatus('[FAIL]'),
+            trying: function(n, max) {
+                statusLine.textContent = '['+n+'/'+max+'...]'
+                aStop.textContent = 'stop'
+            },
+            stop: setStatus('')
+        }
+        var aConnect = aButton(ws, function() {
+            connector.autoConnect(ws, top, status)
+            return false
+        })
+        var aStop = aButton("", function() {
+            connector.stopAutoConnect()
+            return false
+        })
+        addLine({time:time, message:[
+            "connect(", aConnect ,")",
+            statusLine, aStop,
+            " Топ: " + top.map(function(x){return x.name}).join(", ")
+        ]})
     }
 
     function submit(e) {
