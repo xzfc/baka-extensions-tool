@@ -22,12 +22,12 @@
                                "Умничка", "Хуйле", "桜華さん"]
                       },
                  pkb: {aura: "#AA5",
-                       names: /\bpkb\b/i},
-                 fr: {names: /18-25|❶❽-?❷❺|①⑧-?②⑤/},
-                 eksi: {names: /ek[sşŞ\$]i/},
+                       names: /\bpkb|ркб\b/i},
+                 fr: {names: /[1①❶][8⑧❽]-?[2②❷][5⑤❺]/},
+                 turkey: {names: /ek[sşŞ\$][iİ]|[iİ][╦T][µÜ]|[ʍm][εe][†t][uü]?|odt[uü]/},
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
-                 other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW)\]/,
-                                 /\b(MKB|MZK|FKS|MZDK|Mezdeke|met[uü]|odtü|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
+                 other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW|AGU|T[iİ]T)\]/,
+                                 /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
              },
              showOnlyBakaAura: false,
              myAura: "#fff",
