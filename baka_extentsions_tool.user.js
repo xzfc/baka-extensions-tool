@@ -408,7 +408,7 @@
             return false
         })
         addLine({time:time, sender:name, message:[
-            "connect(", aConnect ,")",
+            "connect('", aConnect ,"')",
             statusLine, aStop,
             " Топ: " + top.map(function(x){return x.name}).join(", ")
         ]})
