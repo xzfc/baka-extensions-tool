@@ -127,15 +127,17 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
-        var reconnect = false
-        websocket = new WebSocket(window.bakaconf.wsUri)
-        websocket.onopen = function(evt) {
+        var reconnect = false, closed = false
+        var ws = new WebSocket(window.bakaconf.wsUri)
+        ws.onopen = function(evt) {
             send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
             send({t: "name", "name": myName})
         }
-        websocket.onclose = function(evt) {
+        ws.onclose = function(evt) {
+            if (closed) return
             setChatUsersCount(false, -1)
             if (reconnect) {
+                closed = true
                 addLine({message:['Переподключаюсь~']})
                 return connectChat()
             }
@@ -147,12 +149,22 @@
             }
             unreadCount += 1;updateNotification()
         }
-        websocket.onerror = function(evt) { addLine({message:"Ошибка вебсокета"}) }
-        websocket.reconnect = function() {
-            reconnect = true
-            websocket.close()
+        ws.onerror = function(evt) {
+            if (closed) return
+            addLine({message:"Ошибка вебсокета"})
         }
-        websocket.onmessage = function(evt) {
+        ws.reconnect = function() {
+            reconnect = true
+            ws.close()
+            setTimeout(function() {
+                if (closed) return
+                closed = true
+                addLine({message:['Переподключаюсь~~']})
+                connectChat()
+            }, 1000)
+        }
+        ws.onmessage = function(evt) {
+            if (closed) return
             var d = JSON.parse(evt.data)
             switch(d.t) {
             case "names":
@@ -208,6 +220,7 @@
                 break
             }
         }
+        websocket = ws
     }
 
     function topScreenshot() {
