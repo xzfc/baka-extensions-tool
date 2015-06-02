@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.14.1
+// @version     1.14.2
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -24,9 +24,13 @@
                  pkb: {aura: "#AA5",
                        names: /\b(pkb|ркб|ркв)\b/i},
                  fr: {names: /[1①❶][8⑧❽]-?[2②❷][5⑤❺]/},
-                 turkey: {names: /ek[sşŞ\$][iİ]|[iİ][╦T][µÜ]|[ʍm][εe][†t][υuü]|odt[uü]/},
+                 turkey: {names: [/ek[sşŞ\$][iİ]/,
+                                  /[iİ][╦T][µÜ]/,
+                                  /[ʍm][εe][†t][υuü]/,
+                                  /odt[uü]/,
+                                  /\bDH\b/]},
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
-                 other: {names: [/\[(\$|WAR|FBI|DH|TUC|EU|TW|AGU|T[iİ]T)\]/,
+                 other: {names: [/\[(\$|WAR|FBI|TUC|EU|TW|AGU|T[iİ]T)\]/,
                                  /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⒹⒽ|ⓂⓋⓅ|HKG)\b/]}
              },
              showOnlyBakaAura: false,
@@ -127,15 +131,17 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
-        var reconnect = false
-        websocket = new WebSocket(window.bakaconf.wsUri)
-        websocket.onopen = function(evt) {
+        var reconnect = false, closed = false
+        var ws = new WebSocket(window.bakaconf.wsUri)
+        ws.onopen = function(evt) {
             send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
             send({t: "name", "name": myName})
         }
-        websocket.onclose = function(evt) {
+        ws.onclose = function(evt) {
+            if (closed) return
             setChatUsersCount(false, -1)
             if (reconnect) {
+                closed = true
                 addLine({message:['Переподключаюсь~']})
                 return connectChat()
             }
@@ -147,12 +153,22 @@
             }
             unreadCount += 1;updateNotification()
         }
-        websocket.onerror = function(evt) { addLine({message:"Ошибка вебсокета"}) }
-        websocket.reconnect = function() {
-            reconnect = true
-            websocket.close()
+        ws.onerror = function(evt) {
+            if (closed) return
+            addLine({message:"Ошибка вебсокета"})
         }
-        websocket.onmessage = function(evt) {
+        ws.reconnect = function() {
+            reconnect = true
+            ws.close()
+            setTimeout(function() {
+                if (closed) return
+                closed = true
+                addLine({message:['Переподключаюсь~~']})
+                connectChat()
+            }, 1000)
+        }
+        ws.onmessage = function(evt) {
+            if (closed) return
             var d = JSON.parse(evt.data)
             switch(d.t) {
             case "names":
@@ -208,6 +224,7 @@
                 break
             }
         }
+        websocket = ws
     }
 
     function topScreenshot() {
@@ -395,7 +412,7 @@
             return false
         })
         addLine({time:time, sender:name, message:[
-            "connect(", aConnect ,")",
+            "connect('", aConnect ,"')",
             statusLine, aStop,
             " Топ: " + top.map(function(x){return x.name}).join(", ")
         ]})
