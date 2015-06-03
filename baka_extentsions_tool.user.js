@@ -42,7 +42,6 @@
     var myName = ""
     var chatactive = false
     var serverRestart = false
-    var blackRibbon = true
 
     var defaultName = "Безымянная сырно"
     function g(id) {return document.getElementById(id)}
@@ -91,12 +90,6 @@
         chatHidden = !chatHidden
         g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
         updateNotification()
-    }
-
-    var mapHidden = false
-    function mapHider() {
-        mapHidden = !mapHidden
-        g('map').style.visibility = (mapHidden ? 'hidden' : '')
     }
 
     var unreadCount = 0
@@ -198,7 +191,7 @@
                 addLine({time:d.T, message: [aName(d.f), " теперь ", aName(d.name), "."]})
                 break
             case "map":
-                drawMap(d.data)
+                map.update(d.data)
                 break
             case "join":
                 if (d.f !== "")
@@ -499,7 +492,7 @@
                 case 49: chatHider(); return true
                 case 51: move(); return true
                 case 52: extended = true; quickHint.style.visibility = ''; return true
-                case 53: mapHider(); return true
+                case 53: map.toggle(); return true
                 case 81: repeat = 1; return true
                 }
             }
@@ -538,108 +531,128 @@
         }
     }
 
-    function sendMap() {
-        var a = window.agar
-        if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || a.ws === "") {
-            if (!mapHidden)
-                send({t:'map', reply:1})
-            return
-        }
-        var cells = a.allCells.filter(function(c){
-            return c.size >= 32 || a.myCells.indexOf(c.id) > -1
-        }).map(function(c){
-            return {x:c.x,
-                    y:c.y,
-                    i:c.id,
-                    n:c.name,
-                    c:c.color,
-                    s:c.size,
-                    v:c.isVirus?1:0}
-        })
-        var top = a.top.map(function(x){return [x.id, x.name]})
-        send({t:'map', all:cells, my:a.myCells, top:top, reply:mapHidden?0:1})
-        blackRibbon = false
-    }
-
-    function sendMapThread() {
-        if (window.agar === undefined)
-            addLine({message:["Карта отправляться не будет :<"]})
-        setInterval(sendMap, 1000)
-    }
-
-    function drawMap(data) {
-        if (mapHidden)
-            return
-        var map = document.getElementById("map")
-        var context = map.getContext('2d')
-        var myCells = ((window.agar || {}).myCells) || []
-        var teams = window.bakaconf.teams
-        function getAura(cell) {
-            if(myCells.indexOf(cell.i) > -1)
-                return window.bakaconf.myAura
-            if(cell.a)
-                return window.bakaconf.bakaAura
-            for(var i in teams) {
-                if(i !== 'baka' && window.bakaconf.showOnlyBakaAura)
-                    continue
-                var names = teams[i].names
-                if(names instanceof RegExp || typeof names === 'string')
-                    names = [names]
-                for(var j = 0; j < names.length; j++)
-                    if(names[j] === cell.n ||
-                       (names[j] instanceof RegExp && names[j].test(cell.n)))
-                        return teams[i].aura || window.bakaconf.defaultTeamAura
+    var map = {
+        canvas: null,
+        data: null,
+        blackRibbon: true,
+        hidden: false,
+        init: function() {
+            this.canvas = document.createElement("canvas")
+            this.canvas.id = "map"
+            this.canvas.width = 256
+            this.canvas.height = 256
+            document.body.appendChild(this.canvas)
+            this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
+        },
+        toggle: function() {
+            this.hidden = !this.hidden
+            g('map').style.visibility = (this.hidden ? 'hidden' : '')
+        },
+        update: function(data) {
+            this.data = data
+            this.draw()
+        },
+        draw: function() {
+            if (this.hidden)
+                return
+            var context = this.canvas.getContext('2d')
+            var myCells = ((window.agar || {}).myCells) || []
+            var teams = window.bakaconf.teams
+            function getAura(cell) {
+                if(myCells.indexOf(cell.i) > -1)
+                    return window.bakaconf.myAura
+                if(cell.a)
+                    return window.bakaconf.bakaAura
+                for(var i in teams) {
+                    if(i !== 'baka' && window.bakaconf.showOnlyBakaAura)
+                        continue
+                    var names = teams[i].names
+                    if(names instanceof RegExp || typeof names === 'string')
+                        names = [names]
+                    for(var j = 0; j < names.length; j++)
+                        if(names[j] === cell.n ||
+                           (names[j] instanceof RegExp && names[j].test(cell.n)))
+                            return teams[i].aura || window.bakaconf.defaultTeamAura
+                }
             }
-        }
+            
+            context.clearRect(0 , 0, canvas.width, canvas.height)
+            context.globalAlpha = 0.5
+            context.fillStyle = "#777"
+            context.fillRect(0 , 0, canvas.width, canvas.height)
+            var scale = 256/11180
+            var i
 
-        context.clearRect(0 , 0, canvas.width, canvas.height)
-        context.globalAlpha = 0.5
-        context.fillStyle = "#777"
-        context.fillRect(0 , 0, canvas.width, canvas.height)
-        var scale = 256/11180
-        var i
-
-        if (blackRibbon) {
-            context.beginPath()
-            context.lineWidth = 32
-            context.strokeStyle = "#000"
-            context.beginPath();
-            context.moveTo(256-96-32,256+32);
-            context.lineTo(256+32,256-96-32);
-            context.stroke()
-            context.fill()
-        }
-
-        context.globalAlpha = .4
-        for(i = 0; i < data.length; i++) {
-            var aura = getAura(data[i])
-            if(aura) {
-                context.fillStyle = aura
+            if (this.blackRibbon) {
                 context.beginPath()
-                context.arc(data[i].x*scale, data[i].y*scale,
-                            data[i].s*scale+4, 0, 2 * Math.PI, false)
+                context.lineWidth = 32
+                context.strokeStyle = "#000"
+                context.beginPath();
+                context.moveTo(256-96-32,256+32);
+                context.lineTo(256+32,256-96-32);
+                context.stroke()
                 context.fill()
             }
-        }
 
-        context.lineWidth = 2
-        for(i = 0; i < data.length; i++) {
-            context.beginPath()
-            context.arc(data[i].x*scale, data[i].y*scale,
-                        data[i].s*scale, 0, 2 * Math.PI, false)
-            context.globalAlpha = 1
-            context.fillStyle = data[i].c
-            context.fill()
-            if(data[i].v) {
-                context.strokeStyle = "#ff0000"
-            } else {
-                context.globalAlpha = .1
-                context.strokeStyle = "#000000"
+            context.globalAlpha = .4
+            for(i = 0; i < this.data.length; i++) {
+                var d = this.data[i]
+                var aura = getAura(d)
+                if(aura) {
+                    context.fillStyle = aura
+                    context.beginPath()
+                    context.arc(d.x*scale, d.y*scale,
+                                d.s*scale+4, 0, 2 * Math.PI, false)
+                    context.fill()
+                }
             }
-            context.stroke()
+
+            context.lineWidth = 2
+            for(i = 0; i < this.data.length; i++) {
+                var d = this.data[i]
+                context.beginPath()
+                context.arc(d.x*scale, d.y*scale,
+                            d.s*scale, 0, 2 * Math.PI, false)
+                context.globalAlpha = 1
+                context.fillStyle = d.c
+                context.fill()
+                if(d.v) {
+                    context.strokeStyle = "#ff0000"
+                } else {
+                    context.globalAlpha = .1
+                    context.strokeStyle = "#000000"
+                }
+                context.stroke()
+            }
+        },
+        send: function() {
+            var a = window.agar
+            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || a.ws === "") {
+                if (!this.hidden)
+                    send({t:'map', reply:1})
+                return
+            }
+            var cells = a.allCells.filter(function(c){
+                return c.size >= 32 || a.myCells.indexOf(c.id) > -1
+            }).map(function(c){
+                return {x:c.x,
+                        y:c.y,
+                        i:c.id,
+                        n:c.name,
+                        c:c.color,
+                        s:c.size,
+                        v:c.isVirus?1:0}
+            })
+            var top = a.top.map(function(x){return [x.id, x.name]})
+            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1})
+            this.blackRibbon = false
+        },
+        sendThread: function() {
+            if (window.agar === undefined)
+                addLine({message:["Карта отправляться не будет :<"]})
+            setInterval(function(){ map.send() }, 1000)
         }
     }
-    window.sendMap = sendMap
 
     function init() {
         var stl = document.createElement('style')
@@ -698,11 +711,7 @@
         quickHint.style.visibility = 'hidden'
         document.body.appendChild(quickHint)
 
-        var map = document.createElement("canvas")
-        map.id = "map"
-        map.width = 256
-        map.height = 256
-        document.body.appendChild(map)
+        map.init()
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
@@ -719,13 +728,12 @@
         handleOptions()
         handleKeys()
         connectChat()
-        sendMapThread()
-        map.onmousemove = notification.onmousemove = cbox.onmousemove =
+        map.sendThread()
+        map.canvas.onmousemove = notification.onmousemove = cbox.onmousemove =
             g("canvas").onmousemove
-        g("canvas").onmousewheel = map.onmousewheel = notification.onmousewheel =
+        g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
             document.body.onmousewheel
         document.body.onmousewheel = null
-        map.onclick = function() { blackRibbon = false }
         notification.onclick = chatHider
     }
 
