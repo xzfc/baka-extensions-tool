@@ -709,6 +709,9 @@
         sendMapThread()
         map.onmousemove = notification.onmousemove = cbox.onmousemove =
             g("canvas").onmousemove
+        g("canvas").onmousewheel = map.onmousewheel = notification.onmousewheel =
+            document.body.onmousewheel
+        document.body.onmousewheel = null
         map.onclick = function() { blackRibbon = false }
         notification.onclick = chatHider
     }
