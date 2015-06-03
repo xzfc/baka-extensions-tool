@@ -447,7 +447,8 @@
             else
                 send({t: "message", text: ca.value})
             ca.value = ""
-            ca.blur()
+            if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
+                ca.blur()
         }
         return false
     }
