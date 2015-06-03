@@ -518,7 +518,7 @@
         }, 50)
     }
 
-    function handleSetNick() {
+    function handleOptions() {
         var oldSetNick = window.setNick
         window.setNick = function(n) {
             if (n !== myName) {
@@ -526,6 +526,14 @@
                 send({t: "name", "name": myName})
             }
             oldSetNick(n)
+        }
+        var oldSetDarkTheme = window.setDarkTheme
+        window.setDarkTheme = function(n) {
+            if (n)
+                document.body.setAttribute("dark", n)
+            else
+                document.body.removeAttribute("dark")
+            oldSetDarkTheme(n)
         }
     }
 
@@ -634,17 +642,21 @@
 
     function init() {
         var stl = document.createElement('style')
-        stl.textContent = '#cbox {background: black; position:fixed; z-index:205; bottom:0; right:0; width:400px; opacity:0.5; color:white;}' +
-            '#carea { width: 100%; color: black}' +
-            '#form {margin: 0;}' +
-            '#msgsbox { overflow: auto; word-wrap: break-word; width:400px; height: 250px; }' +
-            '#msgsbox .name {color: #AAA;}' +
-            '#msgsbox .higlight {color: #faa}' +
-            '#msgsbox .time {font-size: 70%; color: #777;}'+
-            '#notification {background: red; position:fixed; z-index:205; bottom:5px;right:5px;opacity:0.5;color:white}'+
-            '#quickHint {background: #777; position:fixed; z-index:120; top:0; left:0; color:white;}'+
-            '#quickHint .key {font-weight: bold;margin-right: 1em;}'+
-            '#map {position: fixed; bottom: 5px; left: 5px; z-index:205; border: 1px black solid;}'
+        stl.textContent = '#cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; width:400px; color:#000; opacity:0.7 }' +
+            '#carea { width:100%; color:black }' +
+            '#form { margin:0 }' +
+            '#msgsbox { overflow:auto; word-wrap:break-word; width:400px; height:250px }' +
+            '#msgsbox .name { color:#333 }' +
+            '#msgsbox .higlight { color:#055 }' +
+            '#msgsbox .time { font-size:70%; color:#777 }' +
+            'body:not([dark]) a { color:#275d8b }' +
+            'body[dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
+            'body[dark] #msgsbox .name { color:#CCC }' +
+            'body[dark] #msgsbox .higlight { color:#faa }' +
+            '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }'+
+            '#quickHint { background:#777; position:fixed; z-index:120; top:0; left:0; color:white }'+
+            '#quickHint .key { font-weight:bold; margin-right:1em }'+
+            '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }'
         document.body.appendChild(stl)
 
         var cbox = document.createElement('table')
@@ -694,16 +706,16 @@
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
             chatactive = true
-            g('cbox').style.opacity = '0.6'
+            g('cbox').style.opacity = '1'
         }
         g('carea').onblur = function () {
             chatactive = false
-            g('cbox').style.opacity = '0.5'
+            g('cbox').style.opacity = '0.7'
         }
 
         g("chat_users").onclick = function() { send({t:'names'}) }
 
-        handleSetNick()
+        handleOptions()
         handleKeys()
         connectChat()
         sendMapThread()
