@@ -186,6 +186,8 @@
             case "quick":
                 addLine({time:d.T, sender:d.f, message:"[" + d.text + "]"})
                 unreadCount += 1;updateNotification()
+                if (d.cells !== undefined)
+                    map.blink(d.cells)
                 break
             case "name":
                 addLine({time:d.T, message: [aName(d.f), " теперь ", aName(d.name), "."]})
@@ -536,6 +538,8 @@
         data: null,
         blackRibbon: true,
         hidden: false,
+        blinkIds: {},
+        blinkIdsCounter: 0,
         init: function() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
@@ -551,6 +555,20 @@
         update: function(data) {
             this.data = data
             this.draw()
+        },
+        blink: function(ids) {
+            var c = this.blinkIdsCounter++
+            var iteration = 6
+            function toggle() {
+                --iteration
+                map.blinkIds[c] = (iteration%2 ? ids : [])
+                map.draw()
+                if(iteration)
+                    window.setTimeout(toggle, 250)
+                else
+                    delete map.blinkIds[c]
+            }
+            toggle()
         },
         draw: function() {
             if (this.hidden)
@@ -624,6 +642,22 @@
                 }
                 context.stroke()
             }
+
+            context.beginPath()
+            context.fillStyle = "#f00"
+            context.globalAlpha = 0.5
+            for(i = 0; i < this.data.length; i++) {
+                var d = this.data[i]
+                for(var j in this.blinkIds)
+                    if (this.blinkIds[j].indexOf(d.i) > -1) {
+                        context.arc(d.x*scale, d.y*scale,
+                                    d.s*scale+6, 0, 2 * Math.PI, false)
+                        context.closePath()
+                        console.log(d.i)
+                        break
+                    }
+            }
+            context.fill()
         },
         send: function() {
             var a = window.agar
