@@ -311,8 +311,11 @@
         }
 
         var msgbox = document.getElementById('msgsbox')
+        var scroll = msgbox.scrollTop + msgbox.offsetHeight - msgbox.scrollHeight === 0
         msgbox.appendChild(d)
-        msgbox.lastChild.scrollIntoView()
+        if (scroll)
+            msgbox.lastChild.scrollIntoView()
+        window.yoba = msgbox
     }
 
     function send(a) {
