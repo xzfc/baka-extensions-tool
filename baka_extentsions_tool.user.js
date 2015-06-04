@@ -560,7 +560,7 @@
         },
         blink: function(ids) {
             var c = this.blinkIdsCounter++
-            var iteration = 6
+            var iteration = 12
             function toggle() {
                 --iteration
                 map.blinkIds[c] = (iteration%2 ? ids : [])
