@@ -525,10 +525,12 @@
         }
         var oldSetDarkTheme = window.setDarkTheme
         window.setDarkTheme = function(n) {
-            if (n)
-                document.body.setAttribute("dark", n)
-            else
-                document.body.removeAttribute("dark")
+            if (n) {
+                if (document.body.hasAttribute("dark"))
+                    document.body.removeAttribute("dark")
+                else
+                    document.body.setAttribute("dark", n)
+            }
             oldSetDarkTheme(n)
         }
     }
