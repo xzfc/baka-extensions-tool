@@ -101,8 +101,8 @@
     }
 
     var chatHidden = false
-    function chatHider() {
-        chatHidden = !chatHidden
+    function chatHider(show) {
+        chatHidden = show === undefined ? !chatHidden : !show
         g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
         updateNotification()
     }
@@ -505,7 +505,7 @@
 
             if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
-                case 9: g('carea').focus(); return false
+                case 9: chatHider(true); g('carea').focus(); return false
                 case 49: chatHider(); return true
                 case 51: move(); return true
                 case 52: extended = true; quick.show(); return true
@@ -819,7 +819,7 @@
         g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
             document.body.onmousewheel
         document.body.onmousewheel = null
-        notification.onclick = chatHider
+        notification.onclick = chatHider.bind(undefined, true)
     }
 
     function wait() {
