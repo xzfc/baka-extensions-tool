@@ -479,7 +479,7 @@
         var extended = false
         window.onkeydown = function(e) {
             if(extended) {
-                if(e.keyCode == 16) return false
+                if(e.keyCode >= 16 && e.keyCode <= 18) return false
                 var cmd = quick.eventToAction(e)
                 if (cmd !== undefined) {
                     var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
@@ -713,7 +713,8 @@
             var t = window.bakaconf.quickTemplates[key]
             if (t === undefined || t.length === 0)
                 return
-            if (e.shiftKey && t.length >= 2)
+            var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
+            if (mod && t.length >= 2)
                 return t[1]
             return t[0]
         },
@@ -747,7 +748,7 @@
                 if(t.length >= 1)
                     add(name, t[0][0], t[0][1])
                 if(t.length >= 2)
-                    add("Shift + " + name, t[1][0], t[1][1])
+                    add("Mod + " + name, t[1][0], t[1][1])
             }
             document.body.appendChild(quickHint)
         },
