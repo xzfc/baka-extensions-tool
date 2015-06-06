@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.16
+// @version     1.16.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -101,8 +101,8 @@
     }
 
     var chatHidden = false
-    function chatHider() {
-        chatHidden = !chatHidden
+    function chatHider(show) {
+        chatHidden = show === undefined ? !chatHidden : !show
         g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
         updateNotification()
     }
@@ -479,7 +479,7 @@
         var extended = false
         window.onkeydown = function(e) {
             if(extended) {
-                if(e.keyCode == 16) return false
+                if(e.keyCode >= 16 && e.keyCode <= 18) return false
                 var cmd = quick.eventToAction(e)
                 if (cmd !== undefined) {
                     var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
@@ -505,7 +505,7 @@
 
             if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
-                case 9: g('carea').focus(); return false
+                case 9: chatHider(true); g('carea').focus(); return false
                 case 49: chatHider(); return true
                 case 51: move(); return true
                 case 52: extended = true; quick.show(); return true
@@ -713,7 +713,8 @@
             var t = window.bakaconf.quickTemplates[key]
             if (t === undefined || t.length === 0)
                 return
-            if (e.shiftKey && t.length >= 2)
+            var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
+            if (mod && t.length >= 2)
                 return t[1]
             return t[0]
         },
@@ -747,7 +748,7 @@
                 if(t.length >= 1)
                     add(name, t[0][0], t[0][1])
                 if(t.length >= 2)
-                    add("Shift + " + name, t[1][0], t[1][1])
+                    add("Mod + " + name, t[1][0], t[1][1])
             }
             document.body.appendChild(quickHint)
         },
@@ -818,7 +819,7 @@
         g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
             document.body.onmousewheel
         document.body.onmousewheel = null
-        notification.onclick = chatHider
+        notification.onclick = chatHider.bind(undefined, true)
     }
 
     function wait() {
