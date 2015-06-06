@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.15.1
+// @version     1.16
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -9,10 +9,25 @@
 
 (function() {
     setConf({wsUri: "ws://89.31.114.117:8000/",
-             quickTemplates: [["Покорми", "Не корми"],
-                              ["Взорви колючку", "Пульни колючку"],
-                              ["Возьми мои ошмётки", "Не бери мои ошмётки"],
-                              ["Отходим", "Наступаем"]],
+             quickTemplates: {
+                 _049: [['К', 'Покорми'],
+                        ['!К', 'Не корми']],
+                 _050: [['ВК', 'Взорви колючку'],
+                        ['ПК', 'Пульни колючку']],
+                 _051: [['Е', 'Возьми мои ошмётки'],
+                        ['!Е', 'Не бери мои ошмётки']],
+	         _052: [['⧀', 'Отходим'],
+                        ['⧁', 'Наступаем']],
+	         _097: [['↙', 'Левый нижний угол']],
+	         _098: [['↓', 'Центр внизу']],
+	         _099: [['↘', 'Правый нижний угол']],
+	         _100: [['←', 'Центр слева']],
+	         _101: [['⨀', 'Центр']],
+	         _102: [['→', 'Центр справа']],
+	         _103: [['↖', 'Левый верхний угол']],
+	         _104: [['↑', 'Центр сверху']],
+	         _105: [['↗', 'Правый верхний угол']],
+             },
              teams:{
                  baka:{aura: "#00f",
                        names: [/[⑨Ø]/,
@@ -184,10 +199,13 @@
                 unreadCount += 1;updateNotification()
                 break
             case "quick":
-                addLine({time:d.T, sender:d.f, message:"[" + d.text + "]"})
+                var message = "[" + d.text + "]"
+                if (d.symbol !== undefined)
+                    message = "[" + d.symbol + ":" + d.text + "]"
+                addLine({time:d.T, sender:d.f, message:message})
                 unreadCount += 1;updateNotification()
                 if (d.cells !== undefined)
-                    map.blink(d.cells)
+                    map.blink(d.cells, d.symbol)
                 break
             case "name":
                 addLine({time:d.T, message: [aName(d.f), " теперь ", aName(d.name), "."]})
@@ -462,17 +480,14 @@
         window.onkeydown = function(e) {
             if(extended) {
                 if(e.keyCode == 16) return false
-                var cmd = window.bakaconf.quickTemplates[e.keyCode - 49]
+                var cmd = quick.eventToAction(e)
                 if (cmd !== undefined) {
-                    cmd = cmd[e.shiftKey?1:0]
-                    if (cmd !== undefined) {
-                        var m = {t:"quick", text:cmd}
-                        if (window.agar !== undefined && window.agar.myCells !== undefined)
-                            m.cells = window.agar.myCells
-                        send(m)
-                    }
+                    var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
+                    if (window.agar !== undefined && window.agar.myCells !== undefined)
+                        m.cells = window.agar.myCells
+                    send(m)
                 }
-                quickHint.style.visibility = 'hidden'
+                quick.hide()
                 extended = false
                 return false
             }
@@ -493,7 +508,7 @@
                 case 9: g('carea').focus(); return false
                 case 49: chatHider(); return true
                 case 51: move(); return true
-                case 52: extended = true; quickHint.style.visibility = ''; return true
+                case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
                 case 81: repeat = 1; return true
                 }
@@ -655,7 +670,6 @@
                         context.arc(d.x*scale, d.y*scale,
                                     d.s*scale+6, 0, 2 * Math.PI, false)
                         context.closePath()
-                        console.log(d.i)
                         break
                     }
             }
@@ -690,6 +704,60 @@
         }
     }
 
+    var quick = {
+        eventToAction: function(e) {
+            var key
+            if (e.keyCode < 10) key = "_00" + e.keyCode
+            else if (e.keyCode < 100) key = "_0" + e.keyCode
+            else key = "_" + e.keyCode
+            var t = window.bakaconf.quickTemplates[key]
+            if (t === undefined || t.length === 0)
+                return
+            if (e.shiftKey && t.length >= 2)
+                return t[1]
+            return t[0]
+        },
+        show: function() {
+            this.hide()
+            var quickHint = document.createElement('div')
+            quickHint.id = "quickHint"
+            function add(key, sym, text) {
+                var line = document.createElement('div')
+                function span(className, textContent) {
+                    var span = document.createElement('span')
+                    span.textContent = textContent
+                    span.className = className
+                    line.appendChild(span)
+                }
+                span('key', key)
+                span('sym', sym)
+                span('text', text)
+                quickHint.appendChild(line)
+            }
+            function codeToName(x) {
+                if (x >= 48 && x <= 57) return ""+(x-48)
+                if (x >= 96 && x <= 105) return "num"+(x-96)
+                if (x >= 65 && x <= 90) return x-65+"a".charCodeAt(0)
+                return "[" + x + "]"
+            }
+            var keys = Object.keys(window.bakaconf.quickTemplates).sort()
+            for(var i = 0; i < keys.length; i++) {
+                var name = codeToName(+keys[i].substr(1))
+                var t = window.bakaconf.quickTemplates[keys[i]]
+                if(t.length >= 1)
+                    add(name, t[0][0], t[0][1])
+                if(t.length >= 2)
+                    add("Shift + " + name, t[1][0], t[1][1])
+            }
+            document.body.appendChild(quickHint)
+        },
+        hide: function() {
+            var quickHint = document.getElementById('quickHint')
+            if (quickHint)
+                document.body.removeChild(quickHint)
+        }
+    }
+
     function init() {
         if (g('baka-style') === null) {
             var stl = document.createElement('style')
@@ -706,8 +774,9 @@
                 'body[dark] #msgsbox .name { color:#CCC }' +
                 'body[dark] #msgsbox .higlight { color:#faa }' +
                 '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
-                '#quickHint { background:#777; position:fixed; z-index:120; top:0; left:0; color:white }'+
-                '#quickHint .key { font-weight:bold; margin-right:1em }' +
+                '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
+                '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
+                '#quickHint .sym { color:#000; float:left; width:2em }' +
                 '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }'
             document.head.appendChild(stl)
         }
@@ -725,30 +794,6 @@
         var notification = document.createElement('div')
         notification.id = "notification"
         document.body.appendChild(notification)
-
-        var quickHint = document.createElement('div')
-        quickHint.id = "quickHint"
-        var addQuickHint = function (key, text) {
-            var line = document.createElement('div')
-
-            var key_ = document.createElement('span')
-            key_.textContent = key
-            key_.className = 'key'
-            line.appendChild(key_)
-
-            var text_ = document.createElement('span')
-            text_.textContent = text
-            text_.className = 'text'
-            line.appendChild(text_)
-
-            quickHint.appendChild(line)
-        }
-        for(var i = 0; i < window.bakaconf.quickTemplates.length; i++) {
-            addQuickHint(1+i, window.bakaconf.quickTemplates[i][0])
-            addQuickHint("Shift + " + (1+i), window.bakaconf.quickTemplates[i][1])
-        }
-        quickHint.style.visibility = 'hidden'
-        document.body.appendChild(quickHint)
 
         map.init()
 
