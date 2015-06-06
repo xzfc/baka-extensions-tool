@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        Agar.io Expose
-// @version     1.3
+// @version     1.3.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/expose.user.js
-// @include     http://agar.io/
+// @include     http://agar.io/*
 // @run-at      document-start
 // @grant       none
 // ==/UserScript==
