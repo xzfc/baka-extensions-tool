@@ -31,10 +31,7 @@
              teams:{
                  baka:{aura: "#00f",
                        names: [/[⑨Ø]/,
-                               "Alice M.", "DUKE NUKEM", "H-hauau Q.Q", "HakureiのMiko",
-                               "Kongo-san", "MarisaB", "OxykomaFan", "QRBG-Chan",
-                               "Reimu", "Rika Nippa", "Колчанька", "Сырно не дура",
-                               "Умничка", "Хуйле", "桜華さん"]
+                               "DUKE NUKEM", "Reimu", "天才　Умничка　秀才", "桜華さん"]
                       },
                  pkb: {aura: "#AA5",
                        names: /\b(pkb|ркб|ркв)\b/i},
