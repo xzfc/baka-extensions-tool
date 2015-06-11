@@ -555,7 +555,7 @@
         data: null,
         blackRibbon: true,
         hidden: false,
-        blinkIds: {},
+        blinks: {},
         blinkIdsCounter: 0,
         init: function() {
             this.canvas = document.createElement("canvas")
@@ -573,17 +573,17 @@
             this.data = data
             this.draw()
         },
-        blink: function(ids) {
+        blink: function(ids, sym) {
             var c = this.blinkIdsCounter++
             var iteration = 12
+            var blink = map.blinks[c] = {ids:ids, sym:sym, hl:false}
             function toggle() {
-                --iteration
-                map.blinkIds[c] = (iteration%2 ? ids : [])
-                map.draw()
-                if(iteration)
+                if(--iteration)
                     window.setTimeout(toggle, 250)
                 else
-                    delete map.blinkIds[c]
+                    delete map.blinks[c]
+                blink.hl = !blink.hl
+                map.draw()
             }
             toggle()
         },
@@ -593,6 +593,7 @@
             var context = this.canvas.getContext('2d')
             var myCells = ((window.agar || {}).myCells) || []
             var teams = window.bakaconf.teams
+            var idx = {}
             function getAura(cell) {
                 if(myCells.indexOf(cell.i) > -1)
                     return window.bakaconf.myAura
@@ -640,6 +641,8 @@
                                 d.s*scale+4, 0, 2 * Math.PI, false)
                     context.fill()
                 }
+
+                idx[d.i] = this.data[i]
             }
 
             context.lineWidth = 2
@@ -660,20 +663,36 @@
                 context.stroke()
             }
 
-            context.beginPath()
-            context.fillStyle = "#f00"
-            context.globalAlpha = 0.5
-            for(i = 0; i < this.data.length; i++) {
-                var d = this.data[i]
-                for(var j in this.blinkIds)
-                    if (this.blinkIds[j].indexOf(d.i) > -1) {
-                        context.arc(d.x*scale, d.y*scale,
-                                    d.s*scale+6, 0, 2 * Math.PI, false)
-                        context.closePath()
-                        break
-                    }
+            for(i in this.blinks) {
+                var blink = this.blinks[i]
+                if (blink.ids.length == 0 || !blink.hl)
+                    continue
+                context.beginPath()
+                context.fillStyle = "#f00"
+                context.globalAlpha = 0.7
+                var minX, maxX, minY, maxY, drawText = false
+                for(var j = 0; j < blink.ids.length; j++) {
+                    console.log[j]
+                    var d = idx[blink.ids[j]]
+                    if (d === undefined) continue
+                    drawText = true
+                    if (j == 0 || minX > d.x*2-d.s) minX = d.x*2-d.s
+                    if (j == 0 || maxX < d.x*2+d.s) maxX = d.x*2+d.s
+                    if (j == 0 || minY > d.y*2-d.s) minY = d.y*2-d.s
+                    if (j == 0 || maxY < d.y*2+d.s) maxY = d.y*2+d.s
+                    context.arc(d.x*scale, d.y*scale,
+                                d.s*scale+6, 0, 2 * Math.PI, false)
+                    context.closePath()
+                }
+                context.fill()
+                if (!drawText) continue
+                context.globalAlpha = 1
+                context.font = 'bold 13px Ubuntu'
+                context.textAlign = 'center'
+                context.textBaseline = 'middle'
+                context.fillStyle = '#0ff'
+                context.fillText(blink.sym, scale*(minX+maxX)/4, scale*(minY+maxY)/4)
             }
-            context.fill()
         },
         send: function() {
             var a = window.agar
