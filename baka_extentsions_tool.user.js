@@ -354,7 +354,6 @@
         msgbox.appendChild(d)
         if (scroll)
             msgbox.lastChild.scrollIntoView()
-        window.yoba = msgbox
     }
 
     function send(a) {
