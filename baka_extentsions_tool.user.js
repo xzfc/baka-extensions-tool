@@ -136,6 +136,7 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
+        ignore.reset()
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         ws.onopen = function(evt) {
@@ -307,6 +308,7 @@
         if(p.sender !== undefined) {
             d.appendChild(aName(p.sender.name, p.sender.i))
             d.appendChild(document.createTextNode(": "))
+            d.setAttribute("bakaid", p.sender.i)
         }
 
         if(p.message !== undefined) {
@@ -444,19 +446,35 @@
                 myName = n.value
                 send({t: "name", name:myName})
             }
-            if(ca.value[0] == "/")
-                switch(ca.value) {
+            var tokens = ca.value.trim().split(/ +/)
+            if (tokens.length == 0)
+                return false
+            if (tokens[0][0] == "/")
+                switch(tokens[0]) {
                 case "/names":
                     send({t:"names"}); break
                 case "/addr":
                     sendAddr(); break
                 case "/reconnect":
                     websocket.reconnect(); break
+                case "/ignore":
+                    for (var i = 1; i < tokens.length; i++)
+                        if(/^[-+]?\d+$/.test(tokens[i])) {
+                            var id = parseInt(tokens[i].substr(1))
+                            if (tokens[i][0] == '+')
+                                ignore.add(id)
+                            else
+                                ignore.remove(id)
+                        }
+                    addLine({message: ["Список игнорирования: "].concat(join(Object.keys(ignore.list)))})
+                    break
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
                     addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
+                    addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
+                                       "Пример: `/ingore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
                 }
             else
                 send({t: "message", text: ca.value})
@@ -780,6 +798,28 @@
         }
     }
 
+    var ignore = {
+        style: null,
+        list: {},
+        init: function() {
+            this.style = document.createElement('style')
+            this.style.id = 'baka-style-ignore'
+            document.head.appendChild(this.style)
+        },
+        update: function() {
+            var list = Object.keys(this.list)
+            if (list.length == 0)
+                this.style.textContent = ""
+            else
+                this.style.textContent = list.map(function(i) {
+                    return '#msgsbox > div[bakaid="'+i+'"]'
+                }).join(',\n') + "{ display:none }"
+        },
+        add: function(i) { this.list[i] = 1; this.update() },
+        remove: function(i) { delete this.list[i]; this.update() },
+        reset: function() { this.list = {}; this.update() },
+    }
+
     function init() {
         if (g('baka-style') === null) {
             var stl = document.createElement('style')
@@ -818,6 +858,7 @@
         document.body.appendChild(notification)
 
         map.init()
+        ignore.init()
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
