@@ -100,6 +100,21 @@
         }
     }
 
+    var storage = {
+        get: function(key) {
+            if (typeof GM_getValue === 'function')
+                return GM_getValue(key, null)
+            else
+                return localStorage.getItem(key)
+        },
+        set: function(key, value) {
+            if (typeof GM_setValue === 'function')
+                GM_setValue(key, value)
+            else
+                localStorage.setItem(key, value)
+        }
+    }
+
     var chatHidden = false
     function chatHider(show) {
         chatHidden = show === undefined ? !chatHidden : !show
@@ -144,6 +159,9 @@
         var ws = new WebSocket(window.bakaconf.wsUri)
         ws.onopen = function(evt) {
             send({t: "version", version: version, expose: (window.agar===undefined?0:1) })
+            var auth_token = storage.get('auth_token')
+            if (auth_token !== null)
+                    send({t:"auth", token:auth_token})
             if (myName !== null)
                 send({t: "name", "name": myName})
         }
@@ -473,6 +491,12 @@
                         }
                     addLine({message: ["Список игнорирования: "].concat(join(Object.keys(ignore.list)))})
                     break
+                case "/auth":
+                    if (tokens[1] !== undefined) {
+                        storage.set("auth_token", tokens[1])
+                        send({t:"auth", token:tokens[1]})
+                    }
+                    break
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
@@ -480,6 +504,7 @@
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                     addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
                                        "Пример: `/ingore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
+                    addLine({message: ["/auth — авторизация"]})
                 }
             else
                 send({t: "message", text: ca.value})
