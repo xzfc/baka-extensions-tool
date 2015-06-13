@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.17.1
+// @version     1.18
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -8,6 +8,7 @@
 // ==/UserScript==
 
 (function() {
+    var version = "1.18"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -51,7 +52,7 @@
              defaultTeamAura: "#A55",
              timeFormat: 0,
             })
-    var myName = ""
+    var myName = null
     var chatactive = false
     var serverRestart = false
 
@@ -73,7 +74,9 @@
     }
 
     function join(l) {
-        if(l.length <= 1)
+        if (l.length == 0)
+            return ["никого"]
+        if (l.length <= 1)
             return l
         result = []
         for(var i = 0; i < l.length; i++) {
@@ -94,6 +97,21 @@
         case 0: return  h+':'+m+':'+s+' '
         case 1: return  h+':'+m+' '
         case 2: return ''
+        }
+    }
+
+    var storage = {
+        get: function(key) {
+            if (typeof GM_getValue === 'function')
+                return GM_getValue(key, null)
+            else
+                return localStorage.getItem(key)
+        },
+        set: function(key, value) {
+            if (typeof GM_setValue === 'function')
+                GM_setValue(key, value)
+            else
+                localStorage.setItem(key, value)
         }
     }
 
@@ -136,11 +154,16 @@
             e.parentNode.removeChild(e)
             connectChat()
         }
+        ignore.reset()
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         ws.onopen = function(evt) {
-            send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
-            send({t: "name", "name": myName})
+            send({t: "version", version: version, expose: (window.agar===undefined?0:1) })
+            var auth_token = storage.get('auth_token')
+            if (auth_token !== null)
+                    send({t:"auth", token:auth_token})
+            if (myName !== null)
+                send({t: "name", "name": myName})
         }
         ws.onclose = function(evt) {
             if (closed) return
@@ -175,10 +198,12 @@
         ws.onmessage = function(evt) {
             if (closed) return
             var d = JSON.parse(evt.data)
+            var sender = {i:d.i, name:d.f}
             switch(d.t) {
             case "names":
-                d.names = d.names.map(function(n) { return typeof n == "string" ? n : n.name })
-                var namesList = d.names.filter(function(n) { return n !== "" }).map(aName)
+                var namesList = d.names.
+                    filter(function(n) { return n.name !== "" }).
+                    map(function(n) { return aName(n.name, n.i) })
                 var nonameCount = d.names.length - namesList.length
                 var iHaveNoName = g('nick').value === ""
                 if(nonameCount === 0) {/* do nothing */}
@@ -192,32 +217,30 @@
             case "message":
                 if (d.legacy <= 1)
                     break
-                addLine({time:d.T, sender:d.f, message:formatMessage(d.text)})
+                addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
                 unreadCount += 1;updateNotification()
                 break
             case "quick":
                 var message = "[" + d.text + "]"
                 if (d.symbol !== undefined)
                     message = "[" + d.symbol + ":" + d.text + "]"
-                addLine({time:d.T, sender:d.f, message:message})
+                addLine({time:d.T, sender:sender, message:message})
                 unreadCount += 1;updateNotification()
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
                 break
             case "name":
-                addLine({time:d.T, message: [aName(d.f), " теперь ", aName(d.name), "."]})
+                addLine({time:d.T, message: [aName(d.f, d.i), " теперь ", aName(d.name, d.i), "."]})
                 break
             case "map":
                 map.update(d.data)
                 break
             case "join":
-                if (d.f !== "")
-                    addLine({time:d.T, message: [aName(d.f), " заходит."]})
+                addLine({time:d.T, message: [aName(d.f, d.i), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
-                if (d.f !== "")
-                    addLine({time:d.T, message: [aName(d.f), " выходит."]})
+                addLine({time:d.T, message: [aName(d.f, d.i), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "ping":
@@ -225,7 +248,7 @@
                 send(d)
                 break
             case "addr":
-                showAddr(d.f, d.T, d.ws, d.top)
+                showAddr(sender, d.T, d.ws, d.top)
                 unreadCount += 1;updateNotification()
                 break
             case "restart":
@@ -266,18 +289,20 @@
         return false
     }
 
-    function aButton(text, action, className) {
+    function aButton(text, action, className, tooltip) {
         var a = document.createElement('a')
         a.href = "javascript:void(0)"
         if (className)
             a.className = className
         a.onclick = action
         a.textContent = text
+        if (tooltip !== undefined)
+            a.title = tooltip
         return a
     }
 
-    function aName(name) {
-        return aButton(name||defaultName, clickName, "name")
+    function aName(name, id) {
+        return aButton(name||defaultName, clickName, "name", id)
     }
 
     function formatMessage(text) {
@@ -287,6 +312,8 @@
             result.higlight = true
         for (i = 1; i < result.length; i += 2)
             result[i] = aButton(result[i], connector.connect.bind(connector, result[i]))
+        if (text.trim()[0] == '>')
+            result.greentext = true
         return result
     }
 
@@ -301,8 +328,9 @@
         }
 
         if(p.sender !== undefined) {
-            d.appendChild(aName(p.sender))
+            d.appendChild(aName(p.sender.name, p.sender.i))
             d.appendChild(document.createTextNode(": "))
+            d.setAttribute("bakaid", p.sender.i)
         }
 
         if(p.message !== undefined) {
@@ -315,8 +343,9 @@
                 else
                     message.appendChild(i)
             })
-            if (p.message.higlight)
-                message.className = "higlight"
+            message.className =
+                (p.message.greentext ? " greentext" : "") +
+                (p.message.higlight ? " higlight" : "")
             d.appendChild(message)
         }
 
@@ -325,7 +354,6 @@
         msgbox.appendChild(d)
         if (scroll)
             msgbox.lastChild.scrollIntoView()
-        window.yoba = msgbox
     }
 
     function send(a) {
@@ -399,7 +427,7 @@
         }
     }
 
-    function showAddr(name, time, ws, top) {
+    function showAddr(sender, time, ws, top) {
         var statusLine = document.createElement('span')
         function setStatus(text) {
             return (function() {
@@ -424,7 +452,7 @@
             connector.stopAutoConnect()
             return false
         })
-        addLine({time:time, sender:name, message:[
+        addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
             statusLine, aStop,
             " Топ: " + top.map(function(x){return x.name}).join(", ")
@@ -436,23 +464,46 @@
 
         if(ca.value != "") {
             var n = document.getElementById('nick')
-            if (myName != n.value) {
+            if (myName !== n.value) {
                 myName = n.value
                 send({t: "name", name:myName})
             }
-            if(ca.value[0] == "/")
-                switch(ca.value) {
+            var tokens = ca.value.trim().split(/ +/)
+            if (tokens.length == 0)
+                return false
+            if (tokens[0][0] == "/")
+                switch(tokens[0]) {
                 case "/names":
                     send({t:"names"}); break
                 case "/addr":
                     sendAddr(); break
                 case "/reconnect":
                     websocket.reconnect(); break
+                case "/ignore":
+                    for (var i = 1; i < tokens.length; i++)
+                        if(/^[-+]?\d+$/.test(tokens[i])) {
+                            var id = parseInt(tokens[i].substr(1))
+                            if (tokens[i][0] == '+')
+                                ignore.add(id)
+                            else
+                                ignore.remove(id)
+                        }
+                    addLine({message: ["Список игнорирования: "].concat(join(Object.keys(ignore.list)))})
+                    break
+                case "/auth":
+                    if (tokens[1] !== undefined) {
+                        storage.set("auth_token", tokens[1])
+                        send({t:"auth", token:tokens[1]})
+                    }
+                    break
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
                     addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
+                    addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
+                                       "Пример: `/ingore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
+                    addLine({message: ["/auth — авторизация"]})
                 }
             else
                 send({t: "message", text: ca.value})
@@ -717,7 +768,7 @@
         sendThread: function() {
             if (window.agar === undefined)
                 addLine({message:["Карта отправляться не будет :<"]})
-            setInterval(function(){ map.send() }, 1000)
+            setInterval(function(){ map.send() }, 250)
         }
     }
 
@@ -776,6 +827,28 @@
         }
     }
 
+    var ignore = {
+        style: null,
+        list: {},
+        init: function() {
+            this.style = document.createElement('style')
+            this.style.id = 'baka-style-ignore'
+            document.head.appendChild(this.style)
+        },
+        update: function() {
+            var list = Object.keys(this.list)
+            if (list.length == 0)
+                this.style.textContent = ""
+            else
+                this.style.textContent = list.map(function(i) {
+                    return '#msgsbox > div[bakaid="'+i+'"]'
+                }).join(',\n') + "{ display:none }"
+        },
+        add: function(i) { this.list[i] = 1; this.update() },
+        remove: function(i) { delete this.list[i]; this.update() },
+        reset: function() { this.list = {}; this.update() },
+    }
+
     function init() {
         if (g('baka-style') === null) {
             var stl = document.createElement('style')
@@ -787,10 +860,12 @@
                 '#msgsbox .name { color:#333 }' +
                 '#msgsbox .higlight { color:#055 }' +
                 '#msgsbox .time { font-size:70%; color:#777 }' +
+                '#msgsbox .greentext { color:#3b5000 }' +
                 'body:not([dark]) a { color:#275d8b }' +
                 'body[dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
                 'body[dark] #msgsbox .name { color:#CCC }' +
                 'body[dark] #msgsbox .higlight { color:#faa }' +
+                'body[dark] #msgsbox .greentext { color:#789922 }' +
                 '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
                 '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
@@ -814,6 +889,7 @@
         document.body.appendChild(notification)
 
         map.init()
+        ignore.init()
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
