@@ -8,6 +8,7 @@
 // ==/UserScript==
 
 (function() {
+    var version = "1.18"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -142,7 +143,7 @@
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         ws.onopen = function(evt) {
-            send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
+            send({t: "version", version: version, expose: (window.agar===undefined?0:1) })
             if (myName !== null)
                 send({t: "name", "name": myName})
         }
