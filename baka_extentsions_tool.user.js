@@ -294,6 +294,8 @@
             result.higlight = true
         for (i = 1; i < result.length; i += 2)
             result[i] = aButton(result[i], connector.connect.bind(connector, result[i]))
+        if (text.trim()[0] == '>')
+            result.greentext = true
         return result
     }
 
@@ -323,8 +325,9 @@
                 else
                     message.appendChild(i)
             })
-            if (p.message.higlight)
-                message.className = "higlight"
+            message.className =
+                (p.message.greentext ? " greentext" : "") +
+                (p.message.higlight ? " higlight" : "")
             d.appendChild(message)
         }
 
@@ -833,10 +836,12 @@
                 '#msgsbox .name { color:#333 }' +
                 '#msgsbox .higlight { color:#055 }' +
                 '#msgsbox .time { font-size:70%; color:#777 }' +
+                '#msgsbox .greentext { color:#3b5000 }' +
                 'body:not([dark]) a { color:#275d8b }' +
                 'body[dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
                 'body[dark] #msgsbox .name { color:#CCC }' +
                 'body[dark] #msgsbox .higlight { color:#faa }' +
+                'body[dark] #msgsbox .greentext { color:#789922 }' +
                 '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
                 '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
