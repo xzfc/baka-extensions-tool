@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.17.1
+// @version     1.18
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -51,7 +51,7 @@
              defaultTeamAura: "#A55",
              timeFormat: 0,
             })
-    var myName = ""
+    var myName = null
     var chatactive = false
     var serverRestart = false
 
@@ -73,7 +73,9 @@
     }
 
     function join(l) {
-        if(l.length <= 1)
+        if (l.length == 0)
+            return ["никого"]
+        if (l.length <= 1)
             return l
         result = []
         for(var i = 0; i < l.length; i++) {
@@ -141,7 +143,8 @@
         var ws = new WebSocket(window.bakaconf.wsUri)
         ws.onopen = function(evt) {
             send({t: "version", version: GM_info.script.version, expose: (window.agar===undefined?0:1) })
-            send({t: "name", "name": myName})
+            if (myName !== null)
+                send({t: "name", "name": myName})
         }
         ws.onclose = function(evt) {
             if (closed) return
@@ -214,13 +217,11 @@
                 map.update(d.data)
                 break
             case "join":
-                if (d.f !== "")
-                    addLine({time:d.T, message: [aName(d.f, d.i), " заходит."]})
+                addLine({time:d.T, message: [aName(d.f, d.i), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
-                if (d.f !== "")
-                    addLine({time:d.T, message: [aName(d.f, d.i), " выходит."]})
+                addLine({time:d.T, message: [aName(d.f, d.i), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "ping":
@@ -442,7 +443,7 @@
 
         if(ca.value != "") {
             var n = document.getElementById('nick')
-            if (myName != n.value) {
+            if (myName !== n.value) {
                 myName = n.value
                 send({t: "name", name:myName})
             }
@@ -739,7 +740,7 @@
         sendThread: function() {
             if (window.agar === undefined)
                 addLine({message:["Карта отправляться не будет :<"]})
-            setInterval(function(){ map.send() }, 1000)
+            setInterval(function(){ map.send() }, 250)
         }
     }
 
