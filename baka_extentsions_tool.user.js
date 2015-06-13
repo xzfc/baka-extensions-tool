@@ -175,10 +175,12 @@
         ws.onmessage = function(evt) {
             if (closed) return
             var d = JSON.parse(evt.data)
+            var sender = {i:d.i, name:d.f}
             switch(d.t) {
             case "names":
-                d.names = d.names.map(function(n) { return typeof n == "string" ? n : n.name })
-                var namesList = d.names.filter(function(n) { return n !== "" }).map(aName)
+                var namesList = d.names.
+                    filter(function(n) { return n.name !== "" }).
+                    map(function(n) { return aName(n.name, n.i) })
                 var nonameCount = d.names.length - namesList.length
                 var iHaveNoName = g('nick').value === ""
                 if(nonameCount === 0) {/* do nothing */}
@@ -192,32 +194,32 @@
             case "message":
                 if (d.legacy <= 1)
                     break
-                addLine({time:d.T, sender:d.f, message:formatMessage(d.text)})
+                addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
                 unreadCount += 1;updateNotification()
                 break
             case "quick":
                 var message = "[" + d.text + "]"
                 if (d.symbol !== undefined)
                     message = "[" + d.symbol + ":" + d.text + "]"
-                addLine({time:d.T, sender:d.f, message:message})
+                addLine({time:d.T, sender:sender, message:message})
                 unreadCount += 1;updateNotification()
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
                 break
             case "name":
-                addLine({time:d.T, message: [aName(d.f), " теперь ", aName(d.name), "."]})
+                addLine({time:d.T, message: [aName(d.f, d.i), " теперь ", aName(d.name, d.i), "."]})
                 break
             case "map":
                 map.update(d.data)
                 break
             case "join":
                 if (d.f !== "")
-                    addLine({time:d.T, message: [aName(d.f), " заходит."]})
+                    addLine({time:d.T, message: [aName(d.f, d.i), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
                 if (d.f !== "")
-                    addLine({time:d.T, message: [aName(d.f), " выходит."]})
+                    addLine({time:d.T, message: [aName(d.f, d.i), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "ping":
@@ -225,7 +227,7 @@
                 send(d)
                 break
             case "addr":
-                showAddr(d.f, d.T, d.ws, d.top)
+                showAddr(sender, d.T, d.ws, d.top)
                 unreadCount += 1;updateNotification()
                 break
             case "restart":
@@ -266,18 +268,20 @@
         return false
     }
 
-    function aButton(text, action, className) {
+    function aButton(text, action, className, tooltip) {
         var a = document.createElement('a')
         a.href = "javascript:void(0)"
         if (className)
             a.className = className
         a.onclick = action
         a.textContent = text
+        if (tooltip !== undefined)
+            a.title = tooltip
         return a
     }
 
-    function aName(name) {
-        return aButton(name||defaultName, clickName, "name")
+    function aName(name, id) {
+        return aButton(name||defaultName, clickName, "name", id)
     }
 
     function formatMessage(text) {
@@ -301,7 +305,7 @@
         }
 
         if(p.sender !== undefined) {
-            d.appendChild(aName(p.sender))
+            d.appendChild(aName(p.sender.name, p.sender.i))
             d.appendChild(document.createTextNode(": "))
         }
 
@@ -399,7 +403,7 @@
         }
     }
 
-    function showAddr(name, time, ws, top) {
+    function showAddr(sender, time, ws, top) {
         var statusLine = document.createElement('span')
         function setStatus(text) {
             return (function() {
@@ -424,7 +428,7 @@
             connector.stopAutoConnect()
             return false
         })
-        addLine({time:time, sender:name, message:[
+        addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
             statusLine, aStop,
             " Топ: " + top.map(function(x){return x.name}).join(", ")
