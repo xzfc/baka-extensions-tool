@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.17
+// @version     1.17.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -698,7 +698,8 @@
                     send({t:'map', reply:1})
                 return
             }
-            var cells = a.allCells.filter(function(c){
+            var allCellsArray = Object.keys(a.allCells).map(function(i){ return a.allCells[i] })
+            var cells = allCellsArray.filter(function(c){
                 return c.size >= 32 || a.myCells.indexOf(c.id) > -1
             }).map(function(c){
                 return {x:c.x,
@@ -707,7 +708,7 @@
                         n:c.name,
                         c:c.color,
                         s:c.size,
-                        v:c.isVirus?1:0}
+                        v:c.d?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
             send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1})
