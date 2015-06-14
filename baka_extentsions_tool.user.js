@@ -198,12 +198,12 @@
         ws.onmessage = function(evt) {
             if (closed) return
             var d = JSON.parse(evt.data)
-            var sender = {i:d.i, name:d.f}
+            var sender = {i:d.i, name:d.f, premium:d.premium}
             switch(d.t) {
             case "names":
                 var namesList = d.names.
                     filter(function(n) { return n.name !== "" }).
-                    map(function(n) { return aName(n.name, n.i) })
+                    map(aName)
                 var nonameCount = d.names.length - namesList.length
                 if(nonameCount === 0) {/* do nothing */}
                 else if(nonameCount === 1)
@@ -229,17 +229,19 @@
                     map.blink(d.cells, d.symbol)
                 break
             case "name":
-                addLine({time:d.T, message: [aName(d.f, d.i), " теперь ", aName(d.name, d.i), "."]})
+                var oldName = aName(sender)
+                sender.name = d.name
+                addLine({time:d.T, message: [oldName, " теперь ", aName(sender), "."]})
                 break
             case "map":
                 map.update(d.data)
                 break
             case "join":
-                addLine({time:d.T, message: [aName(d.f, d.i), " заходит."]})
+                addLine({time:d.T, message: [aName(sender), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
-                addLine({time:d.T, message: [aName(d.f, d.i), " выходит."]})
+                addLine({time:d.T, message: [aName(sender), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "ping":
@@ -300,8 +302,11 @@
         return a
     }
 
-    function aName(name, id) {
-        return aButton(name||defaultName, clickName, "name", id)
+    function aName(p) {
+        return aButton(p.name || defaultName,
+                       clickName,
+                       "name" + (p.premium?" premium":""),
+                       p.i)
     }
 
     function formatMessage(text) {
@@ -327,7 +332,7 @@
         }
 
         if(p.sender !== undefined) {
-            d.appendChild(aName(p.sender.name, p.sender.i))
+            d.appendChild(aName(p.sender))
             d.appendChild(document.createTextNode(": "))
             d.setAttribute("bakaid", p.sender.i)
         }
@@ -856,12 +861,14 @@
                 '#form { margin:0 }' +
                 '#msgsbox { overflow:auto; word-wrap:break-word; width:400px; height:250px }' +
                 '#msgsbox .name { color:#333 }' +
+                '#msgsbox .name.premium { color:#550;font-weight:bold }' +
                 '#msgsbox .higlight { color:#055 }' +
                 '#msgsbox .time { font-size:70%; color:#777 }' +
                 '#msgsbox .greentext { color:#3b5000 }' +
                 'body:not([dark]) a { color:#275d8b }' +
                 'body[dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
                 'body[dark] #msgsbox .name { color:#CCC }' +
+                'body[dark] #msgsbox .name.premium { color:#EEA }' +
                 'body[dark] #msgsbox .higlight { color:#faa }' +
                 'body[dark] #msgsbox .greentext { color:#789922 }' +
                 '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
