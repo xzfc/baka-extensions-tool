@@ -739,7 +739,7 @@
                     context.closePath()
                 }
                 context.fill()
-                if (!drawText) continue
+                if (!drawText || blink.sym === undefined) continue
                 context.globalAlpha = 1
                 context.font = 'bold 13px Ubuntu'
                 context.textAlign = 'center'
