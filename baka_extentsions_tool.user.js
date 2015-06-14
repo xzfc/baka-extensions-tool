@@ -164,6 +164,9 @@
                     send({t:"auth", token:auth_token})
             if (myName !== null)
                 send({t: "name", "name": myName})
+            window.setTimeout(function() {
+                send({"t": "anime", timeFormat:window.bakaconf.timeFormat})
+            }, 1000)
         }
         ws.onclose = function(evt) {
             if (closed) return
