@@ -719,7 +719,6 @@
                 context.globalAlpha = 0.7
                 var minX, maxX, minY, maxY, drawText = false
                 for(var j = 0; j < blink.ids.length; j++) {
-                    console.log[j]
                     var d = idx[blink.ids[j]]
                     if (d === undefined) continue
                     drawText = true
