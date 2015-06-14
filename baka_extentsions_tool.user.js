@@ -205,12 +205,11 @@
                     filter(function(n) { return n.name !== "" }).
                     map(function(n) { return aName(n.name, n.i) })
                 var nonameCount = d.names.length - namesList.length
-                var iHaveNoName = g('nick').value === ""
                 if(nonameCount === 0) {/* do nothing */}
                 else if(nonameCount === 1)
-                    namesList.push("одна безымянная сырно" + (iHaveNoName?" (это ты)":""))
+                    namesList.push("одна безымянная сырно" + (myName === ""?" (это ты)":""))
                 else
-                    namesList.push(nonameCount + " безымянных сырно" + (iHaveNoName?" (включая тебя)":""))
+                    namesList.push(nonameCount + " безымянных сырно" + (myName === ""?" (включая тебя)":""))
                 addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
                 setChatUsersCount(false, d.names.length)
                 break
