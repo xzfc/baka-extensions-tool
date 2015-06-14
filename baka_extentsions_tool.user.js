@@ -761,7 +761,7 @@
                         v:c.d?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
-            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1})
+            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1, ws:a.ws})
             this.blackRibbon = false
         },
         sendThread: function() {
