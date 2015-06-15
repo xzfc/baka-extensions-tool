@@ -530,7 +530,7 @@
         }
 
         var olddown = window.onkeydown, oldup = window.onkeyup
-        var repeat = 0
+        var repeat = 0, repeatm = 0
         var extended = false
         window.onkeydown = function(e) {
             if(extended) {
@@ -576,11 +576,24 @@
             default: return oldup(e)
             }
         }
-        var k = {keyCode: 87}
+        var key_w = {keyCode: 87}, key_space = {keyCode: 32}
+        g("canvas").onmousedown = function(e) {
+            switch (e.which) {
+            case 1: repeatm = true; return false
+            case 3: window.onkeydown(key_space); return false
+            }
+        }
+        g("canvas").onmouseup = function(e) {
+            switch (e.which) {
+            case 1: repeatm = false; return false
+            case 3: window.onkeyup(key_space); return false
+            }
+        }
+        g("canvas").oncontextmenu = function(e) { return false }
         setInterval(function() {
-            if (!repeat) return
-            olddown(k)
-            oldup(k)
+            if (!repeat && !repeatm) return
+            olddown(key_w)
+            oldup(key_w)
         }, 50)
     }
 
