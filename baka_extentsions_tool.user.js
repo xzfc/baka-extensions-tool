@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.18
+// @version     1.19
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -8,7 +8,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.18"
+    var version = "1.19"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -164,6 +164,9 @@
                     send({t:"auth", token:auth_token})
             if (myName !== null)
                 send({t: "name", "name": myName})
+            window.setTimeout(function() {
+                send({"t": "anime", timeFormat:window.bakaconf.timeFormat})
+            }, 1000)
         }
         ws.onclose = function(evt) {
             if (closed) return
@@ -198,19 +201,18 @@
         ws.onmessage = function(evt) {
             if (closed) return
             var d = JSON.parse(evt.data)
-            var sender = {i:d.i, name:d.f}
+            var sender = {i:d.i, name:d.f, premium:d.premium}
             switch(d.t) {
             case "names":
                 var namesList = d.names.
                     filter(function(n) { return n.name !== "" }).
-                    map(function(n) { return aName(n.name, n.i) })
+                    map(aName)
                 var nonameCount = d.names.length - namesList.length
-                var iHaveNoName = g('nick').value === ""
                 if(nonameCount === 0) {/* do nothing */}
                 else if(nonameCount === 1)
-                    namesList.push("одна безымянная сырно" + (iHaveNoName?" (это ты)":""))
+                    namesList.push("одна безымянная сырно" + (myName === ""?" (это ты)":""))
                 else
-                    namesList.push(nonameCount + " безымянных сырно" + (iHaveNoName?" (включая тебя)":""))
+                    namesList.push(nonameCount + " безымянных сырно" + (myName === ""?" (включая тебя)":""))
                 addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
                 setChatUsersCount(false, d.names.length)
                 break
@@ -230,17 +232,19 @@
                     map.blink(d.cells, d.symbol)
                 break
             case "name":
-                addLine({time:d.T, message: [aName(d.f, d.i), " теперь ", aName(d.name, d.i), "."]})
+                var oldName = aName(sender)
+                sender.name = d.name
+                addLine({time:d.T, message: [oldName, " теперь ", aName(sender), "."]})
                 break
             case "map":
                 map.update(d.data)
                 break
             case "join":
-                addLine({time:d.T, message: [aName(d.f, d.i), " заходит."]})
+                addLine({time:d.T, message: [aName(sender), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
-                addLine({time:d.T, message: [aName(d.f, d.i), " выходит."]})
+                addLine({time:d.T, message: [aName(sender), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "ping":
@@ -301,8 +305,11 @@
         return a
     }
 
-    function aName(name, id) {
-        return aButton(name||defaultName, clickName, "name", id)
+    function aName(p) {
+        return aButton(p.name || defaultName,
+                       clickName,
+                       "name" + (p.premium?" premium":""),
+                       p.i)
     }
 
     function formatMessage(text) {
@@ -328,7 +335,7 @@
         }
 
         if(p.sender !== undefined) {
-            d.appendChild(aName(p.sender.name, p.sender.i))
+            d.appendChild(aName(p.sender))
             d.appendChild(document.createTextNode(": "))
             d.setAttribute("bakaid", p.sender.i)
         }
@@ -523,7 +530,7 @@
         }
 
         var olddown = window.onkeydown, oldup = window.onkeyup
-        var repeat = 0
+        var repeat = 0, repeatm = 0
         var extended = false
         window.onkeydown = function(e) {
             if(extended) {
@@ -569,11 +576,24 @@
             default: return oldup(e)
             }
         }
-        var k = {keyCode: 87}
+        var key_w = {keyCode: 87}, key_space = {keyCode: 32}
+        g("canvas").onmousedown = function(e) {
+            switch (e.which) {
+            case 1: repeatm = true; return false
+            case 3: window.onkeydown(key_space); return false
+            }
+        }
+        g("canvas").onmouseup = function(e) {
+            switch (e.which) {
+            case 1: repeatm = false; return false
+            case 3: window.onkeyup(key_space); return false
+            }
+        }
+        g("canvas").oncontextmenu = function(e) { return false }
         setInterval(function() {
-            if (!repeat) return
-            olddown(k)
-            oldup(k)
+            if (!repeat && !repeatm) return
+            olddown(key_w)
+            oldup(key_w)
         }, 50)
     }
 
@@ -720,7 +740,6 @@
                 context.globalAlpha = 0.7
                 var minX, maxX, minY, maxY, drawText = false
                 for(var j = 0; j < blink.ids.length; j++) {
-                    console.log[j]
                     var d = idx[blink.ids[j]]
                     if (d === undefined) continue
                     drawText = true
@@ -733,7 +752,7 @@
                     context.closePath()
                 }
                 context.fill()
-                if (!drawText) continue
+                if (!drawText || blink.sym === undefined) continue
                 context.globalAlpha = 1
                 context.font = 'bold 13px Ubuntu'
                 context.textAlign = 'center'
@@ -762,7 +781,14 @@
                         v:c.d?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
-            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1})
+            var r = {minX:0, maxX:0, minY:0, maxY:0}
+            allCellsArray.forEach(function(c, i) {
+                if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
+                if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
+                if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
+                if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
+            })
+            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1, ws:a.ws, range:r})
             this.blackRibbon = false
         },
         sendThread: function() {
@@ -858,12 +884,14 @@
                 '#form { margin:0 }' +
                 '#msgsbox { overflow:auto; word-wrap:break-word; width:400px; height:250px }' +
                 '#msgsbox .name { color:#333 }' +
+                '#msgsbox .name.premium { color:#550;font-weight:bold }' +
                 '#msgsbox .higlight { color:#055 }' +
                 '#msgsbox .time { font-size:70%; color:#777 }' +
                 '#msgsbox .greentext { color:#3b5000 }' +
                 'body:not([dark]) a { color:#275d8b }' +
                 'body[dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
                 'body[dark] #msgsbox .name { color:#CCC }' +
+                'body[dark] #msgsbox .name.premium { color:#EEA }' +
                 'body[dark] #msgsbox .higlight { color:#faa }' +
                 'body[dark] #msgsbox .greentext { color:#789922 }' +
                 '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
