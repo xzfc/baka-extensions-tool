@@ -42,6 +42,9 @@ window.bakaconf.quickTemplates = {
 };
 */
 
+// Не использовать управление кнопками мыши.
+// window.bakaconf.mouseControls = false;
+
 // Формат отображения времени в чате. 0 — HH:MM:SS, 1 — HH:MM, 2 — не отображать
 // window.bakaconf.timeFormat = 0;
 

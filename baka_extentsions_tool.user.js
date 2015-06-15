@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.19
+// @version     1.19.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -8,7 +8,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.19"
+    var version = "1.19.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -51,6 +51,7 @@
              bakaAura: "#000",
              defaultTeamAura: "#A55",
              timeFormat: 0,
+             mouseControls: true,
             })
     var myName = null
     var chatactive = false
@@ -578,18 +579,24 @@
         }
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
         g("canvas").onmousedown = function(e) {
+            if (!window.bakaconf.mouseControls)
+                return true
             switch (e.which) {
             case 1: repeatm = true; return false
             case 3: window.onkeydown(key_space); return false
             }
         }
         g("canvas").onmouseup = function(e) {
+            if (!window.bakaconf.mouseControls)
+                return true
             switch (e.which) {
             case 1: repeatm = false; return false
             case 3: window.onkeyup(key_space); return false
             }
         }
-        g("canvas").oncontextmenu = function(e) { return false }
+        g("canvas").oncontextmenu = function(e) {
+            return !window.bakaconf.mouseControls
+        }
         setInterval(function() {
             if (!repeat && !repeatm) return
             olddown(key_w)
