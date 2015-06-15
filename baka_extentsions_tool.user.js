@@ -781,7 +781,14 @@
                         v:c.d?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
-            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1, ws:a.ws})
+            var r = {minX:0, maxX:0, minY:0, maxY:0}
+            allCellsArray.forEach(function(c, i) {
+                if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
+                if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
+                if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
+                if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
+            })
+            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1, ws:a.ws, range:r})
             this.blackRibbon = false
         },
         sendThread: function() {
