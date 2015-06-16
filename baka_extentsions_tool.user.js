@@ -149,6 +149,7 @@
         g("chat_users").textContent = (chatUsersCount >= 0) ? chatUsersCount : "#"
     }
 
+    var sessionId = Math.random().toString(36).substring(2)
     function connectChat() {
         function reconnectButton(e) {
             e = e || window.event;e = e.target || e.srcElement
@@ -159,7 +160,9 @@
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         ws.onopen = function(evt) {
-            send({t: "version", version: version, expose: (window.agar===undefined?0:1) })
+            send({t: "version", version: version,
+                  expose: (window.agar===undefined?0:1),
+                  sessionId: sessionId })
             var auth_token = storage.get('auth_token')
             if (auth_token !== null)
                 send({t:"auth", token:auth_token})
