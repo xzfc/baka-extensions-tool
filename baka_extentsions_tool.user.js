@@ -502,21 +502,24 @@
 
     function submit(e) {
         var ca = document.getElementById('carea')
-
-        if (ca.value != "") {
+        function sendName() {
             var n = document.getElementById('nick')
             if (myName !== n.value) {
                 myName = n.value
                 send({t: "name", name:myName})
             }
+        }
+
+        if (ca.value != "") {
             var tokens = ca.value.trim().split(/ +/)
             if (tokens.length == 0)
                 return false
-            if (tokens[0][0] == "/")
+            if (tokens[0][0] == "/") {
                 switch(tokens[0]) {
                 case "/names":
                     send({t:"names"}); break
                 case "/addr":
+                    sendName()
                     sendAddr(); break
                 case "/addrs":
                     send({t:"addrs"}); break
@@ -549,8 +552,10 @@
                                        "Пример: `/ingore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
                     addLine({message: ["/auth — авторизация"]})
                 }
-            else
+            } else {
+                sendName()
                 send({t: "message", text: ca.value})
+            }
             ca.value = ""
             if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
                 ca.blur()
