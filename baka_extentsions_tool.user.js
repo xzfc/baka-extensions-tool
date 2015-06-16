@@ -391,14 +391,13 @@
             window.connect(ws)
         },
         maxAttempts: 10,
-        autoConnect: function(ws, top, status) {
+        autoConnect: function(ws, top) {
             if (!this.checkExpose())
                 return this.connect(ws)
             this.stopAutoConnect()
             this.attempt = 0
             this.ws = ws
             this.top = top
-            this.status = status
             this.autoConnectIteration()
         },
         autoConnectIteration: function() {
@@ -432,37 +431,52 @@
             this.status.stop()
             clearTimeout(this.timer)
             this.timer = undefined
+        },
+        status: {
+            init: function() {
+                var t = this
+                t._element = g("connector")
+                t._stop = aButton("стоп", function(){
+                    connector.stopAutoConnect()
+                    return false
+                })
+                t._close = aButton("закрыть", function() {
+                    t._element.style.display = 'none'
+                    return false
+                })
+                t._text = document.createElement('span')
+                t._ip = document.createElement('span')
+                t._status = document.createElement('span')
+
+                ;["_text", "_ip", "_status", "_close", "_stop"].
+                    forEach(function(e) { t._element.appendChild(t[e])})
+            },
+            _set: function(text, status, stop) {
+                this._element.style.display = ''
+                this._text.textContent = text
+                this._ip.textContent = connector.ws
+                this._status.textContent = status
+                this._stop.style.display = stop ? '' : 'none'
+                this._close.style.display = stop ? 'none' : ''
+            },
+            trying: function(n) {
+                this._set("Подключаюсь к ",
+                          "... [" + n + "/" + connector.maxAttempts + "] ",
+                          true)
+            },
+            ok: function() { this._set("Подключился к ", " ", false) },
+            fail: function() { this._set("Не удалось подключиться к ", " ", false) },
+            stop: function() { this._set("Прервано подлючение к ", " ", false) }
         }
     }
 
     function showAddr(sender, time, ws, top) {
-        var statusLine = document.createElement('span')
-        function setStatus(text) {
-            return (function() {
-                statusLine.textContent = text
-                aStop.textContent = ''
-            })
-        }
-        var status = {
-            ok: setStatus('[OK]'),
-            fail: setStatus('[FAIL]'),
-            trying: function(n, max) {
-                statusLine.textContent = '['+n+'/'+max+'...]'
-                aStop.textContent = 'stop'
-            },
-            stop: setStatus('')
-        }
         var aConnect = aButton(ws, function() {
-            connector.autoConnect(ws, top, status)
-            return false
-        })
-        var aStop = aButton("", function() {
-            connector.stopAutoConnect()
+            connector.autoConnect(ws, top)
             return false
         })
         addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
-            statusLine, aStop,
             " Топ: " + top.map(function(x){return x.name}).join(", ")
         ]})
     }
@@ -916,7 +930,8 @@
             '<tr height="0">' +
             '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></input></form></td>' +
             '<td id="chat_users"></td>' +
-            '</tr>'
+            '</tr>' +
+            '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
         document.body.appendChild(cbox)
 
         var notification = document.createElement('div')
@@ -925,6 +940,7 @@
 
         map.init()
         ignore.init()
+        connector.status.init()
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
