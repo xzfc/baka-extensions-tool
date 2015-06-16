@@ -259,6 +259,9 @@
                 showAddr(sender, d.T, d.ws, d.top)
                 unreadCount += 1;updateNotification()
                 break
+            case "addrs":
+                showAddrs(d.addrs, d.T)
+                break
             case "restart":
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
                 serverRestart = true
@@ -381,8 +384,8 @@
         var ws = window.agar.ws
         if (ws[ws.length-1] == '/')
             ws = ws.substring(0, ws.length-1)
-        var top = agar.top.map(function(x){return (x.name||"An unnamed cell")})
-        send({t: "message", text: "connect('" + ws + "') Топ: " + top.join(", "), legacy: 1})
+        var top = joinTop(agar.top)
+        send({t: "message", text: "connect('" + ws + "') Топ: " + top, legacy: 1})
         send({t: "addr", ws: window.agar.ws, top: window.agar.top})
         return true
     }
@@ -467,12 +470,34 @@
         }
     }
 
+    function joinTop(top) {
+        return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
+    }
+
     function showAddr(sender, time, ws, top) {
         var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, top))
         addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
-            " Топ: " + top.map(function(x){return x.name}).join(", ")
+            " Топ: " + joinTop(top)
         ]})
+    }
+
+    function showAddrs(addrs, time) {
+        addLine({time:time, message:["Сырны играют тут:"]})
+        addrs.sort(function(x, y){
+            if (x.alive > y.alive) return +1
+            if (x.alive < y.alive) return -1
+            if (x.players > y.players) return +1
+            if (x.players < y.players) return -1
+            return 0
+        }).forEach(function(x) {
+            if (x.ws === "") return
+            var aConnect = aButton(x.ws, connector.autoConnect.bind(connector, x.ws, x.top))
+            addLine({message:[
+                x.alive +"/" + x.players +
+                " connect('", aConnect, "')",
+                " Топ: " + joinTop(x.top)]})
+        })
     }
 
     function submit(e) {
@@ -493,6 +518,8 @@
                     send({t:"names"}); break
                 case "/addr":
                     sendAddr(); break
+                case "/addrs":
+                    send({t:"addrs"}); break
                 case "/reconnect":
                     websocket.reconnect(); break
                 case "/ignore":
@@ -516,6 +543,7 @@
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
                     addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
+                    addLine({message: ["/addrs — получить список комнат, на которых играют сырны"]})
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                     addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
                                        "Пример: `/ingore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
