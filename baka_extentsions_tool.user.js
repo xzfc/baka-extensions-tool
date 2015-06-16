@@ -291,7 +291,6 @@
         var ca = document.getElementById('carea')
         ca.value = e.textContent + ": " + ca.value
         ca.focus()
-        return false
     }
 
     function aButton(text, action, className, tooltip) {
@@ -436,14 +435,9 @@
             init: function() {
                 var t = this
                 t._element = g("connector")
-                t._stop = aButton("стоп", function(){
-                    connector.stopAutoConnect()
-                    return false
-                })
-                t._close = aButton("закрыть", function() {
-                    t._element.style.display = 'none'
-                    return false
-                })
+                t._stop = aButton("стоп", connector.stopAutoConnect.bind(connector))
+                t._close = aButton("закрыть",
+                                   function() { t._element.style.display = 'none' })
                 t._text = document.createElement('span')
                 t._ip = document.createElement('span')
                 t._status = document.createElement('span')
@@ -471,10 +465,7 @@
     }
 
     function showAddr(sender, time, ws, top) {
-        var aConnect = aButton(ws, function() {
-            connector.autoConnect(ws, top)
-            return false
-        })
+        var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, top))
         addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
             " Топ: " + top.map(function(x){return x.name}).join(", ")
