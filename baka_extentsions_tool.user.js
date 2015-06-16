@@ -62,15 +62,15 @@
 
     function setConf(defaults) {
         function setDefault(record, field, value) {
-            if(record[field] === undefined && value !== undefined)
+            if (record[field] === undefined && value !== undefined)
                 record[field] = value
         }
         setDefault(window, 'bakaconf', {})
-        for(var i in defaults)
+        for (var i in defaults)
             if (i != 'teams')
                 setDefault(window.bakaconf, i, defaults[i])
         setDefault(window.bakaconf, 'teams', {})
-        for(var i in defaults.teams)
+        for (var i in defaults.teams)
             setDefault(window.bakaconf.teams, i, defaults.teams[i])
     }
 
@@ -80,11 +80,11 @@
         if (l.length <= 1)
             return l
         result = []
-        for(var i = 0; i < l.length; i++) {
+        for (var i = 0; i < l.length; i++) {
             result.push(l[i])
-            if(i < l.length-2)
+            if (i < l.length-2)
                 result.push(", ")
-            else if(i == l.length-2)
+            else if (i == l.length-2)
                 result.push(" и ")
         }
         return result
@@ -130,7 +130,7 @@
             unreadCount = 0
             n.style.visibility =  'hidden'
         } else {
-            if(unreadCount) {
+            if (unreadCount) {
                 n.textContent = unreadCount
                 n.style.visibility =  ''
             } else {
@@ -162,7 +162,7 @@
             send({t: "version", version: version, expose: (window.agar===undefined?0:1) })
             var auth_token = storage.get('auth_token')
             if (auth_token !== null)
-                    send({t:"auth", token:auth_token})
+                send({t:"auth", token:auth_token})
             if (myName !== null)
                 send({t: "name", "name": myName})
             window.setTimeout(function() {
@@ -181,7 +181,8 @@
                 serverRestart = false
                 return setTimeout(connectChat, 500)
             } else {
-                addLine({message:["Вебсокет закрыт. ", aButton("переподключиться к вебсокету", reconnectButton)]})
+                addLine({message:["Вебсокет закрыт. ",
+                                  aButton("переподключиться к вебсокету", reconnectButton)]})
             }
             unreadCount += 1;updateNotification()
         }
@@ -209,11 +210,13 @@
                     filter(function(n) { return n.name !== "" }).
                     map(aName)
                 var nonameCount = d.names.length - namesList.length
-                if(nonameCount === 0) {/* do nothing */}
-                else if(nonameCount === 1)
-                    namesList.push("одна безымянная сырно" + (myName === ""?" (это ты)":""))
+                if (nonameCount === 0) {/* do nothing */}
+                else if (nonameCount === 1)
+                    namesList.push("одна безымянная сырно" +
+                                   (myName === ""?" (это ты)":""))
                 else
-                    namesList.push(nonameCount + " безымянных сырно" + (myName === ""?" (включая тебя)":""))
+                    namesList.push(nonameCount + " безымянных сырно" +
+                                   (myName === ""?" (включая тебя)":""))
                 addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
                 setChatUsersCount(false, d.names.length)
                 break
@@ -327,21 +330,21 @@
     function addLine(p) {
         var d = document.createElement('div')
 
-        if(p.time !== undefined) {
+        if (p.time !== undefined) {
             var time = document.createElement('span')
             time.className = "time"
             time.textContent = formatTime(p.time)
             d.appendChild(time)
         }
 
-        if(p.sender !== undefined) {
+        if (p.sender !== undefined) {
             d.appendChild(aName(p.sender))
             d.appendChild(document.createTextNode(": "))
             d.setAttribute("bakaid", p.sender.i)
         }
 
-        if(p.message !== undefined) {
-            if(typeof p.message === "string")
+        if (p.message !== undefined) {
+            if (typeof p.message === "string")
                 p.message = [p.message]
             var message = document.createElement('span')
             p.message.forEach(function(i) {
@@ -364,16 +367,16 @@
     }
 
     function send(a) {
-        if(websocket.readyState == 1)
+        if (websocket.readyState == 1)
             websocket.send(JSON.stringify(a))
     }
     window.send = send
 
     function sendAddr() {
-        if(window.agar === undefined ||
-           window.agar.ws === undefined ||
-           window.agar.top === undefined ||
-           window.agar.top.length === 0)
+        if (window.agar === undefined ||
+            window.agar.ws === undefined ||
+            window.agar.top === undefined ||
+            window.agar.top.length === 0)
             return false
         var ws = window.agar.ws
         if (ws[ws.length-1] == '/')
@@ -475,7 +478,7 @@
     function submit(e) {
         var ca = document.getElementById('carea')
 
-        if(ca.value != "") {
+        if (ca.value != "") {
             var n = document.getElementById('nick')
             if (myName !== n.value) {
                 myName = n.value
@@ -494,7 +497,7 @@
                     websocket.reconnect(); break
                 case "/ignore":
                     for (var i = 1; i < tokens.length; i++)
-                        if(/^[-+]?\d+$/.test(tokens[i])) {
+                        if (/^[-+]?\d+$/.test(tokens[i])) {
                             var id = parseInt(tokens[i].substr(1))
                             if (tokens[i][0] == '+')
                                 ignore.add(id)
@@ -539,8 +542,8 @@
         var repeat = 0, repeatm = 0
         var extended = false
         window.onkeydown = function(e) {
-            if(extended) {
-                if(e.keyCode >= 16 && e.keyCode <= 18) return false
+            if (extended) {
+                if (e.keyCode >= 16 && e.keyCode <= 18) return false
                 var cmd = quick.eventToAction(e)
                 if (cmd !== undefined) {
                     var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
@@ -564,7 +567,7 @@
                 return false
             }
 
-            if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
+            if (!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
                 case 9: chatHider(true); g('carea').focus(); return false
                 case 49: chatHider(); return true
@@ -658,7 +661,7 @@
             var iteration = 12
             var blink = map.blinks[c] = {ids:ids, sym:sym, hl:false}
             function toggle() {
-                if(--iteration)
+                if (--iteration)
                     window.setTimeout(toggle, 250)
                 else
                     delete map.blinks[c]
@@ -675,19 +678,19 @@
             var teams = window.bakaconf.teams
             var idx = {}
             function getAura(cell) {
-                if(myCells.indexOf(cell.i) > -1)
+                if (myCells.indexOf(cell.i) > -1)
                     return window.bakaconf.myAura
-                if(cell.a)
+                if (cell.a)
                     return window.bakaconf.bakaAura
-                for(var i in teams) {
-                    if(i !== 'baka' && window.bakaconf.showOnlyBakaAura)
+                for (var i in teams) {
+                    if (i !== 'baka' && window.bakaconf.showOnlyBakaAura)
                         continue
                     var names = teams[i].names
-                    if(names instanceof RegExp || typeof names === 'string')
+                    if (names instanceof RegExp || typeof names === 'string')
                         names = [names]
-                    for(var j = 0; j < names.length; j++)
-                        if(names[j] === cell.n ||
-                           (names[j] instanceof RegExp && names[j].test(cell.n)))
+                    for (var j = 0; j < names.length; j++)
+                        if (names[j] === cell.n ||
+                            (names[j] instanceof RegExp && names[j].test(cell.n)))
                             return teams[i].aura || window.bakaconf.defaultTeamAura
                 }
             }
@@ -711,10 +714,10 @@
             }
 
             context.globalAlpha = .4
-            for(i = 0; i < this.data.length; i++) {
+            for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 var aura = getAura(d)
-                if(aura) {
+                if (aura) {
                     context.fillStyle = aura
                     context.beginPath()
                     context.arc(d.x*scale, d.y*scale,
@@ -726,7 +729,7 @@
             }
 
             context.lineWidth = 2
-            for(i = 0; i < this.data.length; i++) {
+            for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 context.beginPath()
                 context.arc(d.x*scale, d.y*scale,
@@ -734,7 +737,7 @@
                 context.globalAlpha = 1
                 context.fillStyle = d.c
                 context.fill()
-                if(d.v) {
+                if (d.v) {
                     context.strokeStyle = "#ff0000"
                 } else {
                     context.globalAlpha = .1
@@ -743,7 +746,7 @@
                 context.stroke()
             }
 
-            for(i in this.blinks) {
+            for (i in this.blinks) {
                 var blink = this.blinks[i]
                 if (blink.ids.length == 0 || !blink.hl)
                     continue
@@ -751,7 +754,7 @@
                 context.fillStyle = "#f00"
                 context.globalAlpha = 0.7
                 var minX, maxX, minY, maxY, drawText = false
-                for(var j = 0; j < blink.ids.length; j++) {
+                for (var j = 0; j < blink.ids.length; j++) {
                     var d = idx[blink.ids[j]]
                     if (d === undefined) continue
                     drawText = true
@@ -848,12 +851,12 @@
                 return "[" + x + "]"
             }
             var keys = Object.keys(window.bakaconf.quickTemplates).sort()
-            for(var i = 0; i < keys.length; i++) {
+            for (var i = 0; i < keys.length; i++) {
                 var name = codeToName(+keys[i].substr(1))
                 var t = window.bakaconf.quickTemplates[keys[i]]
-                if(t.length >= 1)
+                if (t.length >= 1)
                     add(name, t[0][0], t[0][1])
-                if(t.length >= 2)
+                if (t.length >= 2)
                     add("Mod + " + name, t[1][0], t[1][1])
             }
             document.body.appendChild(quickHint)
