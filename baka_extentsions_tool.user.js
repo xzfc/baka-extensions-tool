@@ -597,7 +597,7 @@
                 return true
             switch (e.which) {
             case 1: repeatm = true; return false
-            case 3: window.onkeydown(key_space); return false
+            case 3: olddown(key_space); return false
             }
         }
         g("canvas").onmouseup = function(e) {
@@ -605,7 +605,7 @@
                 return true
             switch (e.which) {
             case 1: repeatm = false; return false
-            case 3: window.onkeyup(key_space); return false
+            case 3: oldup(key_space); return false
             }
         }
         g("canvas").oncontextmenu = function(e) {
