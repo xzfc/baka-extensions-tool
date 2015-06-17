@@ -962,7 +962,8 @@
                 '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
                 '#quickHint .sym { color:#000; float:left; width:2em }' +
-                '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }'
+                '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
+                'body[dark] #map { border-color: #aaa }'
             document.head.appendChild(stl)
         }
 
