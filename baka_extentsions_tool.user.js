@@ -46,6 +46,15 @@
                  other: {names: [/\[(\$|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|T[iİ]T)\]/i,
                                  /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⓂⓋⓅ|HKG)\b/i]}
              },
+             soundList: ["http://89.31.114.117/tutturu/0.mp3",
+                         "http://89.31.114.117/tutturu/1.mp3",
+                         "http://89.31.114.117/tutturu/2.mp3",
+                         "http://89.31.114.117/tutturu/3.mp3",
+                         "http://89.31.114.117/tutturu/4.mp3",
+                         "http://89.31.114.117/tutturu/5.mp3",
+                         "http://89.31.114.117/tutturu/6.mp3",
+                         "http://89.31.114.117/tutturu/7.mp3"],
+             sound: {chat:1, quick:1},
              showOnlyBakaAura: false,
              myAura: "#fff",
              bakaAura: "#000",
@@ -117,6 +126,27 @@
         }
     }
 
+    var sound = {
+        cached: [],
+        list: "",
+        cache: function() {
+            var list = window.bakaconf.soundList.join("\n")
+            if (list === this.list)
+                return
+            this.list = list
+            console.log("Update!")
+            this.cached = window.bakaconf.soundList.map(function(x) {
+                return new Audio(x)
+            })
+        },
+        playRandom: function() {
+            this.cache()
+            if (this.cached.length === 0)
+                return
+            this.cached[Math.floor(Math.random()*this.cached.length)].play()
+        }
+    }
+
     var chatHidden = false
     function chatHider(show) {
         chatHidden = show === undefined ? !chatHidden : !show
@@ -160,6 +190,7 @@
         ignore.reset()
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
+        var myId = null
         ws.onopen = function(evt) {
             send({t: "version", version: version,
                   expose: (window.agar===undefined?0:1),
@@ -205,6 +236,11 @@
             if (closed) return
             var d = JSON.parse(evt.data)
             var sender = {i:d.i, name:d.f, premium:d.premium}
+            function notify(what) {
+                unreadCount += 1;updateNotification()
+                if(window.bakaconf.sound[what] && myId !== d.i && myId !== null)
+                    sound.playRandom()
+            }
             switch(d.t) {
             case "names":
                 var namesList = d.names.
@@ -225,14 +261,14 @@
                 if (d.legacy <= 1)
                     break
                 addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
-                unreadCount += 1;updateNotification()
+                notify("chat", d.i)
                 break
             case "quick":
                 var message = "[" + d.text + "]"
                 if (d.symbol !== undefined)
                     message = "[" + d.symbol + ":" + d.text + "]"
                 addLine({time:d.T, sender:sender, message:message})
-                unreadCount += 1;updateNotification()
+                notify("quick", d.i)
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
                 break
@@ -252,13 +288,15 @@
                 addLine({time:d.T, message: [aName(sender), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
+            case "welcome":
+                myId = d.i
             case "ping":
                 d.t = 'pong'
                 send(d)
                 break
             case "addr":
                 showAddr(sender, d.T, d.ws, d.top)
-                unreadCount += 1;updateNotification()
+                notify("chat")
                 break
             case "addrs":
                 showAddrs(d.addrs, d.T)
@@ -985,6 +1023,7 @@
         map.init()
         ignore.init()
         connector.status.init()
+        sound.cache()
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {

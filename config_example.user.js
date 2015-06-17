@@ -54,6 +54,9 @@ window.bakaconf.quickTemplates = {
 // Включить туман войны
 // window.bakaconf.fogOfWar = true;
 
+// Выключить звук
+// window.bakaconf.sound = {chat:0, quick:0};
+
 // Переопределить встроенный в скрипт стиль
 /*
 bakaStyle('#cbox,#map {visibility: hidden;}',
