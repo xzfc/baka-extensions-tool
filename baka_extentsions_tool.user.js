@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.19.1
+// @version     1.20
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -8,7 +8,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.19.1"
+    var version = "1.20"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -46,12 +46,22 @@
                  other: {names: [/\[(\$|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|T[iİ]T)\]/i,
                                  /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⓂⓋⓅ|HKG)\b/i]}
              },
+             soundList: ["http://89.31.114.117/tutturu/0.mp3",
+                         "http://89.31.114.117/tutturu/1.mp3",
+                         "http://89.31.114.117/tutturu/2.mp3",
+                         "http://89.31.114.117/tutturu/3.mp3",
+                         "http://89.31.114.117/tutturu/4.mp3",
+                         "http://89.31.114.117/tutturu/5.mp3",
+                         "http://89.31.114.117/tutturu/6.mp3",
+                         "http://89.31.114.117/tutturu/7.mp3"],
+             sound: {chat:1, quick:1},
              showOnlyBakaAura: false,
              myAura: "#fff",
              bakaAura: "#000",
              defaultTeamAura: "#A55",
              timeFormat: 0,
              mouseControls: true,
+             fogOfWar: false,
             })
     var myName = null
     var chatactive = false
@@ -62,15 +72,15 @@
 
     function setConf(defaults) {
         function setDefault(record, field, value) {
-            if(record[field] === undefined && value !== undefined)
+            if (record[field] === undefined && value !== undefined)
                 record[field] = value
         }
         setDefault(window, 'bakaconf', {})
-        for(var i in defaults)
+        for (var i in defaults)
             if (i != 'teams')
                 setDefault(window.bakaconf, i, defaults[i])
         setDefault(window.bakaconf, 'teams', {})
-        for(var i in defaults.teams)
+        for (var i in defaults.teams)
             setDefault(window.bakaconf.teams, i, defaults.teams[i])
     }
 
@@ -80,11 +90,11 @@
         if (l.length <= 1)
             return l
         result = []
-        for(var i = 0; i < l.length; i++) {
+        for (var i = 0; i < l.length; i++) {
             result.push(l[i])
-            if(i < l.length-2)
+            if (i < l.length-2)
                 result.push(", ")
-            else if(i == l.length-2)
+            else if (i == l.length-2)
                 result.push(" и ")
         }
         return result
@@ -116,6 +126,27 @@
         }
     }
 
+    var sound = {
+        cached: [],
+        list: "",
+        cache: function() {
+            var list = window.bakaconf.soundList.join("\n")
+            if (list === this.list)
+                return
+            this.list = list
+            console.log("Update!")
+            this.cached = window.bakaconf.soundList.map(function(x) {
+                return new Audio(x)
+            })
+        },
+        playRandom: function() {
+            this.cache()
+            if (this.cached.length === 0)
+                return
+            this.cached[Math.floor(Math.random()*this.cached.length)].play()
+        }
+    }
+
     var chatHidden = false
     function chatHider(show) {
         chatHidden = show === undefined ? !chatHidden : !show
@@ -130,7 +161,7 @@
             unreadCount = 0
             n.style.visibility =  'hidden'
         } else {
-            if(unreadCount) {
+            if (unreadCount) {
                 n.textContent = unreadCount
                 n.style.visibility =  ''
             } else {
@@ -149,6 +180,7 @@
         g("chat_users").textContent = (chatUsersCount >= 0) ? chatUsersCount : "#"
     }
 
+    var sessionId = Math.random().toString(36).substring(2)
     function connectChat() {
         function reconnectButton(e) {
             e = e || window.event;e = e.target || e.srcElement
@@ -158,16 +190,16 @@
         ignore.reset()
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
+        var myId = null
         ws.onopen = function(evt) {
-            send({t: "version", version: version, expose: (window.agar===undefined?0:1) })
+            send({t: "version", version: version,
+                  expose: (window.agar===undefined?0:1),
+                  sessionId: sessionId })
             var auth_token = storage.get('auth_token')
             if (auth_token !== null)
-                    send({t:"auth", token:auth_token})
+                send({t:"auth", token:auth_token})
             if (myName !== null)
                 send({t: "name", "name": myName})
-            window.setTimeout(function() {
-                send({"t": "anime", timeFormat:window.bakaconf.timeFormat})
-            }, 1000)
         }
         ws.onclose = function(evt) {
             if (closed) return
@@ -181,7 +213,8 @@
                 serverRestart = false
                 return setTimeout(connectChat, 500)
             } else {
-                addLine({message:["Вебсокет закрыт. ", aButton("переподключиться к вебсокету", reconnectButton)]})
+                addLine({message:["Вебсокет закрыт. ",
+                                  aButton("переподключиться к вебсокету", reconnectButton)]})
             }
             unreadCount += 1;updateNotification()
         }
@@ -203,17 +236,24 @@
             if (closed) return
             var d = JSON.parse(evt.data)
             var sender = {i:d.i, name:d.f, premium:d.premium}
+            function notify(what) {
+                unreadCount += 1;updateNotification()
+                if(window.bakaconf.sound[what] && myId !== d.i && myId !== null)
+                    sound.playRandom()
+            }
             switch(d.t) {
             case "names":
                 var namesList = d.names.
                     filter(function(n) { return n.name !== "" }).
                     map(aName)
                 var nonameCount = d.names.length - namesList.length
-                if(nonameCount === 0) {/* do nothing */}
-                else if(nonameCount === 1)
-                    namesList.push("одна безымянная сырно" + (myName === ""?" (это ты)":""))
+                if (nonameCount === 0) {/* do nothing */}
+                else if (nonameCount === 1)
+                    namesList.push("одна безымянная сырно" +
+                                   (myName === ""?" (это ты)":""))
                 else
-                    namesList.push(nonameCount + " безымянных сырно" + (myName === ""?" (включая тебя)":""))
+                    namesList.push(nonameCount + " безымянных сырно" +
+                                   (myName === ""?" (включая тебя)":""))
                 addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
                 setChatUsersCount(false, d.names.length)
                 break
@@ -221,14 +261,14 @@
                 if (d.legacy <= 1)
                     break
                 addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
-                unreadCount += 1;updateNotification()
+                notify("chat", d.i)
                 break
             case "quick":
                 var message = "[" + d.text + "]"
                 if (d.symbol !== undefined)
                     message = "[" + d.symbol + ":" + d.text + "]"
                 addLine({time:d.T, sender:sender, message:message})
-                unreadCount += 1;updateNotification()
+                notify("quick", d.i)
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
                 break
@@ -238,7 +278,7 @@
                 addLine({time:d.T, message: [oldName, " теперь ", aName(sender), "."]})
                 break
             case "map":
-                map.update(d.data)
+                map.update(d.data, d.range)
                 break
             case "join":
                 addLine({time:d.T, message: [aName(sender), " заходит."]})
@@ -248,13 +288,18 @@
                 addLine({time:d.T, message: [aName(sender), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
+            case "welcome":
+                myId = d.i
             case "ping":
                 d.t = 'pong'
                 send(d)
                 break
             case "addr":
                 showAddr(sender, d.T, d.ws, d.top)
-                unreadCount += 1;updateNotification()
+                notify("chat")
+                break
+            case "addrs":
+                showAddrs(d.addrs, d.T)
                 break
             case "restart":
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
@@ -291,7 +336,6 @@
         var ca = document.getElementById('carea')
         ca.value = e.textContent + ": " + ca.value
         ca.focus()
-        return false
     }
 
     function aButton(text, action, className, tooltip) {
@@ -328,21 +372,21 @@
     function addLine(p) {
         var d = document.createElement('div')
 
-        if(p.time !== undefined) {
+        if (p.time !== undefined) {
             var time = document.createElement('span')
             time.className = "time"
             time.textContent = formatTime(p.time)
             d.appendChild(time)
         }
 
-        if(p.sender !== undefined) {
+        if (p.sender !== undefined) {
             d.appendChild(aName(p.sender))
             d.appendChild(document.createTextNode(": "))
             d.setAttribute("bakaid", p.sender.i)
         }
 
-        if(p.message !== undefined) {
-            if(typeof p.message === "string")
+        if (p.message !== undefined) {
+            if (typeof p.message === "string")
                 p.message = [p.message]
             var message = document.createElement('span')
             p.message.forEach(function(i) {
@@ -365,22 +409,22 @@
     }
 
     function send(a) {
-        if(websocket.readyState == 1)
+        if (websocket.readyState == 1)
             websocket.send(JSON.stringify(a))
     }
     window.send = send
 
     function sendAddr() {
-        if(window.agar === undefined ||
-           window.agar.ws === undefined ||
-           window.agar.top === undefined ||
-           window.agar.top.length === 0)
+        if (window.agar === undefined ||
+            window.agar.ws === undefined ||
+            window.agar.top === undefined ||
+            window.agar.top.length === 0)
             return false
         var ws = window.agar.ws
         if (ws[ws.length-1] == '/')
             ws = ws.substring(0, ws.length-1)
-        var top = agar.top.map(function(x){return (x.name||"An unnamed cell")})
-        send({t: "message", text: "connect('" + ws + "') Топ: " + top.join(", "), legacy: 1})
+        var top = joinTop(agar.top)
+        send({t: "message", text: "connect('" + ws + "') Топ: " + top, legacy: 1})
         send({t: "addr", ws: window.agar.ws, top: window.agar.top})
         return true
     }
@@ -391,14 +435,13 @@
             window.connect(ws)
         },
         maxAttempts: 10,
-        autoConnect: function(ws, top, status) {
+        autoConnect: function(ws, top) {
             if (!this.checkExpose())
                 return this.connect(ws)
             this.stopAutoConnect()
             this.attempt = 0
             this.ws = ws
             this.top = top
-            this.status = status
             this.autoConnectIteration()
         },
         autoConnectIteration: function() {
@@ -432,64 +475,98 @@
             this.status.stop()
             clearTimeout(this.timer)
             this.timer = undefined
+        },
+        status: {
+            init: function() {
+                var t = this
+                t._element = g("connector")
+                t._stop = aButton("стоп", connector.stopAutoConnect.bind(connector))
+                t._close = aButton("закрыть",
+                                   function() { t._element.style.display = 'none' })
+                t._text = document.createElement('span')
+                t._ip = document.createElement('span')
+                t._status = document.createElement('span')
+
+                ;["_text", "_ip", "_status", "_close", "_stop"].
+                    forEach(function(e) { t._element.appendChild(t[e])})
+            },
+            _set: function(text, status, stop) {
+                this._element.style.display = ''
+                this._text.textContent = text
+                this._ip.textContent = connector.ws
+                this._status.textContent = status
+                this._stop.style.display = stop ? '' : 'none'
+                this._close.style.display = stop ? 'none' : ''
+            },
+            trying: function(n) {
+                this._set("Подключаюсь к ",
+                          "... [" + n + "/" + connector.maxAttempts + "] ",
+                          true)
+            },
+            ok: function() { this._set("Подключился к ", " ", false) },
+            fail: function() { this._set("Не удалось подключиться к ", " ", false) },
+            stop: function() { this._set("Прервано подлючение к ", " ", false) }
         }
     }
 
+    function joinTop(top) {
+        return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
+    }
+
     function showAddr(sender, time, ws, top) {
-        var statusLine = document.createElement('span')
-        function setStatus(text) {
-            return (function() {
-                statusLine.textContent = text
-                aStop.textContent = ''
-            })
-        }
-        var status = {
-            ok: setStatus('[OK]'),
-            fail: setStatus('[FAIL]'),
-            trying: function(n, max) {
-                statusLine.textContent = '['+n+'/'+max+'...]'
-                aStop.textContent = 'stop'
-            },
-            stop: setStatus('')
-        }
-        var aConnect = aButton(ws, function() {
-            connector.autoConnect(ws, top, status)
-            return false
-        })
-        var aStop = aButton("", function() {
-            connector.stopAutoConnect()
-            return false
-        })
+        var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, top))
         addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
-            statusLine, aStop,
-            " Топ: " + top.map(function(x){return x.name}).join(", ")
+            " Топ: " + joinTop(top)
         ]})
+    }
+
+    function showAddrs(addrs, time) {
+        addLine({time:time, message:["Сырны играют тут:"]})
+        addrs.sort(function(x, y){
+            if (x.alive > y.alive) return +1
+            if (x.alive < y.alive) return -1
+            if (x.players > y.players) return +1
+            if (x.players < y.players) return -1
+            return 0
+        }).forEach(function(x) {
+            if (x.ws === "") return
+            var aConnect = aButton(x.ws, connector.autoConnect.bind(connector, x.ws, x.top))
+            addLine({message:[
+                x.alive +"/" + x.players +
+                " connect('", aConnect, "')",
+                " Топ: " + joinTop(x.top)]})
+        })
     }
 
     function submit(e) {
         var ca = document.getElementById('carea')
-
-        if(ca.value != "") {
+        function sendName() {
             var n = document.getElementById('nick')
             if (myName !== n.value) {
                 myName = n.value
                 send({t: "name", name:myName})
             }
+        }
+
+        if (ca.value != "") {
             var tokens = ca.value.trim().split(/ +/)
             if (tokens.length == 0)
                 return false
-            if (tokens[0][0] == "/")
+            if (tokens[0][0] == "/") {
                 switch(tokens[0]) {
                 case "/names":
                     send({t:"names"}); break
                 case "/addr":
+                    sendName()
                     sendAddr(); break
+                case "/addrs":
+                    send({t:"addrs"}); break
                 case "/reconnect":
                     websocket.reconnect(); break
                 case "/ignore":
                     for (var i = 1; i < tokens.length; i++)
-                        if(/^[-+]?\d+$/.test(tokens[i])) {
+                        if (/^[-+]?\d+$/.test(tokens[i])) {
                             var id = parseInt(tokens[i].substr(1))
                             if (tokens[i][0] == '+')
                                 ignore.add(id)
@@ -508,13 +585,16 @@
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
                     addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
+                    addLine({message: ["/addrs — получить список комнат, на которых играют сырны"]})
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                     addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
                                        "Пример: `/ingore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
                     addLine({message: ["/auth — авторизация"]})
                 }
-            else
+            } else {
+                sendName()
                 send({t: "message", text: ca.value})
+            }
             ca.value = ""
             if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
                 ca.blur()
@@ -534,8 +614,8 @@
         var repeat = 0, repeatm = 0
         var extended = false
         window.onkeydown = function(e) {
-            if(extended) {
-                if(e.keyCode >= 16 && e.keyCode <= 18) return false
+            if (extended) {
+                if (e.keyCode >= 16 && e.keyCode <= 18) return false
                 var cmd = quick.eventToAction(e)
                 if (cmd !== undefined) {
                     var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
@@ -559,7 +639,7 @@
                 return false
             }
 
-            if(!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
+            if (!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
                 case 9: chatHider(true); g('carea').focus(); return false
                 case 49: chatHider(); return true
@@ -583,7 +663,7 @@
                 return true
             switch (e.which) {
             case 1: repeatm = true; return false
-            case 3: window.onkeydown(key_space); return false
+            case 3: olddown(key_space); return false
             }
         }
         g("canvas").onmouseup = function(e) {
@@ -591,7 +671,7 @@
                 return true
             switch (e.which) {
             case 1: repeatm = false; return false
-            case 3: window.onkeyup(key_space); return false
+            case 3: oldup(key_space); return false
             }
         }
         g("canvas").oncontextmenu = function(e) {
@@ -628,6 +708,7 @@
     var map = {
         canvas: null,
         data: null,
+        range: [],
         blackRibbon: true,
         hidden: false,
         blinks: {},
@@ -644,8 +725,9 @@
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
         },
-        update: function(data) {
+        update: function(data, range) {
             this.data = data
+            this.range = range
             this.draw()
         },
         blink: function(ids, sym) {
@@ -653,7 +735,7 @@
             var iteration = 12
             var blink = map.blinks[c] = {ids:ids, sym:sym, hl:false}
             function toggle() {
-                if(--iteration)
+                if (--iteration)
                     window.setTimeout(toggle, 250)
                 else
                     delete map.blinks[c]
@@ -670,29 +752,42 @@
             var teams = window.bakaconf.teams
             var idx = {}
             function getAura(cell) {
-                if(myCells.indexOf(cell.i) > -1)
+                if (myCells.indexOf(cell.i) > -1)
                     return window.bakaconf.myAura
-                if(cell.a)
+                if (cell.a)
                     return window.bakaconf.bakaAura
-                for(var i in teams) {
-                    if(i !== 'baka' && window.bakaconf.showOnlyBakaAura)
+                for (var i in teams) {
+                    if (i !== 'baka' && window.bakaconf.showOnlyBakaAura)
                         continue
                     var names = teams[i].names
-                    if(names instanceof RegExp || typeof names === 'string')
+                    if (names instanceof RegExp || typeof names === 'string')
                         names = [names]
-                    for(var j = 0; j < names.length; j++)
-                        if(names[j] === cell.n ||
-                           (names[j] instanceof RegExp && names[j].test(cell.n)))
+                    for (var j = 0; j < names.length; j++)
+                        if (names[j] === cell.n ||
+                            (names[j] instanceof RegExp && names[j].test(cell.n)))
                             return teams[i].aura || window.bakaconf.defaultTeamAura
                 }
             }
             
             context.clearRect(0 , 0, canvas.width, canvas.height)
-            context.globalAlpha = 0.5
-            context.fillStyle = "#777"
-            context.fillRect(0 , 0, canvas.width, canvas.height)
             var scale = 256/11180
             var i
+
+            context.globalAlpha = 0.5
+            context.fillStyle = "#777"
+            if (window.bakaconf.fogOfWar) {
+                context.beginPath()
+                for (i = 0; i < this.range.length; i++) {
+                    var d = this.range[i]
+                    context.rect(d.minX*scale,
+                                 d.minY*scale,
+                                 (d.maxX-d.minX)*scale,
+                                 (d.maxY-d.minY)*scale)
+                }
+                context.fill()
+            } else {
+                context.fillRect(0 , 0, canvas.width, canvas.height)
+            }
 
             if (this.blackRibbon) {
                 context.beginPath()
@@ -706,10 +801,10 @@
             }
 
             context.globalAlpha = .4
-            for(i = 0; i < this.data.length; i++) {
+            for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 var aura = getAura(d)
-                if(aura) {
+                if (aura) {
                     context.fillStyle = aura
                     context.beginPath()
                     context.arc(d.x*scale, d.y*scale,
@@ -721,7 +816,7 @@
             }
 
             context.lineWidth = 2
-            for(i = 0; i < this.data.length; i++) {
+            for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 context.beginPath()
                 context.arc(d.x*scale, d.y*scale,
@@ -729,7 +824,7 @@
                 context.globalAlpha = 1
                 context.fillStyle = d.c
                 context.fill()
-                if(d.v) {
+                if (d.v) {
                     context.strokeStyle = "#ff0000"
                 } else {
                     context.globalAlpha = .1
@@ -738,7 +833,7 @@
                 context.stroke()
             }
 
-            for(i in this.blinks) {
+            for (i in this.blinks) {
                 var blink = this.blinks[i]
                 if (blink.ids.length == 0 || !blink.hl)
                     continue
@@ -746,7 +841,7 @@
                 context.fillStyle = "#f00"
                 context.globalAlpha = 0.7
                 var minX, maxX, minY, maxY, drawText = false
-                for(var j = 0; j < blink.ids.length; j++) {
+                for (var j = 0; j < blink.ids.length; j++) {
                     var d = idx[blink.ids[j]]
                     if (d === undefined) continue
                     drawText = true
@@ -843,12 +938,12 @@
                 return "[" + x + "]"
             }
             var keys = Object.keys(window.bakaconf.quickTemplates).sort()
-            for(var i = 0; i < keys.length; i++) {
+            for (var i = 0; i < keys.length; i++) {
                 var name = codeToName(+keys[i].substr(1))
                 var t = window.bakaconf.quickTemplates[keys[i]]
-                if(t.length >= 1)
+                if (t.length >= 1)
                     add(name, t[0][0], t[0][1])
-                if(t.length >= 2)
+                if (t.length >= 2)
                     add("Mod + " + name, t[1][0], t[1][1])
             }
             document.body.appendChild(quickHint)
@@ -905,7 +1000,8 @@
                 '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
                 '#quickHint .sym { color:#000; float:left; width:2em }' +
-                '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }'
+                '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
+                'body[dark] #map { border-color: #aaa }'
             document.head.appendChild(stl)
         }
 
@@ -916,7 +1012,8 @@
             '<tr height="0">' +
             '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></input></form></td>' +
             '<td id="chat_users"></td>' +
-            '</tr>'
+            '</tr>' +
+            '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
         document.body.appendChild(cbox)
 
         var notification = document.createElement('div')
@@ -925,6 +1022,8 @@
 
         map.init()
         ignore.init()
+        connector.status.init()
+        sound.cache()
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
