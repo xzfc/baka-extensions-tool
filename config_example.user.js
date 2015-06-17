@@ -51,6 +51,9 @@ window.bakaconf.quickTemplates = {
 // Отмечать на карте только сырн
 // window.bakaconf.showOnlyBakaAura = true;
 
+// Включить туман войны
+// window.bakaconf.fogOfWar = true;
+
 // Переопределить встроенный в скрипт стиль
 /*
 bakaStyle('#cbox,#map {visibility: hidden;}',

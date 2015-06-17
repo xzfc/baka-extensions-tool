@@ -52,6 +52,7 @@
              defaultTeamAura: "#A55",
              timeFormat: 0,
              mouseControls: true,
+             fogOfWar: false,
             })
     var myName = null
     var chatactive = false
@@ -241,7 +242,7 @@
                 addLine({time:d.T, message: [oldName, " теперь ", aName(sender), "."]})
                 break
             case "map":
-                map.update(d.data)
+                map.update(d.data, d.range)
                 break
             case "join":
                 addLine({time:d.T, message: [aName(sender), " заходит."]})
@@ -669,6 +670,7 @@
     var map = {
         canvas: null,
         data: null,
+        range: [],
         blackRibbon: true,
         hidden: false,
         blinks: {},
@@ -685,8 +687,9 @@
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
         },
-        update: function(data) {
+        update: function(data, range) {
             this.data = data
+            this.range = range
             this.draw()
         },
         blink: function(ids, sym) {
@@ -729,11 +732,24 @@
             }
             
             context.clearRect(0 , 0, canvas.width, canvas.height)
-            context.globalAlpha = 0.5
-            context.fillStyle = "#777"
-            context.fillRect(0 , 0, canvas.width, canvas.height)
             var scale = 256/11180
             var i
+
+            context.globalAlpha = 0.5
+            context.fillStyle = "#777"
+            if (window.bakaconf.fogOfWar) {
+                context.beginPath()
+                for (i = 0; i < this.range.length; i++) {
+                    var d = this.range[i]
+                    context.rect(d.minX*scale,
+                                 d.minY*scale,
+                                 (d.maxX-d.minX)*scale,
+                                 (d.maxY-d.minY)*scale)
+                }
+                context.fill()
+            } else {
+                context.fillRect(0 , 0, canvas.width, canvas.height)
+            }
 
             if (this.blackRibbon) {
                 context.beginPath()
