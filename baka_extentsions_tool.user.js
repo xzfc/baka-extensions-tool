@@ -62,6 +62,7 @@
              timeFormat: 0,
              mouseControls: true,
              fogOfWar: false,
+             hideJoinLeaveMessages: false,
             })
     var myName = null
     var chatactive = false
@@ -281,11 +282,13 @@
                 map.update(d.data, d.range)
                 break
             case "join":
-                addLine({time:d.T, message: [aName(sender), " заходит."]})
+                if (!window.bakaconf.hideJoinLeaveMessages)
+                    addLine({time:d.T, message: [aName(sender), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
-                addLine({time:d.T, message: [aName(sender), " выходит."]})
+                if (!window.bakaconf.hideJoinLeaveMessages)
+                    addLine({time:d.T, message: [aName(sender), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "welcome":
