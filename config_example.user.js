@@ -57,6 +57,9 @@ window.bakaconf.quickTemplates = {
 // Выключить звук
 // window.bakaconf.sound = {chat:0, quick:0};
 
+// Не показывать сообщения заходит/выходит
+// window.bakaconf.hideJoinLeaveMessages = true;
+
 // Переопределить встроенный в скрипт стиль
 /*
 bakaStyle('#cbox,#map {visibility: hidden;}',

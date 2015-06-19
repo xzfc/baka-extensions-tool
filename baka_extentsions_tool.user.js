@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.20
+// @version     1.20.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -8,7 +8,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.20"
+    var version = "1.20.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -62,10 +62,11 @@
              timeFormat: 0,
              mouseControls: true,
              fogOfWar: false,
+             hideJoinLeaveMessages: false,
             })
     var myName = null
     var chatactive = false
-    var serverRestart = false
+    var hasConnected = false
 
     var defaultName = "Безымянная сырно"
     function g(id) {return document.getElementById(id)}
@@ -209,9 +210,9 @@
                 addLine({message:['Переподключаюсь~']})
                 return connectChat()
             }
-            if (serverRestart) {
-                serverRestart = false
-                return setTimeout(connectChat, 500)
+            if (hasConnected) {
+                hasConnected = false
+                return setTimeout(connectChat, 1000)
             } else {
                 addLine({message:["Вебсокет закрыт. ",
                                   aButton("переподключиться к вебсокету", reconnectButton)]})
@@ -220,6 +221,7 @@
         }
         ws.onerror = function(evt) {
             if (closed) return
+            console.log(evt)
             addLine({message:"Ошибка вебсокета"})
         }
         ws.reconnect = function() {
@@ -233,6 +235,7 @@
             }, 1000)
         }
         ws.onmessage = function(evt) {
+            hasConnected = true
             if (closed) return
             var d = JSON.parse(evt.data)
             var sender = {i:d.i, name:d.f, premium:d.premium}
@@ -281,11 +284,13 @@
                 map.update(d.data, d.range)
                 break
             case "join":
-                addLine({time:d.T, message: [aName(sender), " заходит."]})
+                if (!window.bakaconf.hideJoinLeaveMessages)
+                    addLine({time:d.T, message: [aName(sender), " заходит."]})
                 setChatUsersCount(true, +1)
                 break
             case "leave":
-                addLine({time:d.T, message: [aName(sender), " выходит."]})
+                if (!window.bakaconf.hideJoinLeaveMessages)
+                    addLine({time:d.T, message: [aName(sender), " выходит."]})
                 setChatUsersCount(true, -1)
                 break
             case "welcome":
@@ -303,7 +308,6 @@
                 break
             case "restart":
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
-                serverRestart = true
                 break
             }
         }
@@ -531,6 +535,7 @@
             return 0
         }).forEach(function(x) {
             if (x.ws === "") return
+            if (x.alive == 0 && x.players <= 2) return
             var aConnect = aButton(x.ws, connector.autoConnect.bind(connector, x.ws, x.top))
             addLine({message:[
                 x.alive +"/" + x.players +
