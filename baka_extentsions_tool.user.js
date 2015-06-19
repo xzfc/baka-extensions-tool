@@ -535,6 +535,7 @@
             return 0
         }).forEach(function(x) {
             if (x.ws === "") return
+            if (x.alive == 0 && x.players <= 2) return
             var aConnect = aButton(x.ws, connector.autoConnect.bind(connector, x.ws, x.top))
             addLine({message:[
                 x.alive +"/" + x.players +
