@@ -66,7 +66,7 @@
             })
     var myName = null
     var chatactive = false
-    var serverRestart = false
+    var hasConnected = false
 
     var defaultName = "Безымянная сырно"
     function g(id) {return document.getElementById(id)}
@@ -210,9 +210,9 @@
                 addLine({message:['Переподключаюсь~']})
                 return connectChat()
             }
-            if (serverRestart) {
-                serverRestart = false
-                return setTimeout(connectChat, 500)
+            if (hasConnected) {
+                hasConnected = false
+                return setTimeout(connectChat, 1000)
             } else {
                 addLine({message:["Вебсокет закрыт. ",
                                   aButton("переподключиться к вебсокету", reconnectButton)]})
@@ -221,6 +221,7 @@
         }
         ws.onerror = function(evt) {
             if (closed) return
+            console.log(evt)
             addLine({message:"Ошибка вебсокета"})
         }
         ws.reconnect = function() {
@@ -234,6 +235,7 @@
             }, 1000)
         }
         ws.onmessage = function(evt) {
+            hasConnected = true
             if (closed) return
             var d = JSON.parse(evt.data)
             var sender = {i:d.i, name:d.f, premium:d.premium}
@@ -306,7 +308,6 @@
                 break
             case "restart":
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
-                serverRestart = true
                 break
             }
         }
