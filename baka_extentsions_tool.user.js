@@ -300,7 +300,7 @@
                 send(d)
                 break
             case "addr":
-                showAddr(sender, d.T, d.ws, d.top)
+                showAddr(sender, d.T, d.ws, d.region, d.top)
                 notify("chat")
                 break
             case "addrs":
@@ -419,48 +419,77 @@
     window.send = send
 
     function sendAddr() {
-        if (window.agar === undefined ||
-            window.agar.ws === undefined ||
-            window.agar.top === undefined ||
-            window.agar.top.length === 0)
+        var a = window.agar
+        if (a === undefined ||
+            a.ws === undefined ||
+            a.top === undefined ||
+            a.top.length === 0 ||
+            a.region === undefined)
             return false
-        var ws = window.agar.ws
-        if (ws[ws.length-1] == '/')
-            ws = ws.substring(0, ws.length-1)
-        var top = joinTop(agar.top)
-        send({t: "message", text: "connect('" + ws + "') Топ: " + top, legacy: 1})
-        send({t: "addr", ws: window.agar.ws, top: window.agar.top})
+        send({t: "addr", ws:a.ws, region:a.region, top:a.top})
         return true
     }
 
     var connector = {
-        connect: function(ws) {
-            this.stopAutoConnect()
-            window.connect(ws)
-        },
-        maxAttempts: 10,
-        autoConnect: function(ws, top) {
+        maxTokenAttempts: 100,
+        maxRoomAttempts: 10,
+        autoConnect: function(ws, region, top) {
             if (!this.checkExpose())
-                return this.connect(ws)
+                return
             this.stopAutoConnect()
-            this.attempt = 0
+            this.roomAttempt = this.tokenAttempt = 0
             this.ws = ws
+            this.region = region
             this.top = top
+            this.state = 'token'
             this.autoConnectIteration()
         },
         autoConnectIteration: function() {
-            if (this.checkConnection())
-                return this.status.ok()
-            window.connect(this.ws)
-            this.status.trying(this.attempt, this.maxAttempts)
-            if (++this.attempt != this.maxAttempts)
-                this.timer = setTimeout(this.autoConnectIteration.bind(this), 5000)
-            else
-                return this.status.fail()
+            var thisMethod = this.autoConnectIteration.bind(this), that = this
+            if (this.timer !== undefined)
+                delete this.timer
+            if (this.state == 'token') {
+                this.status.trying()
+                this.request = new XMLHttpRequest()
+                this.request.onload = function() {
+                    delete that.request
+                    var i = this.responseText.split("\n")
+                    if (connector.ws === "ws://" + i[0]) {
+                        that.state = 'check-room'
+                        that.tokenAttempt = 0
+                        that.status.trying()
+                        window.connect("ws://" + i[0], i[1])
+                        this.timer = setTimeout(thisMethod, 1000)
+                    } else {
+                        if (++that.tokenAttempt == that.maxTokenAttempts)
+                            return that.status.fail()
+                        return thisMethod()
+                    }
+                }
+                this.request.onerror = function() {
+                    delete that.request
+                    if (++that.tokenAttempt == that.maxTokenAttempts)
+                        return that.status.fail()
+                    thisMethod()
+                }
+                this.request.open("post", "http://m.agar.io/", true)
+                this.request.send(this.region)
+            } else if (this.state == 'check-room') {
+                if (this.checkConnection())
+                    return this.status.ok()
+                if (++this.roomAttempt == this.maxRoomAttempts)
+                    return this.status.fail()
+                this.state = 'room-failed'
+                this.status.trying()
+                this.state = 'token'
+                this.timer = setTimeout(thisMethod, 4000)
+            }
         },
         checkConnection: function() {
             if (window.agar.ws !== this.ws)
                 return false
+            if (this.top === undefined)
+                return true
             var top1 = window.agar.top, top2 = this.top
             for (var i = 0; i < top1.length; i++)
                 for (var j = 0; j < top2.length; j++)
@@ -471,14 +500,20 @@
         checkExpose: function() {
             return window.agar !== undefined &&
                 window.agar.ws !== undefined &&
+                window.agar.region !== undefined &&
                 window.agar.top !== undefined
         },
         stopAutoConnect: function() {
-            if (this.timer === undefined)
-                return
-            this.status.stop()
-            clearTimeout(this.timer)
-            this.timer = undefined
+            if (this.timer !== undefined) {
+                this.status.stop()
+                clearTimeout(this.timer)
+                delete this.timer
+            }
+            if (this.request !== undefined) {
+                this.status.stop()
+                this.request.abort()
+                delete this.request
+            }
         },
         status: {
             init: function() {
@@ -502,23 +537,29 @@
                 this._stop.style.display = stop ? '' : 'none'
                 this._close.style.display = stop ? 'none' : ''
             },
-            trying: function(n) {
-                this._set("Подключаюсь к ",
-                          "... [" + n + "/" + connector.maxAttempts + "] ",
-                          true)
+            trying: function() {
+                var room = "[" + connector.roomAttempt + "/" + connector.maxRoomAttempts + "] "
+                var token = "[" + connector.tokenAttempt + "/" + connector.maxTokenAttempts + "] "
+                if (connector.state === 'token')
+                    this._set("Ищу токен для ", "... " + token + room, true)
+                else if (connector.state === 'check-room')
+                    this._set("Сверяю топ ", "... " + room, true)
+                else if (connector.state === 'room-failed')
+                    this._set("Подключаюсь к ", "... " + room, true)
             },
             ok: function() { this._set("Подключился к ", " ", false) },
             fail: function() { this._set("Не удалось подключиться к ", " ", false) },
             stop: function() { this._set("Прервано подлючение к ", " ", false) }
         }
     }
+    window.x = connector
 
     function joinTop(top) {
         return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
     }
 
-    function showAddr(sender, time, ws, top) {
-        var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, top))
+    function showAddr(sender, time, ws, region, top) {
+        var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, region, top))
         addLine({time:time, sender:sender, message:[
             "connect('", aConnect ,"')",
             " Топ: " + joinTop(top)
