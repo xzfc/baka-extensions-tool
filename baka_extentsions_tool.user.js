@@ -362,12 +362,17 @@
     }
 
     function formatMessage(text) {
-        var addrRe = /(ws:\/\/\d+\.\d+\.\d+\.\d+:\d+)/
+        var addrRe = /(https?:\/\/[^ ]*[^. ,\(\)])/
             var i, node, result = text.split(addrRe)
         if (text.indexOf(g('nick').value||defaultName) > -1)
             result.higlight = true
-        for (i = 1; i < result.length; i += 2)
-            result[i] = aButton(result[i], connector.connect.bind(connector, result[i]))
+        for (i = 1; i < result.length; i += 2) {
+            var a = document.createElement('a')
+            a.textContent = result[i]
+            a.href = result[i]
+            a.target = "_blank"
+            result[i] = a
+        }
         if (text.trim()[0] == '>')
             result.greentext = true
         return result
