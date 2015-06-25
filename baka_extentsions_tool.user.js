@@ -194,6 +194,7 @@
         var ws = new WebSocket(window.bakaconf.wsUri)
         var myId = null
         ws.onopen = function(evt) {
+            map.reset()
             send({t: "version", version: version,
                   expose: (window.agar===undefined?0:1),
                   sessionId: sessionId })
@@ -419,8 +420,11 @@
     }
 
     function send(a) {
-        if (websocket.readyState == 1)
+        if (websocket.readyState == 1) {
             websocket.send(JSON.stringify(a))
+            return true
+        }
+        return false
     }
     window.send = send
 
@@ -765,6 +769,7 @@
         hidden: false,
         blinks: {},
         blinkIdsCounter: 0,
+        waitReply: true,
         init: function() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
@@ -773,11 +778,15 @@
             document.body.appendChild(this.canvas)
             this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
         },
+        reset: function() {
+            this.waitReply = false
+        },
         toggle: function() {
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
         },
         update: function(data, range) {
+            this.waitReply = false
             this.data = data
             this.range = range
             this.draw()
@@ -917,7 +926,7 @@
         },
         send: function() {
             var a = window.agar
-            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || a.ws === "") {
+            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
@@ -942,7 +951,10 @@
                 if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
                 if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
             })
-            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1, ws:a.ws, range:r})
+            var reply = (!this.hidden && !this.waitReply) ? 1 : 0
+            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply, ws:a.ws, range:r})
+            if (sent && reply)
+                this.waitReply = true
             this.blackRibbon = false
         },
         sendThread: function() {
