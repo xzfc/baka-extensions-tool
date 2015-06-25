@@ -193,6 +193,7 @@
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         var myId = null
+        ws.binaryType = "arraybuffer"
         ws.onopen = function(evt) {
             map.reset()
             send({t: "version", version: version,
@@ -239,7 +240,12 @@
         ws.onmessage = function(evt) {
             hasConnected = true
             if (closed) return
-            var d = JSON.parse(evt.data)
+            if (evt.data instanceof window.ArrayBuffer)
+                onmessage_binary(new DataView(evt.data))
+            else
+                onmessage_json(JSON.parse(evt.data))
+        }
+        function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium}
             function notify(what) {
                 unreadCount += 1;updateNotification()
@@ -312,6 +318,52 @@
                 addLine({time:d.T, message:["Сейчас сервер будет перезапущен"]})
                 break
             }
+        }
+        function onmessage_binary(d) {
+            var c = 1
+            function getString() {
+                var result = ""
+                while (true) {
+                    var x = d.getUint16(c); c+=2
+                    if (x == 0)
+                        return result
+                    result += String.fromCharCode(x)
+                }
+            }
+            function getColor() {
+                var col = d.getUint8(c+2) + d.getUint8(c+1)*0x100 + d.getUint8(c)*0x10000
+                c += 3
+                col = col.toString(16)
+                while (col.length < 6)
+                    col = "0" + col
+                return "#" + col
+            }
+            var data_size = d.getUint32(c); c += 4
+            var data = []
+            for (var i = 0; i < data_size; i++) {
+                var cell = {}
+                cell.i = d.getUint32(c); c += 4
+                cell.s = d.getUint32(c); c += 4
+                cell.x = d.getFloat32(c); c += 4
+                cell.y = d.getFloat32(c); c += 4
+                cell.c = getColor()
+                cell.n = getString()
+                var flags = d.getUint8(c); c+= 1
+                cell.v = (flags & 1) != 0
+                cell.a = (flags & 2) != 0
+                data.push(cell)
+            }
+            var range_size = d.getUint32(c); c += 4
+            var range = []
+            for (var i = 0; i < range_size; i++) {
+                var r = {}
+                r.minX = d.getFloat32(c); c += 4
+                r.minY = d.getFloat32(c); c += 4
+                r.maxX = d.getFloat32(c); c += 4
+                r.maxY = d.getFloat32(c); c += 4
+                range.push(r)
+            }
+            map.update(data, range)
         }
         websocket = ws
     }
