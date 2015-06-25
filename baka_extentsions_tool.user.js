@@ -432,6 +432,10 @@
         return result
     }
 
+    function br() {
+        return document.createElement('br')
+    }
+
     function addLine(p) {
         var d = document.createElement('div')
 
@@ -614,7 +618,6 @@
             stop: function() { this._set("Прервано подлючение к ", " ", false) }
         }
     }
-    window.x = connector
 
     function joinTop(top) {
         return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
@@ -623,12 +626,14 @@
     function showAddr(sender, time, ws, region, top) {
         var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, region, top))
         addLine({time:time, sender:sender, message:[
-            "connect('", aConnect ,"')",
-            " Топ: " + joinTop(top)
-        ]})
+            "Топ: " + joinTop(top), br(),
+            "!brute " + ws + " " + region]})
     }
 
     function showAddrs(addrs, time) {
+        addrs = addrs.filter(function(x) { return (x.alive || x.players > 2) && x.ws })
+        if (addrs.length === 0)
+            return addLine({time:time, message:["Сырны нигде не играют."]})
         addLine({time:time, message:["Сырны играют тут:"]})
         addrs.sort(function(x, y){
             if (x.alive > y.alive) return +1
@@ -636,14 +641,13 @@
             if (x.players > y.players) return +1
             if (x.players < y.players) return -1
             return 0
-        }).forEach(function(x) {
-            if (x.ws === "") return
-            if (x.alive == 0 && x.players <= 2) return
+        }).forEach(function(x, idx) {
             var aConnect = aButton(x.ws, connector.autoConnect.bind(connector, x.ws, x.top))
             addLine({message:[
-                x.alive +"/" + x.players +
-                " connect('", aConnect, "')",
-                " Топ: " + joinTop(x.top)]})
+                idx?br():"",
+                "• " + x.alive +"/" + x.players + " Топ: " + joinTop(x.top),
+                br(),
+                "!brute " + x.ws]})
         })
     }
 
@@ -667,6 +671,8 @@
                     send({t:"names"}); break
                 case "/addr":
                     sendName()
+                    if (tokens[1] && window.agar)
+                        window.agar.region = tokens[1]
                     sendAddr(); break
                 case "/addrs":
                     send({t:"addrs"}); break
@@ -692,7 +698,7 @@
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
-                    addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
+                    addLine({message: ["/addr [регион] — отправить текущий севрер и топ (требуется expose)"]})
                     addLine({message: ["/addrs — получить список комнат, на которых играют сырны"]})
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                     addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
