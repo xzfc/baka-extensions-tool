@@ -60,6 +60,9 @@ window.bakaconf.quickTemplates = {
 // Не показывать сообщения заходит/выходит
 // window.bakaconf.hideJoinLeaveMessages = true;
 
+// Вернуть проекцию карты как раньше
+// window.bakaconf.mapProjection = [0,11180];
+
 // Переопределить встроенный в скрипт стиль
 /*
 bakaStyle('#cbox,#map {visibility: hidden;}',

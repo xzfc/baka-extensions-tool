@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.22
+// @version     1.22.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.22"
+    var version = "1.22.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -64,6 +64,7 @@
              mouseControls: true,
              fogOfWar: false,
              hideJoinLeaveMessages: false,
+             mapProjection: [-7060, 7060],
             })
     var myName = null
     var chatactive = false
@@ -914,7 +915,10 @@
             }
             
             context.clearRect(0 , 0, canvas.width, canvas.height)
-            var scale = 256/11180
+            var proj = window.bakaconf.mapProjection
+            proj = [proj[0], 256/(proj[1]-proj[0])]
+            function t(v) { return (v-proj[0])*proj[1] } // shift+scale
+            function s(v) { return v * proj[1] }         // scale
             var i
 
             context.globalAlpha = 0.5
@@ -923,10 +927,10 @@
                 context.beginPath()
                 for (i = 0; i < this.range.length; i++) {
                     var d = this.range[i]
-                    context.rect(d.minX*scale,
-                                 d.minY*scale,
-                                 (d.maxX-d.minX)*scale,
-                                 (d.maxY-d.minY)*scale)
+                    context.rect(t(d.minX), t(d.minY),
+                                 s(d.maxX-d.minX),
+                                 s(d.maxY-d.minY))
+                    console.log(t(d.minX))
                 }
                 context.fill()
             } else {
@@ -951,8 +955,8 @@
                 if (aura) {
                     context.fillStyle = aura
                     context.beginPath()
-                    context.arc(d.x*scale, d.y*scale,
-                                d.s*scale+4, 0, 2 * Math.PI, false)
+                    context.arc(t(d.x), t(d.y), s(d.s)+4,
+                                0, 2 * Math.PI, false)
                     context.fill()
                 }
 
@@ -963,8 +967,8 @@
             for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 context.beginPath()
-                context.arc(d.x*scale, d.y*scale,
-                            d.s*scale, 0, 2 * Math.PI, false)
+                context.arc(t(d.x), t(d.y), s(d.s),
+                            0, 2 * Math.PI, false)
                 context.globalAlpha = 1
                 context.fillStyle = d.c
                 context.fill()
@@ -993,8 +997,8 @@
                     if (j == 0 || maxX < d.x*2+d.s) maxX = d.x*2+d.s
                     if (j == 0 || minY > d.y*2-d.s) minY = d.y*2-d.s
                     if (j == 0 || maxY < d.y*2+d.s) maxY = d.y*2+d.s
-                    context.arc(d.x*scale, d.y*scale,
-                                d.s*scale+6, 0, 2 * Math.PI, false)
+                    context.arc(t(d.x), t(d.y), s(d.s)+6,
+                                0, 2 * Math.PI, false)
                     context.closePath()
                 }
                 context.fill()
@@ -1004,7 +1008,7 @@
                 context.textAlign = 'center'
                 context.textBaseline = 'middle'
                 context.fillStyle = '#0ff'
-                context.fillText(blink.sym, scale*(minX+maxX)/4, scale*(minY+maxY)/4)
+                context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
             }
         },
         send: function() {
