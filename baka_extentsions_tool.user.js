@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.22.1
+// @version     1.22.2
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.22.1"
+    var version = "1.22.2"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -930,7 +930,6 @@
                     context.rect(t(d.minX), t(d.minY),
                                  s(d.maxX-d.minX),
                                  s(d.maxY-d.minY))
-                    console.log(t(d.minX))
                 }
                 context.fill()
             } else {
