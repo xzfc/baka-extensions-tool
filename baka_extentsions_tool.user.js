@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.21.1
+// @version     1.22
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.21.1"
+    var version = "1.22"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -193,7 +193,9 @@
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         var myId = null
+        ws.binaryType = "arraybuffer"
         ws.onopen = function(evt) {
+            map.reset()
             send({t: "version", version: version,
                   expose: (window.agar===undefined?0:1),
                   sessionId: sessionId })
@@ -238,7 +240,12 @@
         ws.onmessage = function(evt) {
             hasConnected = true
             if (closed) return
-            var d = JSON.parse(evt.data)
+            if (evt.data instanceof window.ArrayBuffer)
+                onmessage_binary(new DataView(evt.data))
+            else
+                onmessage_json(JSON.parse(evt.data))
+        }
+        function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium}
             function notify(what) {
                 unreadCount += 1;updateNotification()
@@ -312,6 +319,52 @@
                 break
             }
         }
+        function onmessage_binary(d) {
+            var c = 1
+            function getString() {
+                var result = ""
+                while (true) {
+                    var x = d.getUint16(c); c+=2
+                    if (x == 0)
+                        return result
+                    result += String.fromCharCode(x)
+                }
+            }
+            function getColor() {
+                var col = d.getUint8(c+2) + d.getUint8(c+1)*0x100 + d.getUint8(c)*0x10000
+                c += 3
+                col = col.toString(16)
+                while (col.length < 6)
+                    col = "0" + col
+                return "#" + col
+            }
+            var data_size = d.getUint32(c); c += 4
+            var data = []
+            for (var i = 0; i < data_size; i++) {
+                var cell = {}
+                cell.i = d.getUint32(c); c += 4
+                cell.s = d.getUint32(c); c += 4
+                cell.x = d.getFloat32(c); c += 4
+                cell.y = d.getFloat32(c); c += 4
+                cell.c = getColor()
+                cell.n = getString()
+                var flags = d.getUint8(c); c+= 1
+                cell.v = (flags & 1) != 0
+                cell.a = (flags & 2) != 0
+                data.push(cell)
+            }
+            var range_size = d.getUint32(c); c += 4
+            var range = []
+            for (var i = 0; i < range_size; i++) {
+                var r = {}
+                r.minX = d.getFloat32(c); c += 4
+                r.minY = d.getFloat32(c); c += 4
+                r.maxX = d.getFloat32(c); c += 4
+                r.maxY = d.getFloat32(c); c += 4
+                range.push(r)
+            }
+            map.update(data, range)
+        }
         websocket = ws
     }
 
@@ -363,20 +416,49 @@
     }
 
     function formatMessage(text) {
-        var addrRe = /(https?:\/\/[^ ]*[^. ,\(\)])/
-            var i, node, result = text.split(addrRe)
+        var re = /(https?:\/\/[^ ]*[^. ,\(\)]|:noel:)/
+            var i, node, result = text.split(re)
         if (text.indexOf(g('nick').value||defaultName) > -1)
             result.higlight = true
         for (i = 1; i < result.length; i += 2) {
-            var a = document.createElement('a')
-            a.textContent = result[i]
-            a.href = result[i]
-            a.target = "_blank"
-            result[i] = a
+            var el
+            if (result[i] === ':noel:') {
+                el = document.createElement("img")
+                el.src = "data: image/ gif; base64, R0lG"+
+                    "O                                  "+
+                    "D            lhEAAQALMAAP          "+
+                    "3        eAv7            pUv7      "+
+                    "x      mPW/                  A+    "+
+                    "C    TA    f8AALAAAP///8D    Aw    "+
+                    "I    CAgAAA              AP///w    "+
+                    "A  AA      AAAAAAAAAAAACH5B    AE  "+
+                    "A  AA        sALA    AAAAAQ    AB  "+
+                    "A  AA        ARec    Mmpq  p14VVN  "+
+                    "6  r9                          lm  "+
+                    "j  Jy    nUAlirdy5qFWKIEd9a    QM  "+
+                    "A    rC  ut              qD  lA    "+
+                    "o    CI    QW          GY    /R    "+
+                    "X      Co    CBibRwVhGa    ha      "+
+                    "A        zvVl          LcCD        "+
+                    "H            7aX218ULq0            "+
+                    "B                                  "+
+                    "PAMmJYgCenVoD1BSuFwUGbNQ2QwazN/EQA7";
+                el.title = el.alt = result[i]
+            } else {
+                el = document.createElement('a')
+                el.textContent = result[i]
+                el.href = result[i]
+                el.target = "_blank"
+            }
+            result[i] = el
         }
         if (text.trim()[0] == '>')
             result.greentext = true
         return result
+    }
+
+    function br() {
+        return document.createElement('br')
     }
 
     function addLine(p) {
@@ -419,8 +501,11 @@
     }
 
     function send(a) {
-        if (websocket.readyState == 1)
+        if (websocket.readyState == 1) {
             websocket.send(JSON.stringify(a))
+            return true
+        }
+        return false
     }
     window.send = send
 
@@ -558,7 +643,6 @@
             stop: function() { this._set("Прервано подлючение к ", " ", false) }
         }
     }
-    window.x = connector
 
     function joinTop(top) {
         return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
@@ -567,12 +651,14 @@
     function showAddr(sender, time, ws, region, top) {
         var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, region, top))
         addLine({time:time, sender:sender, message:[
-            "connect('", aConnect ,"')",
-            " Топ: " + joinTop(top)
-        ]})
+            "Топ: " + joinTop(top), br(),
+            "!brute " + ws + " " + region]})
     }
 
     function showAddrs(addrs, time) {
+        addrs = addrs.filter(function(x) { return (x.alive || x.players > 2) && x.ws })
+        if (addrs.length === 0)
+            return addLine({time:time, message:["Сырны нигде не играют."]})
         addLine({time:time, message:["Сырны играют тут:"]})
         addrs.sort(function(x, y){
             if (x.alive > y.alive) return +1
@@ -580,14 +666,13 @@
             if (x.players > y.players) return +1
             if (x.players < y.players) return -1
             return 0
-        }).forEach(function(x) {
-            if (x.ws === "") return
-            if (x.alive == 0 && x.players <= 2) return
+        }).forEach(function(x, idx) {
             var aConnect = aButton(x.ws, connector.autoConnect.bind(connector, x.ws, x.top))
             addLine({message:[
-                x.alive +"/" + x.players +
-                " connect('", aConnect, "')",
-                " Топ: " + joinTop(x.top)]})
+                idx?br():"",
+                "• " + x.alive +"/" + x.players + " Топ: " + joinTop(x.top),
+                br(),
+                "!brute " + x.ws]})
         })
     }
 
@@ -611,6 +696,8 @@
                     send({t:"names"}); break
                 case "/addr":
                     sendName()
+                    if (tokens[1] && window.agar)
+                        window.agar.region = tokens[1]
                     sendAddr(); break
                 case "/addrs":
                     send({t:"addrs"}); break
@@ -636,7 +723,7 @@
                 default:
                     addLine({message: ["Команды чата:"]})
                     addLine({message: ["/names — получить список сырн в чате"]})
-                    addLine({message: ["/addr — отправить текущий севрер и топ (требуется expose)"]})
+                    addLine({message: ["/addr [регион] — отправить текущий севрер и топ (требуется expose)"]})
                     addLine({message: ["/addrs — получить список комнат, на которых играют сырны"]})
                     addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
                     addLine({message: ["/ingore [действия] — работа со списком игнорирования. " +
@@ -765,6 +852,7 @@
         hidden: false,
         blinks: {},
         blinkIdsCounter: 0,
+        waitReply: true,
         init: function() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
@@ -773,11 +861,15 @@
             document.body.appendChild(this.canvas)
             this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
         },
+        reset: function() {
+            this.waitReply = false
+        },
         toggle: function() {
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
         },
         update: function(data, range) {
+            this.waitReply = false
             this.data = data
             this.range = range
             this.draw()
@@ -917,7 +1009,7 @@
         },
         send: function() {
             var a = window.agar
-            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || a.ws === "") {
+            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
@@ -942,7 +1034,10 @@
                 if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
                 if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
             })
-            send({t:'map', all:cells, my:a.myCells, top:top, reply:map.hidden?0:1, ws:a.ws, range:r})
+            var reply = (!this.hidden && !this.waitReply) ? 1 : 0
+            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply, ws:a.ws, range:r})
+            if (sent && reply)
+                this.waitReply = true
             this.blackRibbon = false
         },
         sendThread: function() {
