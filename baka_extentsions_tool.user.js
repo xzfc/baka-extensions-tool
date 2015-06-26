@@ -416,16 +416,41 @@
     }
 
     function formatMessage(text) {
-        var addrRe = /(https?:\/\/[^ ]*[^. ,\(\)])/
-            var i, node, result = text.split(addrRe)
+        var re = /(https?:\/\/[^ ]*[^. ,\(\)]|:noel:)/
+            var i, node, result = text.split(re)
         if (text.indexOf(g('nick').value||defaultName) > -1)
             result.higlight = true
         for (i = 1; i < result.length; i += 2) {
-            var a = document.createElement('a')
-            a.textContent = result[i]
-            a.href = result[i]
-            a.target = "_blank"
-            result[i] = a
+            var el
+            if (result[i] === ':noel:') {
+                el = document.createElement("img")
+                el.src = "data: image/ gif; base64, R0lG"+
+                    "O                                  "+
+                    "D            lhEAAQALMAAP          "+
+                    "3        eAv7            pUv7      "+
+                    "x      mPW/                  A+    "+
+                    "C    TA    f8AALAAAP///8D    Aw    "+
+                    "I    CAgAAA              AP///w    "+
+                    "A  AA      AAAAAAAAAAAACH5B    AE  "+
+                    "A  AA        sALA    AAAAAQ    AB  "+
+                    "A  AA        ARec    Mmpq  p14VVN  "+
+                    "6  r9                          lm  "+
+                    "j  Jy    nUAlirdy5qFWKIEd9a    QM  "+
+                    "A    rC  ut              qD  lA    "+
+                    "o    CI    QW          GY    /R    "+
+                    "X      Co    CBibRwVhGa    ha      "+
+                    "A        zvVl          LcCD        "+
+                    "H            7aX218ULq0            "+
+                    "B                                  "+
+                    "PAMmJYgCenVoD1BSuFwUGbNQ2QwazN/EQA7";
+                el.title = el.alt = result[i]
+            } else {
+                el = document.createElement('a')
+                el.textContent = result[i]
+                el.href = result[i]
+                el.target = "_blank"
+            }
+            result[i] = el
         }
         if (text.trim()[0] == '>')
             result.greentext = true
