@@ -829,6 +829,8 @@
         window.setNick = function(n) {
             if (n !== myName) {
                 myName = n
+                if (window.location.hostname == 'petridish.pw')
+                    myName = myName.replace(/:::::.*?:::::[0-3]$/, '')
                 send({t: "name", "name": myName})
             }
             oldSetNick(n)
