@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.22.2
+// @version     1.22.3
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.22.2"
+    var version = "1.22.3"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -1174,6 +1174,10 @@
         ignore.init()
         connector.status.init()
         sound.cache()
+
+        setInterval(function() {
+            send({t:'ping'})
+        }, 1000)
 
         g('form').onsubmit = submit
         g('carea').onfocus = function () {
