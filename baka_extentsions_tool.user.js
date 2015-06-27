@@ -42,10 +42,12 @@
                                   /[iİ][╦T][µÜ]/i,
                                   /[ʍm][εe][†t][υuü]|ʍε†/i,
                                   /[Ծo][dԺ][tԵ][uü]/i,
-                                  /\bDH\b/, /つみ|ⒹⒽ/i]},
+                                  /ΆǾĢ|ⒶⓄⒼ/, /ŦĪŦ/,
+                                  /\bDH\b/, /[つマづ][みℋん]|ⒹⒽ|매/]},
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
-                 other: {names: [/\[(\$|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|T[iİ]T)\]/i,
-                                 /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⓂⓋⓅ|HKG)\b/i]}
+                 other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T)\]/i,
+                                 /ヴいｐ|ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
+                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]}
              },
              soundList: ["http://89.31.114.117/tutturu/0.mp3",
                          "http://89.31.114.117/tutturu/1.mp3",
