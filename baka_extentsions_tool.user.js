@@ -333,7 +333,14 @@
                 send(d)
                 break
             case "addr":
-                showAddr(sender, d.T, d.ws, d.region, d.top)
+                var connect = ""
+                if (d.game === undefined || d.game == "agar.io")
+                    connect = "!brute " + d.ws + " " + d.region
+                else
+                    connect = "connect(" + d.ws + ")"
+                addLine({time:d.T, sender:sender, message:[
+                    d.game !== undefined? "(" + d.game + ") " : "",
+                    "Топ: " + joinTop(d.top), br(), connect]})
                 notify("chat")
                 break
             case "addrs":
@@ -530,11 +537,12 @@
         if (a === undefined ||
             a.ws === undefined ||
             a.top === undefined ||
-            a.top.length === 0 ||
-            a.region === undefined)
+            a.top.length === 0)
             return false
-        send({t: "addr", ws:a.ws, region:a.region, top:a.top})
-        return true
+        var m = {t: "addr", ws:a.ws, top:a.top, game:window.location.hostname}
+        if (a.region !== undefined)
+            m.region = a.region
+        send(m)
     }
 
     var connector = {
@@ -662,13 +670,6 @@
 
     function joinTop(top) {
         return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
-    }
-
-    function showAddr(sender, time, ws, region, top) {
-        var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, region, top))
-        addLine({time:time, sender:sender, message:[
-            "Топ: " + joinTop(top), br(),
-            "!brute " + ws + " " + region]})
     }
 
     function showAddrs(addrs, time) {
@@ -1056,7 +1057,8 @@
                 if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
             })
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
-            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply, ws:a.ws, range:r})
+            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply,
+                             ws:a.ws, range:r, game:window.location.hostname})
             if (sent && reply)
                 this.waitReply = true
             this.blackRibbon = false
