@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.22.3
+// @version     1.23
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.22.3"
+    var version = "1.23"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -42,10 +42,12 @@
                                   /[iİ][╦T][µÜ]/i,
                                   /[ʍm][εe][†t][υuü]|ʍε†/i,
                                   /[Ծo][dԺ][tԵ][uü]/i,
-                                  /\bDH\b/, /つみ|ⒹⒽ/i]},
+                                  /ΆǾĢ|ⒶⓄⒼ/, /ŦĪŦ/,
+                                  /\bDH\b/, /[つマづ][みℋん]|ⒹⒽ|매/]},
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
-                 other: {names: [/\[(\$|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|T[iİ]T)\]/i,
-                                 /\b(MKB|MZK|FKS|RZCW|TİT|MZDK|Mezdeke|ⓂⓋⓅ|HKG)\b/i]}
+                 other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T)\]/i,
+                                 /ヴいｐ|ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
+                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]}
              },
              soundList: ["http://89.31.114.117/tutturu/0.mp3",
                          "http://89.31.114.117/tutturu/1.mp3",
@@ -129,9 +131,17 @@
         }
     }
 
-    var sound = {
+    var notificator = {
         cached: [],
         list: "",
+        unreadCount: 0,
+        init: function() {
+            var el = document.createElement('div')
+            el.id = "notification"
+            document.body.appendChild(el)
+            el.onclick = chat.toggle.bind(chat, true)
+            this.cache()
+        },
         cache: function() {
             var list = window.bakaconf.soundList.join("\n")
             if (list === this.list)
@@ -142,45 +152,69 @@
                 return new Audio(x)
             })
         },
-        playRandom: function() {
-            this.cache()
-            if (this.cached.length === 0)
-                return
-            this.cached[Math.floor(Math.random()*this.cached.length)].play()
-        }
-    }
-
-    var chatHidden = false
-    function chatHider(show) {
-        chatHidden = show === undefined ? !chatHidden : !show
-        g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
-        updateNotification()
-    }
-
-    var unreadCount = 0
-    function updateNotification() {
-        var n = g("notification")
-        if (!chatHidden) {
-            unreadCount = 0
-            n.style.visibility =  'hidden'
-        } else {
-            if (unreadCount) {
-                n.textContent = unreadCount
-                n.style.visibility =  ''
-            } else {
-                n.style.visibility =  'hidden'
+        clear: function() {
+            this.unreadCount = 0
+            g("notification").style.visibility = 'hidden'
+        },
+        notify: function(what) {
+            if (chat.hidden) {
+                g("notification").style.visibility = ''
+                g("notification").textContent = ++this.unreadCount
+            }
+            if (window.bakaconf.sound[what]) {
+                this.cache()
+                if (this.cached.length === 0)
+                    return
+                this.cached[Math.floor(Math.random()*this.cached.length)].play()
             }
         }
     }
 
-    var chatUsersCount = 0
-    function setChatUsersCount(add, value) {
-        if (add)
-            chatUsersCount += value
-        else
-            chatUsersCount = value
-
-        g("chat_users").textContent = (chatUsersCount >= 0) ? chatUsersCount : "#"
+    var chat = {
+        hidden: false,
+        active: false,
+        usersCount: 0,
+        init: function() {
+            g("chat_users").onclick = function() { send({t:'names'}) }
+            g('form').onsubmit = submit
+            g('carea').onfocus = function () {
+                chat.active = true
+                g('cbox').style.opacity = '1'
+            }
+            g('carea').onblur = function () {
+                chat.active = false
+                g('cbox').style.opacity = '0.7'
+            }
+            g('carea').onkeydown = function(e) {
+                switch (e.keyCode) {
+                case 38: return submitHistory.up(), false
+                case 40: return submitHistory.down(), false
+                }
+            }
+        },
+        toggle: function(show) {
+            this.hidden = show === undefined ? !this.hidden : !show
+            g('cbox').style.visibility = (this.hidden ? 'hidden' : '')
+            notificator.clear()
+        },
+        focus: function() {
+            this.toggle(true)
+            document.getElementById('carea').focus()
+        },
+        blur: function() { g('carea').blur() },
+        clickName: function(e) {
+            e = e || window.event; e = e.target || e.srcElement
+            var ca = document.getElementById('carea')
+            ca.value = e.textContent + ": " + ca.value
+            chat.focus()
+        },
+        setUsersCount: function(add, value) {
+            if (add)
+                this.usersCount += value
+            else
+                this.usersCount = value
+            g("chat_users").textContent = (this.usersCount >= 0) ? this.usersCount : "#"
+        }
     }
 
     var sessionId = Math.random().toString(36).substring(2)
@@ -208,7 +242,7 @@
         }
         ws.onclose = function(evt) {
             if (closed) return
-            setChatUsersCount(false, -1)
+            chat.setUsersCount(false, -1)
             if (reconnect) {
                 closed = true
                 addLine({message:['Переподключаюсь~']})
@@ -221,7 +255,7 @@
                 addLine({message:["Вебсокет закрыт. ",
                                   aButton("переподключиться к вебсокету", reconnectButton)]})
             }
-            unreadCount += 1;updateNotification()
+            notificator.notfy('system')
         }
         ws.onerror = function(evt) {
             if (closed) return
@@ -248,11 +282,7 @@
         }
         function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium}
-            function notify(what) {
-                unreadCount += 1;updateNotification()
-                if(window.bakaconf.sound[what] && myId !== d.i && myId !== null)
-                    sound.playRandom()
-            }
+            function notify(what) { if (myId !== d.i) notificator.notify(what) }
             switch(d.t) {
             case "names":
                 var namesList = d.names.
@@ -267,20 +297,20 @@
                     namesList.push(nonameCount + " безымянных сырно" +
                                    (myName === ""?" (включая тебя)":""))
                 addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
-                setChatUsersCount(false, d.names.length)
+                chat.setUsersCount(false, d.names.length)
                 break
             case "message":
                 if (d.legacy <= 1)
                     break
                 addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
-                notify("chat", d.i)
+                notify("chat")
                 break
             case "quick":
                 var message = "[" + d.text + "]"
                 if (d.symbol !== undefined)
                     message = "[" + d.symbol + ":" + d.text + "]"
                 addLine({time:d.T, sender:sender, message:message})
-                notify("quick", d.i)
+                notify("quick")
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
                 break
@@ -295,12 +325,12 @@
             case "join":
                 if (!window.bakaconf.hideJoinLeaveMessages)
                     addLine({time:d.T, message: [aName(sender), " заходит."]})
-                setChatUsersCount(true, +1)
+                chat.setUsersCount(true, +1)
                 break
             case "leave":
                 if (!window.bakaconf.hideJoinLeaveMessages)
                     addLine({time:d.T, message: [aName(sender), " выходит."]})
-                setChatUsersCount(true, -1)
+                chat.setUsersCount(true, -1)
                 break
             case "welcome":
                 myId = d.i
@@ -309,7 +339,14 @@
                 send(d)
                 break
             case "addr":
-                showAddr(sender, d.T, d.ws, d.region, d.top)
+                var connect = ""
+                if (d.game === undefined || d.game == "agar.io")
+                    connect = "!brute " + d.ws + " " + d.region
+                else
+                    connect = "connect(" + d.ws + ")"
+                addLine({time:d.T, sender:sender, message:[
+                    d.game !== undefined? "(" + d.game + ") " : "",
+                    "Топ: " + joinTop(d.top), br(), connect]})
                 notify("chat")
                 break
             case "addrs":
@@ -390,13 +427,6 @@
         document.body.removeChild(a)
     }
 
-    function clickName(e) {
-        e = e || window.event;e = e.target || e.srcElement
-        var ca = document.getElementById('carea')
-        ca.value = e.textContent + ": " + ca.value
-        ca.focus()
-    }
-
     function aButton(text, action, className, tooltip) {
         var a = document.createElement('a')
         a.href = "javascript:void(0)"
@@ -410,10 +440,8 @@
     }
 
     function aName(p) {
-        return aButton(p.name || defaultName,
-                       clickName,
-                       "name" + (p.premium?" premium":""),
-                       p.i)
+        return aButton(p.name || defaultName, chat.clickName,
+                       "name" + (p.premium?" premium":""), p.i)
     }
 
     function formatMessage(text) {
@@ -515,11 +543,12 @@
         if (a === undefined ||
             a.ws === undefined ||
             a.top === undefined ||
-            a.top.length === 0 ||
-            a.region === undefined)
+            a.top.length === 0)
             return false
-        send({t: "addr", ws:a.ws, region:a.region, top:a.top})
-        return true
+        var m = {t: "addr", ws:a.ws, top:a.top, game:window.location.hostname}
+        if (a.region !== undefined)
+            m.region = a.region
+        send(m)
     }
 
     var connector = {
@@ -649,13 +678,6 @@
         return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
     }
 
-    function showAddr(sender, time, ws, region, top) {
-        var aConnect = aButton(ws, connector.autoConnect.bind(connector, ws, region, top))
-        addLine({time:time, sender:sender, message:[
-            "Топ: " + joinTop(top), br(),
-            "!brute " + ws + " " + region]})
-    }
-
     function showAddrs(addrs, time) {
         addrs = addrs.filter(function(x) { return (x.alive || x.players > 2) && x.ws })
         if (addrs.length === 0)
@@ -675,6 +697,31 @@
                 br(),
                 "!brute " + x.ws]})
         })
+    }
+
+    var submitHistory = {
+        list: [],
+        idx: -1,
+        text: "",
+        up: function() {
+            if (this.idx == -1) {
+		this.text = g('carea').value
+		g('carea').value = this.list[this.idx = this.list.length-1]
+	    } else if (this.idx != 0)
+		g('carea').value = this.list[--this.idx]
+        },
+        down: function() {
+            if (this.idx == this.list.length-1) {
+		this.idx = -1
+		g('carea').value = this.text
+	    } else if (this.idx != -1)
+		g('carea').value = this.list[++this.idx]
+        },
+        push: function(t) {
+            this.idx = -1
+            if (this.list[this.list.length -1] !== t)
+                this.list.push(t)
+        }
     }
 
     function submit(e) {
@@ -735,6 +782,7 @@
                 sendName()
                 send({t: "message", text: ca.value})
             }
+            submitHistory.push(ca.value)
             ca.value = ""
             if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
                 ca.blur()
@@ -768,11 +816,12 @@
                 return false
             }
 
-            if (chatactive)
-                if (e.keyCode == 27 || e.keyCode == 9) {
-                    g('carea').blur()
-                    return false
-                } else return true
+            if (chat.active) {
+                if (e.keyCode == 27 || e.keyCode == 9)
+                    return chat.blur(), false
+                else
+                    return true
+            }
 
             if (e.ctrlKey && e.keyCode === 83) {
                 downloadTopScreenshot()
@@ -781,8 +830,8 @@
 
             if (!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
-                case 9: chatHider(true); g('carea').focus(); return false
-                case 49: chatHider(); return true
+                case 9: return chat.focus(), false
+                case 49: return chat.toggle(), true
                 case 51: move(); return true
                 case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
@@ -829,6 +878,8 @@
         window.setNick = function(n) {
             if (n !== myName) {
                 myName = n
+                if (window.location.hostname == 'petridish.pw')
+                    myName = myName.replace(/:::::.*?:::::[0-3]$/, '')
                 send({t: "name", "name": myName})
             }
             oldSetNick(n)
@@ -1038,7 +1089,8 @@
                 if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
             })
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
-            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply, ws:a.ws, range:r})
+            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply,
+                             ws:a.ws, range:r, game:window.location.hostname})
             if (sent && reply)
                 this.waitReply = true
             this.blackRibbon = false
@@ -1166,30 +1218,15 @@
             '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
         document.body.appendChild(cbox)
 
-        var notification = document.createElement('div')
-        notification.id = "notification"
-        document.body.appendChild(notification)
-
         map.init()
         ignore.init()
         connector.status.init()
-        sound.cache()
+        notificator.init()
+        chat.init()
 
         setInterval(function() {
             send({t:'ping'})
         }, 1000)
-
-        g('form').onsubmit = submit
-        g('carea').onfocus = function () {
-            chatactive = true
-            g('cbox').style.opacity = '1'
-        }
-        g('carea').onblur = function () {
-            chatactive = false
-            g('cbox').style.opacity = '0.7'
-        }
-
-        g("chat_users").onclick = function() { send({t:'names'}) }
 
         handleOptions()
         handleKeys()
@@ -1200,7 +1237,6 @@
         g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
             document.body.onmousewheel
         document.body.onmousewheel = null
-        notification.onclick = chatHider.bind(undefined, true)
     }
 
     function wait() {
