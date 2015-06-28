@@ -784,7 +784,8 @@
             }
             submitHistory.push(ca.value)
             ca.value = ""
-            if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
+            var myCells = map.myCells()
+            if (myCells === undefined || myCells.length !== 0)
                 ca.blur()
         }
         return false
@@ -805,12 +806,8 @@
             if (extended) {
                 if (e.keyCode >= 16 && e.keyCode <= 18) return false
                 var cmd = quick.eventToAction(e)
-                if (cmd !== undefined) {
-                    var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
-                    if (window.agar !== undefined && window.agar.myCells !== undefined)
-                        m.cells = window.agar.myCells
-                    send(m)
-                }
+                if (cmd !== undefined)
+                    send({t:"quick", symbol:cmd[0], text:cmd[1], cells:map.myCells()})
                 quick.hide()
                 extended = false
                 return false
@@ -944,7 +941,7 @@
             if (this.hidden)
                 return
             var context = this.canvas.getContext('2d')
-            var myCells = ((window.agar || {}).myCells) || []
+            var myCells = this.myCells() || []
             var teams = window.bakaconf.teams
             var idx = {}
             function getAura(cell) {
@@ -1061,16 +1058,23 @@
                 context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
             }
         },
+        myCells: function() {
+            var a = window.agar
+            if (a === undefined || a.myCells === undefined || a.allCells === undefined)
+                return undefined
+            return a.myCells.filter(function f(x){return x in a.allCells})
+        },
         send: function() {
             var a = window.agar
-            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
+            var myCells = this.myCells()
+            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
             }
             var allCellsArray = Object.keys(a.allCells).map(function(i){ return a.allCells[i] })
             var cells = allCellsArray.filter(function(c){
-                return c.size >= 32 || a.myCells.indexOf(c.id) > -1
+                return c.size >= 32 || myCells.indexOf(c.id) > -1
             }).map(function(c){
                 return {x:c.x,
                         y:c.y,
@@ -1089,7 +1093,7 @@
                 if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
             })
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
-            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply,
+            var sent = send({t:'map', all:cells, my:myCells, top:top, reply:reply,
                              ws:a.ws, range:r, game:window.location.hostname})
             if (sent && reply)
                 this.waitReply = true
