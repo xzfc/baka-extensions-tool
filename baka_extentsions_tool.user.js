@@ -139,7 +139,7 @@
             var el = document.createElement('div')
             el.id = "notification"
             document.body.appendChild(el)
-            el.onclick = chatHider.bind(undefined, true)
+            el.onclick = chat.toggle.bind(chat, true)
             this.cache()
         },
         cache: function() {
@@ -157,7 +157,7 @@
             g("notification").style.visibility = 'hidden'
         },
         notify: function(what) {
-            if (chatHidden) {
+            if (chat.hidden) {
                 g("notification").style.visibility = ''
                 g("notification").textContent = ++this.unreadCount
             }
@@ -170,21 +170,45 @@
         }
     }
 
-    var chatHidden = false
-    function chatHider(show) {
-        chatHidden = show === undefined ? !chatHidden : !show
-        g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
-        notificator.clear()
-    }
-
-    var chatUsersCount = 0
-    function setChatUsersCount(add, value) {
-        if (add)
-            chatUsersCount += value
-        else
-            chatUsersCount = value
-
-        g("chat_users").textContent = (chatUsersCount >= 0) ? chatUsersCount : "#"
+    var chat = {
+        hidden: false,
+        active: false,
+        usersCount: 0,
+        init: function() {
+            g("chat_users").onclick = function() { send({t:'names'}) }
+            g('form').onsubmit = submit
+            g('carea').onfocus = function () {
+                chat.active = true
+                g('cbox').style.opacity = '1'
+            }
+            g('carea').onblur = function () {
+                chat.active = false
+                g('cbox').style.opacity = '0.7'
+            }
+        },
+        toggle: function(show) {
+            this.hidden = show === undefined ? !this.hidden : !show
+            g('cbox').style.visibility = (this.hidden ? 'hidden' : '')
+            notificator.clear()
+        },
+        focus: function() {
+            this.toggle(true)
+            document.getElementById('carea').focus()
+        },
+        blur: function() { g('carea').blur() },
+        clickName: function(e) {
+            e = e || window.event; e = e.target || e.srcElement
+            var ca = document.getElementById('carea')
+            ca.value = e.textContent + ": " + ca.value
+            chat.focus()
+        },
+        setUsersCount: function(add, value) {
+            if (add)
+                this.usersCount += value
+            else
+                this.usersCount = value
+            g("chat_users").textContent = (this.usersCount >= 0) ? this.usersCount : "#"
+        }
     }
 
     var sessionId = Math.random().toString(36).substring(2)
@@ -212,7 +236,7 @@
         }
         ws.onclose = function(evt) {
             if (closed) return
-            setChatUsersCount(false, -1)
+            chat.setUsersCount(false, -1)
             if (reconnect) {
                 closed = true
                 addLine({message:['Переподключаюсь~']})
@@ -267,7 +291,7 @@
                     namesList.push(nonameCount + " безымянных сырно" +
                                    (myName === ""?" (включая тебя)":""))
                 addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
-                setChatUsersCount(false, d.names.length)
+                chat.setUsersCount(false, d.names.length)
                 break
             case "message":
                 if (d.legacy <= 1)
@@ -295,12 +319,12 @@
             case "join":
                 if (!window.bakaconf.hideJoinLeaveMessages)
                     addLine({time:d.T, message: [aName(sender), " заходит."]})
-                setChatUsersCount(true, +1)
+                chat.setUsersCount(true, +1)
                 break
             case "leave":
                 if (!window.bakaconf.hideJoinLeaveMessages)
                     addLine({time:d.T, message: [aName(sender), " выходит."]})
-                setChatUsersCount(true, -1)
+                chat.setUsersCount(true, -1)
                 break
             case "welcome":
                 myId = d.i
@@ -390,13 +414,6 @@
         document.body.removeChild(a)
     }
 
-    function clickName(e) {
-        e = e || window.event;e = e.target || e.srcElement
-        var ca = document.getElementById('carea')
-        ca.value = e.textContent + ": " + ca.value
-        ca.focus()
-    }
-
     function aButton(text, action, className, tooltip) {
         var a = document.createElement('a')
         a.href = "javascript:void(0)"
@@ -410,10 +427,8 @@
     }
 
     function aName(p) {
-        return aButton(p.name || defaultName,
-                       clickName,
-                       "name" + (p.premium?" premium":""),
-                       p.i)
+        return aButton(p.name || defaultName, chat.clickName,
+                       "name" + (p.premium?" premium":""), p.i)
     }
 
     function formatMessage(text) {
@@ -768,11 +783,12 @@
                 return false
             }
 
-            if (chatactive)
-                if (e.keyCode == 27 || e.keyCode == 9) {
-                    g('carea').blur()
-                    return false
-                } else return true
+            if (chat.active) {
+                if (e.keyCode == 27 || e.keyCode == 9)
+                    return chat.blur(), false
+                else
+                    return true
+            }
 
             if (e.ctrlKey && e.keyCode === 83) {
                 downloadTopScreenshot()
@@ -781,8 +797,8 @@
 
             if (!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
-                case 9: chatHider(true); g('carea').focus(); return false
-                case 49: chatHider(); return true
+                case 9: return chat.focus(), false
+                case 49: return chat.toggle(), true
                 case 51: move(); return true
                 case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
@@ -1172,22 +1188,11 @@
         ignore.init()
         connector.status.init()
         notificator.init()
+        chat.init()
 
         setInterval(function() {
             send({t:'ping'})
         }, 1000)
-
-        g('form').onsubmit = submit
-        g('carea').onfocus = function () {
-            chatactive = true
-            g('cbox').style.opacity = '1'
-        }
-        g('carea').onblur = function () {
-            chatactive = false
-            g('cbox').style.opacity = '0.7'
-        }
-
-        g("chat_users").onclick = function() { send({t:'names'}) }
 
         handleOptions()
         handleKeys()
