@@ -185,6 +185,12 @@
                 chat.active = false
                 g('cbox').style.opacity = '0.7'
             }
+            g('carea').onkeydown = function(e) {
+                switch (e.keyCode) {
+                case 38: return submitHistory.up(), false
+                case 40: return submitHistory.down(), false
+                }
+            }
         },
         toggle: function(show) {
             this.hidden = show === undefined ? !this.hidden : !show
@@ -693,6 +699,31 @@
         })
     }
 
+    var submitHistory = {
+        list: [],
+        idx: -1,
+        text: "",
+        up: function() {
+            if (this.idx == -1) {
+		this.text = g('carea').value
+		g('carea').value = this.list[this.idx = this.list.length-1]
+	    } else if (this.idx != 0)
+		g('carea').value = this.list[--this.idx]
+        },
+        down: function() {
+            if (this.idx == this.list.length-1) {
+		this.idx = -1
+		g('carea').value = this.text
+	    } else if (this.idx != -1)
+		g('carea').value = this.list[++this.idx]
+        },
+        push: function(t) {
+            this.idx = -1
+            if (this.list[this.list.length -1] !== t)
+                this.list.push(t)
+        }
+    }
+
     function submit(e) {
         var ca = document.getElementById('carea')
         function sendName() {
@@ -751,6 +782,7 @@
                 sendName()
                 send({t: "message", text: ca.value})
             }
+            submitHistory.push(ca.value)
             ca.value = ""
             if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
                 ca.blur()
