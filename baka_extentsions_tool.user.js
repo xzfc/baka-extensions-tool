@@ -131,9 +131,17 @@
         }
     }
 
-    var sound = {
+    var notificator = {
         cached: [],
         list: "",
+        unreadCount: 0,
+        init: function() {
+            var el = document.createElement('div')
+            el.id = "notification"
+            document.body.appendChild(el)
+            el.onclick = chatHider.bind(undefined, true)
+            this.cache()
+        },
         cache: function() {
             var list = window.bakaconf.soundList.join("\n")
             if (list === this.list)
@@ -144,11 +152,21 @@
                 return new Audio(x)
             })
         },
-        playRandom: function() {
-            this.cache()
-            if (this.cached.length === 0)
-                return
-            this.cached[Math.floor(Math.random()*this.cached.length)].play()
+        clear: function() {
+            this.unreadCount = 0
+            g("notification").style.visibility = 'hidden'
+        },
+        notify: function(what) {
+            if (chatHidden) {
+                g("notification").style.visibility = ''
+                g("notification").textContent = ++this.unreadCount
+            }
+            if (window.bakaconf.sound[what]) {
+                this.cache()
+                if (this.cached.length === 0)
+                    return
+                this.cached[Math.floor(Math.random()*this.cached.length)].play()
+            }
         }
     }
 
@@ -156,23 +174,7 @@
     function chatHider(show) {
         chatHidden = show === undefined ? !chatHidden : !show
         g('cbox').style.visibility = (chatHidden ? 'hidden' : '')
-        updateNotification()
-    }
-
-    var unreadCount = 0
-    function updateNotification() {
-        var n = g("notification")
-        if (!chatHidden) {
-            unreadCount = 0
-            n.style.visibility =  'hidden'
-        } else {
-            if (unreadCount) {
-                n.textContent = unreadCount
-                n.style.visibility =  ''
-            } else {
-                n.style.visibility =  'hidden'
-            }
-        }
+        notificator.clear()
     }
 
     var chatUsersCount = 0
@@ -223,7 +225,7 @@
                 addLine({message:["Вебсокет закрыт. ",
                                   aButton("переподключиться к вебсокету", reconnectButton)]})
             }
-            unreadCount += 1;updateNotification()
+            notificator.notfy('system')
         }
         ws.onerror = function(evt) {
             if (closed) return
@@ -250,11 +252,7 @@
         }
         function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium}
-            function notify(what) {
-                unreadCount += 1;updateNotification()
-                if(window.bakaconf.sound[what] && myId !== d.i && myId !== null)
-                    sound.playRandom()
-            }
+            function notify(what) { if (myId !== d.i) notificator.notify(what) }
             switch(d.t) {
             case "names":
                 var namesList = d.names.
@@ -275,14 +273,14 @@
                 if (d.legacy <= 1)
                     break
                 addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
-                notify("chat", d.i)
+                notify("chat")
                 break
             case "quick":
                 var message = "[" + d.text + "]"
                 if (d.symbol !== undefined)
                     message = "[" + d.symbol + ":" + d.text + "]"
                 addLine({time:d.T, sender:sender, message:message})
-                notify("quick", d.i)
+                notify("quick")
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
                 break
@@ -1170,14 +1168,10 @@
             '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
         document.body.appendChild(cbox)
 
-        var notification = document.createElement('div')
-        notification.id = "notification"
-        document.body.appendChild(notification)
-
         map.init()
         ignore.init()
         connector.status.init()
-        sound.cache()
+        notificator.init()
 
         setInterval(function() {
             send({t:'ping'})
@@ -1204,7 +1198,6 @@
         g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
             document.body.onmousewheel
         document.body.onmousewheel = null
-        notification.onclick = chatHider.bind(undefined, true)
     }
 
     function wait() {
