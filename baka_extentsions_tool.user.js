@@ -707,6 +707,8 @@
         idx: -1,
         text: "",
         up: function() {
+            if (this.list.length === 0)
+                return
             if (this.idx == -1) {
 		this.text = g('carea').value
 		g('carea').value = this.list[this.idx = this.list.length-1]
@@ -714,6 +716,8 @@
 		g('carea').value = this.list[--this.idx]
         },
         down: function() {
+            if (this.list.length === 0)
+                return
             if (this.idx == this.list.length-1) {
 		this.idx = -1
 		g('carea').value = this.text
