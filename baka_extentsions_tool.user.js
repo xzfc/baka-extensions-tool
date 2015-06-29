@@ -902,6 +902,7 @@
         blinks: {},
         blinkIdsCounter: 0,
         waitReply: true,
+        myCellsAffected: false,
         init: function() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
@@ -1062,7 +1063,12 @@
             var a = window.agar
             if (a === undefined || a.myCells === undefined || a.allCells === undefined)
                 return undefined
-            return a.myCells.filter(function f(x){return x in a.allCells})
+            var myCells = a.myCells.filter(function f(x){return x in a.allCells})
+            if (this.myCellsAffected && myCells.length !== a.myCells.length) {
+                this.myCellsAffected = true
+                send({t:'anime', myCellsAffected:1})
+            }
+            return myCells
         },
         send: function() {
             var a = window.agar
