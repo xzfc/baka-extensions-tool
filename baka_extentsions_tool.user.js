@@ -282,7 +282,10 @@
         }
         function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium}
-            function notify(what) { if (myId !== d.i) notificator.notify(what) }
+            function notify(what) {
+                if (myId !== d.i && myId !== null)
+                    notificator.notify(what)
+            }
             switch(d.t) {
             case "names":
                 var namesList = d.names.
