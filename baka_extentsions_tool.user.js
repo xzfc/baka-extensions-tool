@@ -798,7 +798,7 @@
         return false
     }
 
-    function handleKeys() {
+    function handleEvents() {
         var defaultPosition = true
         var move = function () {
             defaultPosition = !defaultPosition
@@ -806,8 +806,17 @@
             g('cbox').style.top = g('cbox').style.left = (defaultPosition ? '' : '0')
         }
 
-        var olddown = window.onkeydown, oldup = window.onkeyup
+        // Autofire
         var repeat = 0, repeatm = 0
+        setInterval(function() {
+            if (!repeat && !repeatm) return
+            if (!isHovered()) return repeat = repeatm = false
+            olddown(key_w)
+            oldup(key_w)
+        }, 50)
+
+        // Keyboard controls
+        var olddown = window.onkeydown, oldup = window.onkeyup
         var extended = false
         window.onkeydown = function(e) {
             if (extended) {
@@ -850,31 +859,43 @@
             default: return oldup(e)
             }
         }
+
+        // Mouse controls
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
         g("canvas").onmousedown = function(e) {
             if (!window.bakaconf.mouseControls)
                 return true
             switch (e.which) {
-            case 1: repeatm = true; return false
-            case 3: olddown(key_space); return false
+            case 1: return repeatm = true, false
+            case 3: return olddown(key_space), oldup(key_space), false
             }
         }
-        g("canvas").onmouseup = function(e) {
-            if (!window.bakaconf.mouseControls)
-                return true
-            switch (e.which) {
-            case 1: repeatm = false; return false
-            case 3: oldup(key_space); return false
-            }
+        g("canvas").onmouseup = g("map").onmouseup = g("notification").onmouseup =
+            g("cbox").onmouseup =
+            function(e) { if (e.which === 1) repeatm = false }
+        g("canvas").oncontextmenu =
+            function(e) { return !window.bakaconf.mouseControls }
+
+        // Mouse controls: hover tracker
+        var hovered = {}
+        function isHovered() {
+            for (var i in hovered) if (hovered[i]) return true
+            return false
         }
-        g("canvas").oncontextmenu = function(e) {
-            return !window.bakaconf.mouseControls
+        function track(id) {
+            function set(k, v) { hovered[k] = v }
+            g(id).addEventListener("mouseenter", set.bind(this, id, true))
+            g(id).addEventListener("mousemove",  set.bind(this, id, true))
+            g(id).addEventListener("mouseleave", set.bind(this, id, false))
         }
-        setInterval(function() {
-            if (!repeat && !repeatm) return
-            olddown(key_w)
-            oldup(key_w)
-        }, 50)
+        track("canvas"); track("map"), track("notification"), track("cbox")
+
+        // Make baka UI mouse-transparent
+        g("map").onmousemove = g("notification").onmousemove = g("cbox").onmousemove =
+            g("canvas").onmousemove
+        g("canvas").onmousewheel = g("map").onmousewheel = g("notification").onmousewheel =
+            document.body.onmousewheel
+        document.body.onmousewheel = null
     }
 
     function handleOptions() {
@@ -1246,14 +1267,9 @@
         }, 1000)
 
         handleOptions()
-        handleKeys()
+        handleEvents()
         connectChat()
         map.sendThread()
-        map.canvas.onmousemove = notification.onmousemove = cbox.onmousemove =
-            g("canvas").onmousemove
-        g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
-            document.body.onmousewheel
-        document.body.onmousewheel = null
     }
 
     function wait() {
