@@ -5,6 +5,7 @@
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
 // @include     http://petridish.pw/*
+// @include     http://fxia.me/agar/
 // @grant       none
 // ==/UserScript==
 
@@ -1003,6 +1004,11 @@
             
             context.clearRect(0 , 0, canvas.width, canvas.height)
             var proj = window.bakaconf.mapProjection
+            if (window.location.hostname === "petridish.pw") {
+                var region = g('region').options[g('region').selectedIndex].text
+                proj = [0, parseFloat(region.replace(/.*\bMap([0-9.]+)K\b.*/, "$1"))*1000]
+            } else if ((window.agar||{}).dimensions)
+                proj = [window.agar.dimensions[0], window.agar.dimensions[2]]
             proj = [proj[0], 256/(proj[1]-proj[0])]
             function t(v) { return (v-proj[0])*proj[1] } // shift+scale
             function s(v) { return v * proj[1] }         // scale
