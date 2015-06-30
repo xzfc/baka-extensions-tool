@@ -19,17 +19,17 @@
                         ['ПК', 'Пульни колючку']],
                  _051: [['Е', 'Возьми мои ошмётки'],
                         ['!Е', 'Не бери мои ошмётки']],
-	         _052: [['⧀', 'Отходим'],
+                 _052: [['⧀', 'Отходим'],
                         ['⧁', 'Наступаем']],
-	         _097: [['↙', 'Левый нижний угол']],
-	         _098: [['↓', 'Центр внизу']],
-	         _099: [['↘', 'Правый нижний угол']],
-	         _100: [['←', 'Центр слева']],
-	         _101: [['⨀', 'Центр']],
-	         _102: [['→', 'Центр справа']],
-	         _103: [['↖', 'Левый верхний угол']],
-	         _104: [['↑', 'Центр сверху']],
-	         _105: [['↗', 'Правый верхний угол']],
+                 _097: [['↙', 'Левый нижний угол']],
+                 _098: [['↓', 'Центр внизу']],
+                 _099: [['↘', 'Правый нижний угол']],
+                 _100: [['←', 'Центр слева']],
+                 _101: [['⨀', 'Центр']],
+                 _102: [['→', 'Центр справа']],
+                 _103: [['↖', 'Левый верхний угол']],
+                 _104: [['↑', 'Центр сверху']],
+                 _105: [['↗', 'Правый верхний угол']],
              },
              teams:{
                  baka:{aura: "#00f",
@@ -48,7 +48,7 @@
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
                  other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T)\]/i,
                                  /ヴいｐ|ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
-                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]}
+                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]},
              },
              soundList: ["http://89.31.114.117/tutturu/0.mp3",
                          "http://89.31.114.117/tutturu/1.mp3",
@@ -167,7 +167,7 @@
                     return
                 this.cached[Math.floor(Math.random()*this.cached.length)].play()
             }
-        }
+        },
     }
 
     var chat = {
@@ -232,7 +232,7 @@
             else
                 this.usersCount = value
             g("chat_users").textContent = (this.usersCount >= 0) ? this.usersCount : "#"
-        }
+        },
     }
 
     var sessionId = Math.random().toString(36).substring(2)
@@ -692,7 +692,7 @@
             ok: function() { this._set("Подключился к ", " ", false) },
             fail: function() { this._set("Не удалось подключиться к ", " ", false) },
             stop: function() { this._set("Прервано подлючение к ", " ", false) }
-        }
+        },
     }
 
     function joinTop(top) {
@@ -728,25 +728,25 @@
             if (this.list.length === 0)
                 return
             if (this.idx == -1) {
-		this.text = g('carea').value
-		g('carea').value = this.list[this.idx = this.list.length-1]
-	    } else if (this.idx != 0)
-		g('carea').value = this.list[--this.idx]
+                this.text = g('carea').value
+                g('carea').value = this.list[this.idx = this.list.length-1]
+            } else if (this.idx != 0)
+                g('carea').value = this.list[--this.idx]
         },
         down: function() {
             if (this.list.length === 0)
                 return
             if (this.idx == this.list.length-1) {
-		this.idx = -1
-		g('carea').value = this.text
-	    } else if (this.idx != -1)
-		g('carea').value = this.list[++this.idx]
+                this.idx = -1
+                g('carea').value = this.text
+            } else if (this.idx != -1)
+               g('carea').value = this.list[++this.idx]
         },
         push: function(t) {
             this.idx = -1
             if (this.list[this.list.length -1] !== t)
                 this.list.push(t)
-        }
+        },
     }
 
     function submit(e) {
@@ -1208,7 +1208,7 @@
             var quickHint = document.getElementById('quickHint')
             if (quickHint)
                 document.body.removeChild(quickHint)
-        }
+        },
     }
 
     var ignore = {
