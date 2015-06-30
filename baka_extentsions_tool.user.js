@@ -1,15 +1,16 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.23
+// @version     1.24
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
 // @include     http://petridish.pw/*
+// @include     http://fxia.me/agar/
 // @grant       none
 // ==/UserScript==
 
 (function() {
-    var version = "1.23"
+    var version = "1.24"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -18,17 +19,17 @@
                         ['ПК', 'Пульни колючку']],
                  _051: [['Е', 'Возьми мои ошмётки'],
                         ['!Е', 'Не бери мои ошмётки']],
-	         _052: [['⧀', 'Отходим'],
+                 _052: [['⧀', 'Отходим'],
                         ['⧁', 'Наступаем']],
-	         _097: [['↙', 'Левый нижний угол']],
-	         _098: [['↓', 'Центр внизу']],
-	         _099: [['↘', 'Правый нижний угол']],
-	         _100: [['←', 'Центр слева']],
-	         _101: [['⨀', 'Центр']],
-	         _102: [['→', 'Центр справа']],
-	         _103: [['↖', 'Левый верхний угол']],
-	         _104: [['↑', 'Центр сверху']],
-	         _105: [['↗', 'Правый верхний угол']],
+                 _097: [['↙', 'Левый нижний угол']],
+                 _098: [['↓', 'Центр внизу']],
+                 _099: [['↘', 'Правый нижний угол']],
+                 _100: [['←', 'Центр слева']],
+                 _101: [['⨀', 'Центр']],
+                 _102: [['→', 'Центр справа']],
+                 _103: [['↖', 'Левый верхний угол']],
+                 _104: [['↑', 'Центр сверху']],
+                 _105: [['↗', 'Правый верхний угол']],
              },
              teams:{
                  baka:{aura: "#00f",
@@ -47,7 +48,7 @@
                  eigth: {names: /ȣȣȣ|ȢȢȢ/},
                  other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T)\]/i,
                                  /ヴいｐ|ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
-                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]}
+                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]},
              },
              soundList: ["http://89.31.114.117/tutturu/0.mp3",
                          "http://89.31.114.117/tutturu/1.mp3",
@@ -69,7 +70,6 @@
              mapProjection: [-7060, 7060],
             })
     var myName = null
-    var chatactive = false
     var hasConnected = false
 
     var defaultName = "Безымянная сырно"
@@ -167,23 +167,35 @@
                     return
                 this.cached[Math.floor(Math.random()*this.cached.length)].play()
             }
-        }
+        },
     }
 
     var chat = {
         hidden: false,
         active: false,
+        defaultPosition: true,
         usersCount: 0,
         init: function() {
+            var cbox = document.createElement('table')
+            cbox.cellpadding = cbox.cellspacing = 0
+            cbox.id = 'cbox'
+            cbox.innerHTML = '<tr><td colspan="2"><div id="msgsbox"></div></td></tr>' +
+                '<tr height="0">' +
+                '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></form></td>' +
+                '<td id="chat_users"></td>' +
+                '</tr>' +
+                '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
+            document.body.appendChild(cbox)
+
             g("chat_users").onclick = function() { send({t:'names'}) }
             g('form').onsubmit = submit
             g('carea').onfocus = function () {
                 chat.active = true
-                g('cbox').style.opacity = '1'
+                cbox.style.opacity = '1'
             }
             g('carea').onblur = function () {
                 chat.active = false
-                g('cbox').style.opacity = '0.7'
+                cbox.style.opacity = '0.7'
             }
             g('carea').onkeydown = function(e) {
                 switch (e.keyCode) {
@@ -191,6 +203,12 @@
                 case 40: return submitHistory.down(), false
                 }
             }
+        },
+        move: function() {
+            var dp = this.defaultPosition = !this.defaultPosition
+            var stl = g('cbox').style
+            stl.bottom = stl.right = dp?'0':''
+            stl.top    = stl.left  = dp?'' :'0'
         },
         toggle: function(show) {
             this.hidden = show === undefined ? !this.hidden : !show
@@ -214,7 +232,7 @@
             else
                 this.usersCount = value
             g("chat_users").textContent = (this.usersCount >= 0) ? this.usersCount : "#"
-        }
+        },
     }
 
     var sessionId = Math.random().toString(36).substring(2)
@@ -282,7 +300,10 @@
         }
         function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium}
-            function notify(what) { if (myId !== d.i) notificator.notify(what) }
+            function notify(what) {
+                if (myId !== d.i && myId !== null)
+                    notificator.notify(what)
+            }
             switch(d.t) {
             case "names":
                 var namesList = d.names.
@@ -671,7 +692,7 @@
             ok: function() { this._set("Подключился к ", " ", false) },
             fail: function() { this._set("Не удалось подключиться к ", " ", false) },
             stop: function() { this._set("Прервано подлючение к ", " ", false) }
-        }
+        },
     }
 
     function joinTop(top) {
@@ -704,24 +725,28 @@
         idx: -1,
         text: "",
         up: function() {
+            if (this.list.length === 0)
+                return
             if (this.idx == -1) {
-		this.text = g('carea').value
-		g('carea').value = this.list[this.idx = this.list.length-1]
-	    } else if (this.idx != 0)
-		g('carea').value = this.list[--this.idx]
+                this.text = g('carea').value
+                g('carea').value = this.list[this.idx = this.list.length-1]
+            } else if (this.idx != 0)
+                g('carea').value = this.list[--this.idx]
         },
         down: function() {
+            if (this.list.length === 0)
+                return
             if (this.idx == this.list.length-1) {
-		this.idx = -1
-		g('carea').value = this.text
-	    } else if (this.idx != -1)
-		g('carea').value = this.list[++this.idx]
+                this.idx = -1
+                g('carea').value = this.text
+            } else if (this.idx != -1)
+               g('carea').value = this.list[++this.idx]
         },
         push: function(t) {
             this.idx = -1
             if (this.list[this.list.length -1] !== t)
                 this.list.push(t)
-        }
+        },
     }
 
     function submit(e) {
@@ -784,33 +809,32 @@
             }
             submitHistory.push(ca.value)
             ca.value = ""
-            if (window.agar === undefined || window.agar.myCells === undefined || window.agar.myCells.length !== 0)
+            var myCells = map.myCells()
+            if (myCells === undefined || myCells.length !== 0)
                 ca.blur()
         }
         return false
     }
 
-    function handleKeys() {
-        var defaultPosition = true
-        var move = function () {
-            defaultPosition = !defaultPosition
-            g('cbox').style.bottom = g('cbox').style.right = (defaultPosition ? '0' : '')
-            g('cbox').style.top = g('cbox').style.left = (defaultPosition ? '' : '0')
-        }
-
-        var olddown = window.onkeydown, oldup = window.onkeyup
+    function handleEvents() {
+        // Autofire
         var repeat = 0, repeatm = 0
+        setInterval(function() {
+            if (!repeat && !repeatm) return
+            if (!isHovered()) return repeat = repeatm = false
+            olddown(key_w)
+            oldup(key_w)
+        }, 50)
+
+        // Keyboard controls
+        var olddown = window.onkeydown, oldup = window.onkeyup
         var extended = false
         window.onkeydown = function(e) {
             if (extended) {
                 if (e.keyCode >= 16 && e.keyCode <= 18) return false
                 var cmd = quick.eventToAction(e)
-                if (cmd !== undefined) {
-                    var m = {t:"quick", symbol:cmd[0], text:cmd[1]}
-                    if (window.agar !== undefined && window.agar.myCells !== undefined)
-                        m.cells = window.agar.myCells
-                    send(m)
-                }
+                if (cmd !== undefined)
+                    send({t:"quick", symbol:cmd[0], text:cmd[1], cells:map.myCells()})
                 quick.hide()
                 extended = false
                 return false
@@ -832,7 +856,7 @@
                 switch(e.keyCode) {
                 case 9: return chat.focus(), false
                 case 49: return chat.toggle(), true
-                case 51: move(); return true
+                case 51: return chat.move(), true
                 case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
                 case 81: repeat = 1; return true
@@ -846,31 +870,43 @@
             default: return oldup(e)
             }
         }
+
+        // Mouse controls
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
         g("canvas").onmousedown = function(e) {
             if (!window.bakaconf.mouseControls)
                 return true
             switch (e.which) {
-            case 1: repeatm = true; return false
-            case 3: olddown(key_space); return false
+            case 1: return repeatm = true, false
+            case 3: return olddown(key_space), oldup(key_space), false
             }
         }
-        g("canvas").onmouseup = function(e) {
-            if (!window.bakaconf.mouseControls)
-                return true
-            switch (e.which) {
-            case 1: repeatm = false; return false
-            case 3: oldup(key_space); return false
-            }
+        g("canvas").onmouseup = g("map").onmouseup = g("notification").onmouseup =
+            g("cbox").onmouseup =
+            function(e) { if (e.which === 1) repeatm = false }
+        g("canvas").oncontextmenu =
+            function(e) { return !window.bakaconf.mouseControls }
+
+        // Mouse controls: hover tracker
+        var hovered = {}
+        function isHovered() {
+            for (var i in hovered) if (hovered[i]) return true
+            return false
         }
-        g("canvas").oncontextmenu = function(e) {
-            return !window.bakaconf.mouseControls
+        function track(id) {
+            function set(k, v) { hovered[k] = v }
+            g(id).addEventListener("mouseenter", set.bind(this, id, true))
+            g(id).addEventListener("mousemove",  set.bind(this, id, true))
+            g(id).addEventListener("mouseleave", set.bind(this, id, false))
         }
-        setInterval(function() {
-            if (!repeat && !repeatm) return
-            olddown(key_w)
-            oldup(key_w)
-        }, 50)
+        track("canvas"); track("map"), track("notification"), track("cbox")
+
+        // Make baka UI mouse-transparent
+        g("map").onmousemove = g("notification").onmousemove = g("cbox").onmousemove =
+            g("canvas").onmousemove
+        g("canvas").onmousewheel = g("map").onmousewheel = g("notification").onmousewheel =
+            document.body.onmousewheel
+        document.body.onmousewheel = null
     }
 
     function handleOptions() {
@@ -905,6 +941,7 @@
         blinks: {},
         blinkIdsCounter: 0,
         waitReply: true,
+        myCellsAffected: false,
         init: function() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
@@ -944,7 +981,7 @@
             if (this.hidden)
                 return
             var context = this.canvas.getContext('2d')
-            var myCells = ((window.agar || {}).myCells) || []
+            var myCells = this.myCells() || []
             var teams = window.bakaconf.teams
             var idx = {}
             function getAura(cell) {
@@ -967,6 +1004,11 @@
             
             context.clearRect(0 , 0, canvas.width, canvas.height)
             var proj = window.bakaconf.mapProjection
+            if (window.location.hostname === "petridish.pw") {
+                var region = g('region').options[g('region').selectedIndex].text
+                proj = [0, parseFloat(region.replace(/.*\bMap([0-9.]+)K\b.*/, "$1"))*1000]
+            } else if ((window.agar||{}).dimensions)
+                proj = [window.agar.dimensions[0], window.agar.dimensions[2]]
             proj = [proj[0], 256/(proj[1]-proj[0])]
             function t(v) { return (v-proj[0])*proj[1] } // shift+scale
             function s(v) { return v * proj[1] }         // scale
@@ -1061,16 +1103,28 @@
                 context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
             }
         },
+        myCells: function() {
+            var a = window.agar
+            if (a === undefined || a.myCells === undefined || a.allCells === undefined)
+                return undefined
+            var myCells = a.myCells.filter(function f(x){return x in a.allCells})
+            if (this.myCellsAffected && myCells.length !== a.myCells.length) {
+                this.myCellsAffected = true
+                send({t:'anime', myCellsAffected:1})
+            }
+            return myCells
+        },
         send: function() {
             var a = window.agar
-            if (a === undefined || a.allCells === undefined || a.myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
+            var myCells = this.myCells()
+            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
             }
             var allCellsArray = Object.keys(a.allCells).map(function(i){ return a.allCells[i] })
             var cells = allCellsArray.filter(function(c){
-                return c.size >= 32 || a.myCells.indexOf(c.id) > -1
+                return c.size >= 32 || myCells.indexOf(c.id) > -1
             }).map(function(c){
                 return {x:c.x,
                         y:c.y,
@@ -1089,7 +1143,7 @@
                 if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
             })
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
-            var sent = send({t:'map', all:cells, my:a.myCells, top:top, reply:reply,
+            var sent = send({t:'map', all:cells, my:myCells, top:top, reply:reply,
                              ws:a.ws, range:r, game:window.location.hostname})
             if (sent && reply)
                 this.waitReply = true
@@ -1154,7 +1208,7 @@
             var quickHint = document.getElementById('quickHint')
             if (quickHint)
                 document.body.removeChild(quickHint)
-        }
+        },
     }
 
     var ignore = {
@@ -1207,36 +1261,20 @@
             document.head.appendChild(stl)
         }
 
-        var cbox = document.createElement('table')
-        cbox.cellpadding = cbox.cellspacing = 0
-        cbox.id = 'cbox'
-        cbox.innerHTML = '<tr><td colspan="2"><div id="msgsbox"></div></td></tr>' +
-            '<tr height="0">' +
-            '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></input></form></td>' +
-            '<td id="chat_users"></td>' +
-            '</tr>' +
-            '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
-        document.body.appendChild(cbox)
-
+        chat.init()
         map.init()
         ignore.init()
         connector.status.init()
         notificator.init()
-        chat.init()
 
         setInterval(function() {
             send({t:'ping'})
         }, 1000)
 
         handleOptions()
-        handleKeys()
+        handleEvents()
         connectChat()
         map.sendThread()
-        map.canvas.onmousemove = notification.onmousemove = cbox.onmousemove =
-            g("canvas").onmousemove
-        g("canvas").onmousewheel = map.canvas.onmousewheel = notification.onmousewheel =
-            document.body.onmousewheel
-        document.body.onmousewheel = null
     }
 
     function wait() {
