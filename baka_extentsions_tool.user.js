@@ -69,7 +69,6 @@
              mapProjection: [-7060, 7060],
             })
     var myName = null
-    var chatactive = false
     var hasConnected = false
 
     var defaultName = "Безымянная сырно"
@@ -173,17 +172,29 @@
     var chat = {
         hidden: false,
         active: false,
+        defaultPosition: true,
         usersCount: 0,
         init: function() {
+            var cbox = document.createElement('table')
+            cbox.cellpadding = cbox.cellspacing = 0
+            cbox.id = 'cbox'
+            cbox.innerHTML = '<tr><td colspan="2"><div id="msgsbox"></div></td></tr>' +
+                '<tr height="0">' +
+                '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></form></td>' +
+                '<td id="chat_users"></td>' +
+                '</tr>' +
+                '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
+            document.body.appendChild(cbox)
+
             g("chat_users").onclick = function() { send({t:'names'}) }
             g('form').onsubmit = submit
             g('carea').onfocus = function () {
                 chat.active = true
-                g('cbox').style.opacity = '1'
+                cbox.style.opacity = '1'
             }
             g('carea').onblur = function () {
                 chat.active = false
-                g('cbox').style.opacity = '0.7'
+                cbox.style.opacity = '0.7'
             }
             g('carea').onkeydown = function(e) {
                 switch (e.keyCode) {
@@ -191,6 +202,12 @@
                 case 40: return submitHistory.down(), false
                 }
             }
+        },
+        move: function() {
+            var dp = this.defaultPosition = !this.defaultPosition
+            var stl = g('cbox').style
+            stl.bottom = stl.right = dp?'0':''
+            stl.top    = stl.left  = dp?'' :'0'
         },
         toggle: function(show) {
             this.hidden = show === undefined ? !this.hidden : !show
@@ -799,13 +816,6 @@
     }
 
     function handleEvents() {
-        var defaultPosition = true
-        var move = function () {
-            defaultPosition = !defaultPosition
-            g('cbox').style.bottom = g('cbox').style.right = (defaultPosition ? '0' : '')
-            g('cbox').style.top = g('cbox').style.left = (defaultPosition ? '' : '0')
-        }
-
         // Autofire
         var repeat = 0, repeatm = 0
         setInterval(function() {
@@ -845,7 +855,7 @@
                 switch(e.keyCode) {
                 case 9: return chat.focus(), false
                 case 49: return chat.toggle(), true
-                case 51: move(); return true
+                case 51: return chat.move(), true
                 case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
                 case 81: repeat = 1; return true
@@ -1245,22 +1255,11 @@
             document.head.appendChild(stl)
         }
 
-        var cbox = document.createElement('table')
-        cbox.cellpadding = cbox.cellspacing = 0
-        cbox.id = 'cbox'
-        cbox.innerHTML = '<tr><td colspan="2"><div id="msgsbox"></div></td></tr>' +
-            '<tr height="0">' +
-            '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></input></form></td>' +
-            '<td id="chat_users"></td>' +
-            '</tr>' +
-            '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
-        document.body.appendChild(cbox)
-
+        chat.init()
         map.init()
         ignore.init()
         connector.status.init()
         notificator.init()
-        chat.init()
 
         setInterval(function() {
             send({t:'ping'})
