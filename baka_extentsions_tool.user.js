@@ -904,9 +904,17 @@
         // Make baka UI mouse-transparent
         g("map").onmousemove = g("notification").onmousemove = g("cbox").onmousemove =
             g("canvas").onmousemove
-        g("canvas").onmousewheel = g("map").onmousewheel = g("notification").onmousewheel =
-            document.body.onmousewheel
-        document.body.onmousewheel = null
+        var wheel = [g("canvas"), g("map"), g("notification")]
+        for (var i = 0; i < wheel.length; i++) {
+            if (window.agar.dommousescroll)
+                wheel[i].addEventListener('DOMMouseScroll', window.agar.dommousescroll, false)
+            else
+                wheel[i].onmousewheel = document.body.onmousewheel
+        }
+        if (window.agar.dommousescroll)
+            document.removeEventListener('DOMMouseScroll', window.agar.dommousescroll, false)
+        else
+            document.body.onmousewheel = null
     }
 
     function handleOptions() {
