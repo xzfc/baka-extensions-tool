@@ -82,7 +82,7 @@
         }
         setDefault(window, 'bakaconf', {})
         for (var i in defaults)
-            if (i != 'teams')
+            if (i !== 'teams')
                 setDefault(window.bakaconf, i, defaults[i])
         setDefault(window.bakaconf, 'teams', {})
         for (var i in defaults.teams)
@@ -90,16 +90,16 @@
     }
 
     function join(l) {
-        if (l.length == 0)
+        if (l.length === 0)
             return ["никого"]
         if (l.length <= 1)
             return l
-        result = []
+        var result = []
         for (var i = 0; i < l.length; i++) {
             result.push(l[i])
             if (i < l.length-2)
                 result.push(", ")
-            else if (i == l.length-2)
+            else if (i === l.length-2)
                 result.push(" и ")
         }
         return result
@@ -355,13 +355,14 @@
                 break
             case "welcome":
                 myId = d.i
+                break
             case "ping":
                 d.t = 'pong'
                 send(d)
                 break
             case "addr":
                 var connect = ""
-                if (d.game === undefined || d.game == "agar.io")
+                if (d.game === undefined || d.game === "agar.io")
                     connect = "!brute " + d.ws + " " + d.region
                 else
                     connect = "connect(" + d.ws + ")"
@@ -384,7 +385,7 @@
                 var result = ""
                 while (true) {
                     var x = d.getUint16(c); c+=2
-                    if (x == 0)
+                    if (x === 0)
                         return result
                     result += String.fromCharCode(x)
                 }
@@ -408,8 +409,8 @@
                 cell.c = getColor()
                 cell.n = getString()
                 var flags = d.getUint8(c); c+= 1
-                cell.v = (flags & 1) != 0
-                cell.a = (flags & 2) != 0
+                cell.v = (flags & 1) !== 0
+                cell.a = (flags & 2) !== 0
                 data.push(cell)
             }
             var range_size = d.getUint32(c); c += 4
@@ -502,7 +503,7 @@
             }
             result[i] = el
         }
-        if (text.trim()[0] == '>')
+        if (text.trim()[0] === '>')
             result.greentext = true
         return result
     }
@@ -551,7 +552,7 @@
     }
 
     function send(a) {
-        if (websocket.readyState == 1) {
+        if (websocket.readyState === 1) {
             websocket.send(JSON.stringify(a))
             return true
         }
@@ -590,7 +591,7 @@
             var thisMethod = this.autoConnectIteration.bind(this), that = this
             if (this.timer !== undefined)
                 delete this.timer
-            if (this.state == 'token') {
+            if (this.state === 'token') {
                 this.status.trying()
                 this.request = new XMLHttpRequest()
                 this.request.onload = function() {
@@ -603,23 +604,23 @@
                         window.connect("ws://" + i[0], i[1])
                         this.timer = setTimeout(thisMethod, 1000)
                     } else {
-                        if (++that.tokenAttempt == that.maxTokenAttempts)
+                        if (++that.tokenAttempt === that.maxTokenAttempts)
                             return that.status.fail()
                         return thisMethod()
                     }
                 }
                 this.request.onerror = function() {
                     delete that.request
-                    if (++that.tokenAttempt == that.maxTokenAttempts)
+                    if (++that.tokenAttempt === that.maxTokenAttempts)
                         return that.status.fail()
                     thisMethod()
                 }
                 this.request.open("post", "http://m.agar.io/", true)
                 this.request.send(this.region)
-            } else if (this.state == 'check-room') {
+            } else if (this.state === 'check-room') {
                 if (this.checkConnection())
                     return this.status.ok()
-                if (++this.roomAttempt == this.maxRoomAttempts)
+                if (++this.roomAttempt === this.maxRoomAttempts)
                     return this.status.fail()
                 this.state = 'room-failed'
                 this.status.trying()
@@ -727,19 +728,19 @@
         up: function() {
             if (this.list.length === 0)
                 return
-            if (this.idx == -1) {
+            if (this.idx === -1) {
                 this.text = g('carea').value
                 g('carea').value = this.list[this.idx = this.list.length-1]
-            } else if (this.idx != 0)
+            } else if (this.idx !== 0)
                 g('carea').value = this.list[--this.idx]
         },
         down: function() {
             if (this.list.length === 0)
                 return
-            if (this.idx == this.list.length-1) {
+            if (this.idx === this.list.length-1) {
                 this.idx = -1
                 g('carea').value = this.text
-            } else if (this.idx != -1)
+            } else if (this.idx !== -1)
                g('carea').value = this.list[++this.idx]
         },
         push: function(t) {
@@ -759,11 +760,11 @@
             }
         }
 
-        if (ca.value != "") {
+        if (ca.value !== "") {
             var tokens = ca.value.trim().split(/ +/)
-            if (tokens.length == 0)
+            if (tokens.length === 0)
                 return false
-            if (tokens[0][0] == "/") {
+            if (tokens[0][0] === "/") {
                 switch(tokens[0]) {
                 case "/names":
                     send({t:"names"}); break
@@ -780,7 +781,7 @@
                     for (var i = 1; i < tokens.length; i++)
                         if (/^[-+]?\d+$/.test(tokens[i])) {
                             var id = parseInt(tokens[i].substr(1))
-                            if (tokens[i][0] == '+')
+                            if (tokens[i][0] === '+')
                                 ignore.add(id)
                             else
                                 ignore.remove(id)
@@ -841,7 +842,7 @@
             }
 
             if (chat.active) {
-                if (e.keyCode == 27 || e.keyCode == 9)
+                if (e.keyCode === 27 || e.keyCode === 9)
                     return chat.blur(), false
                 else
                     return true
@@ -922,7 +923,7 @@
         window.setNick = function(n) {
             if (n !== myName) {
                 myName = n
-                if (window.location.hostname == 'petridish.pw')
+                if (window.location.hostname === 'petridish.pw')
                     myName = myName.replace(/:::::.*?:::::[0-3]$/, '')
                 send({t: "name", "name": myName})
             }
@@ -1081,9 +1082,9 @@
                 context.stroke()
             }
 
-            for (i in this.blinks) {
+            for (var i in this.blinks) {
                 var blink = this.blinks[i]
-                if (blink.ids.length == 0 || !blink.hl)
+                if (blink.ids.length === 0 || !blink.hl)
                     continue
                 context.beginPath()
                 context.fillStyle = "#f00"
@@ -1093,10 +1094,10 @@
                     var d = idx[blink.ids[j]]
                     if (d === undefined) continue
                     drawText = true
-                    if (j == 0 || minX > d.x*2-d.s) minX = d.x*2-d.s
-                    if (j == 0 || maxX < d.x*2+d.s) maxX = d.x*2+d.s
-                    if (j == 0 || minY > d.y*2-d.s) minY = d.y*2-d.s
-                    if (j == 0 || maxY < d.y*2+d.s) maxY = d.y*2+d.s
+                    if (j === 0 || minX > d.x*2-d.s) minX = d.x*2-d.s
+                    if (j === 0 || maxX < d.x*2+d.s) maxX = d.x*2+d.s
+                    if (j === 0 || minY > d.y*2-d.s) minY = d.y*2-d.s
+                    if (j === 0 || maxY < d.y*2+d.s) maxY = d.y*2+d.s
                     context.arc(t(d.x), t(d.y), s(d.s)+6,
                                 0, 2 * Math.PI, false)
                     context.closePath()
@@ -1115,7 +1116,7 @@
             var a = window.agar
             if (a === undefined || a.myCells === undefined || a.allCells === undefined)
                 return undefined
-            var myCells = a.myCells.filter(function f(x){return x in a.allCells})
+            var myCells = a.myCells.filter(function (x){return x in a.allCells})
             if (this.myCellsAffected && myCells.length !== a.myCells.length) {
                 this.myCellsAffected = true
                 send({t:'anime', myCellsAffected:1})
@@ -1229,7 +1230,7 @@
         },
         update: function() {
             var list = Object.keys(this.list)
-            if (list.length == 0)
+            if (list.length === 0)
                 this.style.textContent = ""
             else
                 this.style.textContent = list.map(function(i) {
