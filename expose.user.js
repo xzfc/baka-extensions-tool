@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Agar.io Expose
-// @version     2.3
+// @version     2.4
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/expose.user.js
 // @include     http://agar.io/*
@@ -14,7 +14,7 @@ var allRules = [
     { hostname: ["agar.io"],
       scriptTextRe: /console\.log\("socket open"\);/,
       replace: function (m) {
-          var dr = "(\\w+)=\\w+\\.getFloat64\\(\\w+,!0\\),\\w+\\+=8,"
+          var dr = "(\\w+)=\\w+\\.getFloat64\\(\\w+,!0\\);\\w+\\+=8;\\n?"
           var dd = 7071.067811865476; dd = JSON.stringify([-dd,-dd,dd,dd])
           m.replace("allCells",   /(=null;)(\w+)(.hasOwnProperty\(\w+\)?)/, "$1" + "window.agar.allCells=$2;" + "$2$3",    '{}')
           m.replace("myCells",    /(case 32:)(\w+)(\.push)/,                "$1" + "window.agar.myCells=$2;" + "$2$3",     '[]')
@@ -24,6 +24,8 @@ var allRules = [
           m.replace("dimensions", RegExp("case 64:"+dr+dr+dr+dr),           "$&" + "window.agar.dimensions=[$1,$2,$3,$4],", dd)
           m.replace("reset",      /new WebSocket\(\w+[^;]+?;/,              "$&" + m.reset)
           m.replace("region",     /console\.log\("Find "\+(\w+\+\w+)\);/,   "$&" + "window.agar.region=$1;",               '""')
+          m.replace("isVirus",    /((\w+)=!!\(\w+&1\)[\s\S]{0,400})((\w+).(\w+)=\2;)/, "$1$4.isVirus=$3")
+          m.replace("dommousescroll", /("DOMMouseScroll",)(\w+),/,          "$1(window.agar.dommousescroll=$2),")
       }},
     { hostname: ["petridish.pw"],
       scriptUriRe: /\/engine\/main[0-9]+.js\?/,
@@ -63,6 +65,7 @@ if (window.top != window.self)
 if (document.readyState !== 'loading')
     return console.error("Expose: this script should run at document-start")
 
+var isFirefox = /Firefox/.test(navigator.userAgent)
 
 // Stage 1: Find corresponding rule
 var rules
@@ -75,29 +78,39 @@ if (!rules)
     return console.error("Expose: cant find corresponding rule")
 
 
-// Stage 2: Iterate over document.head child elements and look for `main_out.js`
-for (var i = 0; i < document.head.childNodes.length; i++)
-    if (tryReplace(document.head.childNodes[i]))
-        return
-// If there are no desired element in document.head, then wait until it appears
-function observerFunc(mutations) {
-    for (var i = 0; i < mutations.length; i++) {
-        var addedNodes = mutations[i].addedNodes
-        for (var j = 0; j < addedNodes.length; j++)
-            if (tryReplace(addedNodes[j]))
-                return observer.disconnect()
+// Stage 2: Search for `main_out.js`
+if (isFirefox) {
+    function bse_listener(e) { tryReplace(e.target, e) }
+    window.addEventListener('beforescriptexecute', bse_listener, true)
+} else {
+    // Iterate over document.head child elements and look for `main_out.js`
+    for (var i = 0; i < document.head.childNodes.length; i++)
+        if (tryReplace(document.head.childNodes[i]))
+            return
+    // If there are no desired element in document.head, then wait until it appears
+    function observerFunc(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+            var addedNodes = mutations[i].addedNodes
+            for (var j = 0; j < addedNodes.length; j++)
+                if (tryReplace(addedNodes[j]))
+                    return observer.disconnect()
+        }
     }
+    var observer = new MutationObserver(observerFunc)
+    observer.observe(document.head, {childList: true})
 }
-var observer = new MutationObserver(observerFunc)
-observer.observe(document.head, {childList: true})
-
 
 // Stage 3: Replace found element using rules
-function tryReplace(node) {
+function tryReplace(node, event) {
     var scriptLinked = rules.scriptUriRe && rules.scriptUriRe.test(node.src)
     var scriptEmbedded = rules.scriptTextRe && rules.scriptTextRe.test(node.textContent)
     if (node.tagName != "SCRIPT" || (!scriptLinked && !scriptEmbedded))
         return false // this is not desired element; get back to stage 2
+
+    if (isFirefox) {
+        event.preventDefault()
+        window.removeEventListener('beforescriptexecute', bse_listener, true)
+    }
 
     var mod = {
         reset: "",
@@ -120,7 +133,10 @@ function tryReplace(node) {
     if (scriptEmbedded) {
         mod.text = node.textContent
         rules.replace(mod)
-        node.textContent = mod.get()
+        document.head.removeChild(node)
+        var script = document.createElement("script")
+        script.textContent = mod.get()
+        document.head.appendChild(script)
         console.log("Expose: replacement done")
     } else {
         document.head.removeChild(node)
