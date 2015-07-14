@@ -1132,7 +1132,7 @@
                         n:c.name,
                         c:c.color,
                         s:c.size,
-                        v:c.d?1:0}
+                        v:c.isVirus?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
             var r = {minX:0, maxX:0, minY:0, maxY:0}
