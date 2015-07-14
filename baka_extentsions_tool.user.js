@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.24.1
+// @version     1.24.2
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.24.1"
+    var version = "1.24.2"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -907,12 +907,12 @@
             g("canvas").onmousemove
         var wheel = [g("canvas"), g("map"), g("notification")]
         for (var i = 0; i < wheel.length; i++) {
-            if (window.agar.dommousescroll)
+            if (window.agar && window.agar.dommousescroll)
                 wheel[i].addEventListener('DOMMouseScroll', window.agar.dommousescroll, false)
             else
                 wheel[i].onmousewheel = document.body.onmousewheel
         }
-        if (window.agar.dommousescroll)
+        if (window.agar && window.agar.dommousescroll)
             document.removeEventListener('DOMMouseScroll', window.agar.dommousescroll, false)
         else
             document.body.onmousewheel = null
