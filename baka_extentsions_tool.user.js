@@ -943,7 +943,7 @@
 
     var map = {
         canvas: null,
-        data: null,
+        data: [],
         range: [],
         blackRibbon: true,
         hidden: false,
@@ -958,6 +958,8 @@
             this.canvas.height = 256
             document.body.appendChild(this.canvas)
             this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
+            this.draw()
+            setInterval(function(){ map.send() }, 250)
         },
         reset: function() {
             this.waitReply = false
@@ -1158,11 +1160,6 @@
                 this.waitReply = true
             this.blackRibbon = false
         },
-        sendThread: function() {
-            if (window.agar === undefined)
-                addLine({message:["Карта отправляться не будет :<"]})
-            setInterval(function(){ map.send() }, 250)
-        }
     }
 
     var quick = {
@@ -1283,7 +1280,6 @@
         handleOptions()
         handleEvents()
         connectChat()
-        map.sendThread()
     }
 
     function wait() {
