@@ -1263,7 +1263,9 @@
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
                 '#quickHint .sym { color:#000; float:left; width:2em }' +
                 '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
-                'body[dark] #map { border-color: #aaa }'
+                'body[dark] #map { border-color: #aaa }' +
+                '.agario-promo { width: 220px !important; height: 274px !important; background-size: contain }' +
+                '.tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }'
             document.head.appendChild(stl)
         }
 
