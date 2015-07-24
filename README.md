@@ -27,7 +27,7 @@
 [Tampermonkey]: https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en
 [Greasemonkey]: https://addons.mozilla.org/en-Us/firefox/addon/greasemonkey/
 [`baka_extentsions_tool.user.js`]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
-[`expose.user.js`]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/expose.user.js
+[`expose.user.js`]: https://raw.githubusercontent.com/xzfc/agar-expose/master/expose.user.js
 
 ## ♀ Горячие клавиши ♀
 

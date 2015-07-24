@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.24.2
+// @version     1.25
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.24.2"
+    var version = "1.25"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _049: [['К', 'Покорми'],
@@ -33,22 +33,24 @@
              },
              teams:{
                  baka:{aura: "#00f",
-                       names: [/[⑨Ø]/,
-                               "DUKE NUKEM", "Reimu", "天才　Умничка　秀才", "桜華さん"]
-                      },
-                 pkb: {aura: "#AA5",
-                       names: [/\b(pkb|ркб|ркв)\b/i, /pkb/i]},
-                 fr: {names: /[1①❶][8⑧❽]-?[2②❷][5⑤❺]/},
+                       names: [/[⑨Ø]/]},
+                 zt: {aura: "#a5a",
+                      names: [/ƵŦ/]},
                  turkey: {names: [/ek[sşŞ\$][iİ]/i,
                                   /[iİ][╦T][µÜ]/i,
                                   /[ʍm][εe][†t][υuü]|ʍε†/i,
                                   /[Ծo][dԺ][tԵ][uü]/i,
                                   /ΆǾĢ|ⒶⓄⒼ/, /ŦĪŦ/,
-                                  /\bDH\b/, /[つマづ][みℋん]|ⒹⒽ|매/]},
-                 eigth: {names: /ȣȣȣ|ȢȢȢ/},
+                                  /\bDH\b/, /[つマづĐÐ][みℋんĦн]|ⒹⒽ|매|Ďℍ|⊃Ⓗ|đħ/]},
                  other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T)\]/i,
-                                 /ヴいｐ|ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
-                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i]},
+                                 /ヴ[いぃ]ｐ/,
+                                 /ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
+                                 /\b(AOG|MKB|MZK|FKS|TİT|HKG)\b/i,
+                                 /\b(pkb|ркб|ркв)\b/i, /pkb/i,
+                                 /[1①❶][8⑧❽]-?[2②❷][5⑤❺]/,
+                                 /Ì\.M\.P/, "[UP] #1",
+                                 /㉹/, /ՁЧ➹７|ջЧ➹Դ/,
+                                ]},
              },
              soundList: ["http://89.31.114.117/tutturu/0.mp3",
                          "http://89.31.114.117/tutturu/1.mp3",
@@ -362,9 +364,15 @@
                 break
             case "addr":
                 var connect = ""
-                if (d.game === undefined || d.game === "agar.io")
-                    connect = "!brute " + d.ws + " " + d.region
-                else
+                if (d.game === undefined || d.game === "agar.io") {
+                    if (d.token)
+                        connect = aButton(
+                            d.token + " " + d.region,
+                            connector.autoConnectParty.bind(
+                                connector, d.token, d.region, d.top))
+                    else
+                        connect = "!brute " + d.ws + " " + d.region
+                } else
                     connect = "connect(" + d.ws + ")"
                 addLine({time:d.T, sender:sender, message:[
                     d.game !== undefined? "(" + d.game + ") " : "",
@@ -568,69 +576,58 @@
             a.top.length === 0)
             return false
         var m = {t: "addr", ws:a.ws, top:a.top, game:window.location.hostname}
-        if (a.region !== undefined)
+        if (a.region !== undefined) {
             m.region = a.region
+            if (a.region.endsWith(":party"))
+                m.token =
+                    document.getElementsByClassName("partyToken")[0].
+                    value.replace(/^agar\.io\//, "")
+        }
         send(m)
     }
 
     var connector = {
-        maxTokenAttempts: 100,
-        maxRoomAttempts: 10,
-        autoConnect: function(ws, region, top) {
+        maxAttempts: 10,
+        autoConnectParty: function(token, region, top) {
             if (!this.checkExpose())
                 return
-            this.stopAutoConnect()
-            this.roomAttempt = this.tokenAttempt = 0
-            this.ws = ws
+            this.stop()
+            this.attempt = 0
+            this.token = token
+            window.setRegion(region.replace(/:.*$/, ""))
             this.region = region
             this.top = top
-            this.state = 'token'
+            this.state = 'connect'
             this.autoConnectIteration()
         },
         autoConnectIteration: function() {
-            var thisMethod = this.autoConnectIteration.bind(this), that = this
+            var thisMethod = this.autoConnectIteration.bind(this)
             if (this.timer !== undefined)
                 delete this.timer
-            if (this.state === 'token') {
+            if (this.state === 'connect') {
                 this.status.trying()
-                this.request = new XMLHttpRequest()
-                this.request.onload = function() {
-                    delete that.request
-                    var i = this.responseText.split("\n")
-                    if (connector.ws === "ws://" + i[0]) {
-                        that.state = 'check-room'
-                        that.tokenAttempt = 0
-                        that.status.trying()
-                        window.connect("ws://" + i[0], i[1])
-                        this.timer = setTimeout(thisMethod, 1000)
+                if (this.attempt === 0)
+                    window.joinParty(this.token)
+                else
+                    window.createParty()
+                this.state = 'check'
+                this.timer = setTimeout(thisMethod, 1000)
+            } else {
+                var partyState = g('helloContainer').getAttribute('data-party-state')
+                if (partyState === '5' || partyState === '1' && this.checkConnection()) {
+                    this.status.ok()
+                } else {
+                    if (++this.attempt !== this.maxAttempts) {
+                        this.status.trying()
+                        this.state = 'connect'
+                        this.timer = setTimeout(thisMethod, 4000)
                     } else {
-                        if (++that.tokenAttempt === that.maxTokenAttempts)
-                            return that.status.fail()
-                        return thisMethod()
+                        this.status.fail()
                     }
                 }
-                this.request.onerror = function() {
-                    delete that.request
-                    if (++that.tokenAttempt === that.maxTokenAttempts)
-                        return that.status.fail()
-                    thisMethod()
-                }
-                this.request.open("post", "http://m.agar.io/", true)
-                this.request.send(this.region)
-            } else if (this.state === 'check-room') {
-                if (this.checkConnection())
-                    return this.status.ok()
-                if (++this.roomAttempt === this.maxRoomAttempts)
-                    return this.status.fail()
-                this.state = 'room-failed'
-                this.status.trying()
-                this.state = 'token'
-                this.timer = setTimeout(thisMethod, 4000)
             }
         },
         checkConnection: function() {
-            if (window.agar.ws !== this.ws)
-                return false
             if (this.top === undefined)
                 return true
             var top1 = window.agar.top, top2 = this.top
@@ -646,53 +643,45 @@
                 window.agar.region !== undefined &&
                 window.agar.top !== undefined
         },
-        stopAutoConnect: function() {
+        stop: function() {
             if (this.timer !== undefined) {
                 this.status.stop()
                 clearTimeout(this.timer)
                 delete this.timer
-            }
-            if (this.request !== undefined) {
-                this.status.stop()
-                this.request.abort()
-                delete this.request
             }
         },
         status: {
             init: function() {
                 var t = this
                 t._element = g("connector")
-                t._stop = aButton("стоп", connector.stopAutoConnect.bind(connector))
+                t._stop = aButton("стоп", connector.stop.bind(connector))
                 t._close = aButton("закрыть",
                                    function() { t._element.style.display = 'none' })
                 t._text = document.createElement('span')
-                t._ip = document.createElement('span')
-                t._status = document.createElement('span')
 
-                ;["_text", "_ip", "_status", "_close", "_stop"].
+                ;["_text", "_close", "_stop"].
                     forEach(function(e) { t._element.appendChild(t[e])})
             },
-            _set: function(text, status, stop) {
+            _set: function(text, stop) {
                 this._element.style.display = ''
                 this._text.textContent = text
-                this._ip.textContent = connector.ws
-                this._status.textContent = status
                 this._stop.style.display = stop ? '' : 'none'
                 this._close.style.display = stop ? 'none' : ''
             },
             trying: function() {
-                var room = "[" + connector.roomAttempt + "/" + connector.maxRoomAttempts + "] "
-                var token = "[" + connector.tokenAttempt + "/" + connector.maxTokenAttempts + "] "
-                if (connector.state === 'token')
-                    this._set("Ищу токен для ", "... " + token + room, true)
-                else if (connector.state === 'check-room')
-                    this._set("Сверяю топ ", "... " + room, true)
-                else if (connector.state === 'room-failed')
-                    this._set("Подключаюсь к ", "... " + room, true)
+                var attempt = "[" + connector.attempt + "/" + connector.maxAttempts + "] "
+                if (connector.state === 'connect') {
+                    if (connector.attempt === 0)
+                        this._set("Подключаюсь к " + connector.token + "..." + attempt, true)
+                    else
+                        this._set("Перебираю в " + connector.region + "... " + attempt, true)
+                }
+                else if (connector.state === 'check')
+                    this._set("Проверяю... " + attempt, true)
             },
-            ok: function() { this._set("Подключился к ", " ", false) },
-            fail: function() { this._set("Не удалось подключиться к ", " ", false) },
-            stop: function() { this._set("Прервано подлючение к ", " ", false) }
+            ok: function() { this._set("Подключился! ", false) },
+            fail: function() { this._set("Не удалось подключиться. ", false) },
+            stop: function() { this._set("Подключение прервано. ", false) }
         },
     }
 
@@ -943,7 +932,7 @@
 
     var map = {
         canvas: null,
-        data: null,
+        data: [],
         range: [],
         blackRibbon: true,
         hidden: false,
@@ -958,6 +947,8 @@
             this.canvas.height = 256
             document.body.appendChild(this.canvas)
             this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
+            this.draw()
+            setInterval(function(){ map.send() }, 250)
         },
         reset: function() {
             this.waitReply = false
@@ -1124,13 +1115,31 @@
             return myCells
         },
         send: function() {
+            function getViewport() {
+                var v = a.rawViewport
+                if (v) {
+                    var dx = 1024 / v.scale, dy = 600 / v.scale
+                    return {minX:v.x-dx, minY:v.y-dy, maxX:v.x+dx, maxY:v.y+dy}
+                } else {
+                    var r = {minX:0, maxX:0, minY:0, maxY:0}
+                    allCellsArray.forEach(function(c, i) {
+                        if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
+                        if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
+                        if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
+                        if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
+                    })
+                    return r
+                }
+            }
             var a = window.agar
             var myCells = this.myCells()
-            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
+            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
             }
+            if (!a.top.length)
+                return
             var allCellsArray = Object.keys(a.allCells).map(function(i){ return a.allCells[i] })
             var cells = allCellsArray.filter(function(c){
                 return c.size >= 32 || myCells.indexOf(c.id) > -1
@@ -1144,25 +1153,13 @@
                         v:c.isVirus?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
-            var r = {minX:0, maxX:0, minY:0, maxY:0}
-            allCellsArray.forEach(function(c, i) {
-                if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
-                if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
-                if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
-                if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
-            })
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
             var sent = send({t:'map', all:cells, my:myCells, top:top, reply:reply,
-                             ws:a.ws, range:r, game:window.location.hostname})
+                             ws:a.ws, range:getViewport(), game:window.location.hostname})
             if (sent && reply)
                 this.waitReply = true
             this.blackRibbon = false
         },
-        sendThread: function() {
-            if (window.agar === undefined)
-                addLine({message:["Карта отправляться не будет :<"]})
-            setInterval(function(){ map.send() }, 250)
-        }
     }
 
     var quick = {
@@ -1266,7 +1263,9 @@
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
                 '#quickHint .sym { color:#000; float:left; width:2em }' +
                 '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
-                'body[dark] #map { border-color: #aaa }'
+                'body[dark] #map { border-color: #aaa }' +
+                '.agario-promo { width: 220px !important; height: 274px !important; background-size: contain }' +
+                '.tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }'
             document.head.appendChild(stl)
         }
 
@@ -1283,7 +1282,9 @@
         handleOptions()
         handleEvents()
         connectChat()
-        map.sendThread()
+
+        if (window.agar !== undefined && window.agar.minScale !== undefined)
+            window.agar.minScale = 2/3
     }
 
     function wait() {
