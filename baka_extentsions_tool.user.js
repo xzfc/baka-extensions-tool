@@ -364,9 +364,15 @@
                 break
             case "addr":
                 var connect = ""
-                if (d.game === undefined || d.game === "agar.io")
-                    connect = "!brute " + d.ws + " " + d.region
-                else
+                if (d.game === undefined || d.game === "agar.io") {
+                    if (d.token)
+                        connect = aButton(
+                            d.token + " " + d.region,
+                            connector.autoConnectParty.bind(
+                                connector, d.token, d.region, d.top))
+                    else
+                        connect = "!brute " + d.ws + " " + d.region
+                } else
                     connect = "connect(" + d.ws + ")"
                 addLine({time:d.T, sender:sender, message:[
                     d.game !== undefined? "(" + d.game + ") " : "",
@@ -570,69 +576,58 @@
             a.top.length === 0)
             return false
         var m = {t: "addr", ws:a.ws, top:a.top, game:window.location.hostname}
-        if (a.region !== undefined)
+        if (a.region !== undefined) {
             m.region = a.region
+            if (a.region.endsWith(":party"))
+                m.token =
+                    document.getElementsByClassName("partyToken")[0].
+                    value.replace(/^agar\.io\//, "")
+        }
         send(m)
     }
 
     var connector = {
-        maxTokenAttempts: 100,
-        maxRoomAttempts: 10,
-        autoConnect: function(ws, region, top) {
+        maxAttempts: 10,
+        autoConnectParty: function(token, region, top) {
             if (!this.checkExpose())
                 return
-            this.stopAutoConnect()
-            this.roomAttempt = this.tokenAttempt = 0
-            this.ws = ws
+            this.stop()
+            this.attempt = 0
+            this.token = token
+            window.setRegion(region.replace(/:.*$/, ""))
             this.region = region
             this.top = top
-            this.state = 'token'
+            this.state = 'connect'
             this.autoConnectIteration()
         },
         autoConnectIteration: function() {
-            var thisMethod = this.autoConnectIteration.bind(this), that = this
+            var thisMethod = this.autoConnectIteration.bind(this)
             if (this.timer !== undefined)
                 delete this.timer
-            if (this.state === 'token') {
+            if (this.state === 'connect') {
                 this.status.trying()
-                this.request = new XMLHttpRequest()
-                this.request.onload = function() {
-                    delete that.request
-                    var i = this.responseText.split("\n")
-                    if (connector.ws === "ws://" + i[0]) {
-                        that.state = 'check-room'
-                        that.tokenAttempt = 0
-                        that.status.trying()
-                        window.connect("ws://" + i[0], i[1])
-                        this.timer = setTimeout(thisMethod, 1000)
+                if (this.attempt === 0)
+                    window.joinParty(this.token)
+                else
+                    window.createParty()
+                this.state = 'check'
+                this.timer = setTimeout(thisMethod, 1000)
+            } else {
+                var partyState = g('helloContainer').getAttribute('data-party-state')
+                if (partyState === '5' || partyState === '1' && this.checkConnection()) {
+                    this.status.ok()
+                } else {
+                    if (++this.attempt !== this.maxAttempts) {
+                        this.status.trying()
+                        this.state = 'connect'
+                        this.timer = setTimeout(thisMethod, 4000)
                     } else {
-                        if (++that.tokenAttempt === that.maxTokenAttempts)
-                            return that.status.fail()
-                        return thisMethod()
+                        this.status.fail()
                     }
                 }
-                this.request.onerror = function() {
-                    delete that.request
-                    if (++that.tokenAttempt === that.maxTokenAttempts)
-                        return that.status.fail()
-                    thisMethod()
-                }
-                this.request.open("post", "http://m.agar.io/", true)
-                this.request.send(this.region)
-            } else if (this.state === 'check-room') {
-                if (this.checkConnection())
-                    return this.status.ok()
-                if (++this.roomAttempt === this.maxRoomAttempts)
-                    return this.status.fail()
-                this.state = 'room-failed'
-                this.status.trying()
-                this.state = 'token'
-                this.timer = setTimeout(thisMethod, 4000)
             }
         },
         checkConnection: function() {
-            if (window.agar.ws !== this.ws)
-                return false
             if (this.top === undefined)
                 return true
             var top1 = window.agar.top, top2 = this.top
@@ -648,53 +643,45 @@
                 window.agar.region !== undefined &&
                 window.agar.top !== undefined
         },
-        stopAutoConnect: function() {
+        stop: function() {
             if (this.timer !== undefined) {
                 this.status.stop()
                 clearTimeout(this.timer)
                 delete this.timer
-            }
-            if (this.request !== undefined) {
-                this.status.stop()
-                this.request.abort()
-                delete this.request
             }
         },
         status: {
             init: function() {
                 var t = this
                 t._element = g("connector")
-                t._stop = aButton("стоп", connector.stopAutoConnect.bind(connector))
+                t._stop = aButton("стоп", connector.stop.bind(connector))
                 t._close = aButton("закрыть",
                                    function() { t._element.style.display = 'none' })
                 t._text = document.createElement('span')
-                t._ip = document.createElement('span')
-                t._status = document.createElement('span')
 
-                ;["_text", "_ip", "_status", "_close", "_stop"].
+                ;["_text", "_close", "_stop"].
                     forEach(function(e) { t._element.appendChild(t[e])})
             },
-            _set: function(text, status, stop) {
+            _set: function(text, stop) {
                 this._element.style.display = ''
                 this._text.textContent = text
-                this._ip.textContent = connector.ws
-                this._status.textContent = status
                 this._stop.style.display = stop ? '' : 'none'
                 this._close.style.display = stop ? 'none' : ''
             },
             trying: function() {
-                var room = "[" + connector.roomAttempt + "/" + connector.maxRoomAttempts + "] "
-                var token = "[" + connector.tokenAttempt + "/" + connector.maxTokenAttempts + "] "
-                if (connector.state === 'token')
-                    this._set("Ищу токен для ", "... " + token + room, true)
-                else if (connector.state === 'check-room')
-                    this._set("Сверяю топ ", "... " + room, true)
-                else if (connector.state === 'room-failed')
-                    this._set("Подключаюсь к ", "... " + room, true)
+                var attempt = "[" + connector.attempt + "/" + connector.maxAttempts + "] "
+                if (connector.state === 'connect') {
+                    if (connector.attempt === 0)
+                        this._set("Подключаюсь к " + connector.token + "..." + attempt, true)
+                    else
+                        this._set("Перебираю в " + connector.region + "... " + attempt, true)
+                }
+                else if (connector.state === 'check')
+                    this._set("Проверяю... " + attempt, true)
             },
-            ok: function() { this._set("Подключился к ", " ", false) },
-            fail: function() { this._set("Не удалось подключиться к ", " ", false) },
-            stop: function() { this._set("Прервано подлючение к ", " ", false) }
+            ok: function() { this._set("Подключился! ", false) },
+            fail: function() { this._set("Не удалось подключиться. ", false) },
+            stop: function() { this._set("Подключение прервано. ", false) }
         },
     }
 
