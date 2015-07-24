@@ -1282,6 +1282,9 @@
         handleOptions()
         handleEvents()
         connectChat()
+
+        if (window.agar !== undefined && window.agar.minScale !== undefined)
+            window.agar.minScale = 2/3
     }
 
     function wait() {
