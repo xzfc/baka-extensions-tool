@@ -1133,11 +1133,13 @@
             }
             var a = window.agar
             var myCells = this.myCells()
-            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
+            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
             }
+            if (!a.top.length)
+                return
             var allCellsArray = Object.keys(a.allCells).map(function(i){ return a.allCells[i] })
             var cells = allCellsArray.filter(function(c){
                 return c.size >= 32 || myCells.indexOf(c.id) > -1
