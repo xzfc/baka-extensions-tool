@@ -1128,6 +1128,22 @@
             return myCells
         },
         send: function() {
+            function getViewport() {
+                var v = a.rawViewport
+                if (v) {
+                    var dx = 1024 / v.scale, dy = 600 / v.scale
+                    return {minX:v.x-dx, minY:v.y-dy, maxX:v.x+dx, maxY:v.y+dy}
+                } else {
+                    var r = {minX:0, maxX:0, minY:0, maxY:0}
+                    allCellsArray.forEach(function(c, i) {
+                        if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
+                        if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
+                        if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
+                        if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
+                    })
+                    return r
+                }
+            }
             var a = window.agar
             var myCells = this.myCells()
             if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.top.length || !a.ws) {
@@ -1148,16 +1164,9 @@
                         v:c.isVirus?1:0}
             })
             var top = a.top.map(function(x){return [x.id, x.name]})
-            var r = {minX:0, maxX:0, minY:0, maxY:0}
-            allCellsArray.forEach(function(c, i) {
-                if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
-                if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
-                if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
-                if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
-            })
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
             var sent = send({t:'map', all:cells, my:myCells, top:top, reply:reply,
-                             ws:a.ws, range:r, game:window.location.hostname})
+                             ws:a.ws, range:getViewport(), game:window.location.hostname})
             if (sent && reply)
                 this.waitReply = true
             this.blackRibbon = false
