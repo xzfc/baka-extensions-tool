@@ -13,23 +13,25 @@
     var version = "1.25.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
-                 _049: [['К', 'Покорми'],
-                        ['!К', 'Не корми']],
-                 _050: [['ВК', 'Взорви колючку'],
-                        ['ПК', 'Пульни колючку']],
-                 _051: [['Е', 'Возьми мои ошмётки'],
-                        ['!Е', 'Не бери мои ошмётки']],
-                 _052: [['⧀', 'Отходим'],
-                        ['⧁', 'Наступаем']],
-                 _097: [['↙', 'Левый нижний угол']],
-                 _098: [['↓', 'Центр внизу']],
-                 _099: [['↘', 'Правый нижний угол']],
-                 _100: [['←', 'Центр слева']],
-                 _101: [['⨀', 'Центр']],
-                 _102: [['→', 'Центр справа']],
-                 _103: [['↖', 'Левый верхний угол']],
-                 _104: [['↑', 'Центр сверху']],
-                 _105: [['↗', 'Правый верхний угол']],
+                 _052: {
+                     _049: ['К', 'Покорми'],
+                     S049: ['!К', 'Не корми'],
+                     _050: ['ВК', 'Взорви колючку'],
+                     S050: ['ПК', 'Пульни колючку'],
+                     _051: ['Е', 'Возьми мои ошмётки'],
+                     S051: ['!Е', 'Не бери мои ошмётки'],
+                     _052: ['⧀', 'Отходим'],
+                     S052: ['⧁', 'Наступаем'],
+                     _097: ['↙', 'Левый нижний угол'],
+                     _098: ['↓', 'Центр внизу'],
+                     _099: ['↘', 'Правый нижний угол'],
+                     _100: ['←', 'Центр слева'],
+                     _101: ['⨀', 'Центр'],
+                     _102: ['→', 'Центр справа'],
+                     _103: ['↖', 'Левый верхний угол'],
+                     _104: ['↑', 'Центр сверху'],
+                     _105: ['↗', 'Правый верхний угол'],
+                 },
              },
              teams:{
                  baka:{aura: "#00f",
@@ -821,11 +823,8 @@
         window.onkeydown = function(e) {
             if (extended) {
                 if (e.keyCode >= 16 && e.keyCode <= 18) return false
-                var cmd = quick.eventToAction(e)
-                if (cmd !== undefined)
-                    send({t:"quick", symbol:cmd[0], text:cmd[1], cells:map.myCells()})
-                quick.hide()
-                extended = false
+                if (!quick.key(e))
+                    extended = false
                 return false
             }
 
@@ -846,10 +845,11 @@
                 case 9: return chat.focus(), false
                 case 49: return chat.toggle(), true
                 case 51: return chat.move(), true
-                case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
                 case 81: repeat = 1; return true
                 }
+                if (quick.key(e))
+                    return extended = true
             }
             return olddown(e)
         }
@@ -1162,51 +1162,62 @@
     }
 
     var quick = {
-        eventToAction: function(e) {
-            var key
-            if (e.keyCode < 10) key = "_00" + e.keyCode
-            else if (e.keyCode < 100) key = "_0" + e.keyCode
-            else key = "_" + e.keyCode
-            var t = window.bakaconf.quickTemplates[key]
-            if (t === undefined || t.length === 0)
-                return
-            var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
-            if (mod && t.length >= 2)
-                return t[1]
-            return t[0]
+        state: undefined,
+        key: function(e, state) {
+            if (e.keyCode >= 16 && e.keyCode <= 18) return true
+            var key = (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey)? "S" : "_"
+            if (e.keyCode < 10) key += "00" + e.keyCode
+            else if (e.keyCode < 100) key += "0" + e.keyCode
+            else key += e.keyCode
+            if (this.state === undefined) {
+                this.show()
+                this.state = window.bakaconf.quickTemplates
+            }
+            this.state = this.state[key]
+            if (this.state === undefined || this.state instanceof Array) {
+                if (this.state)
+                    send({t:"quick", symbol:this.state[0], text:this.state[1],
+                          cells:map.myCells()})
+                this.state = undefined
+                this.hide()
+                return false
+            }
+            return true
         },
         show: function() {
             this.hide()
             var quickHint = document.createElement('div')
             quickHint.id = "quickHint"
-            function add(key, sym, text) {
-                var line = document.createElement('div')
-                function span(className, textContent) {
-                    var span = document.createElement('span')
-                    span.textContent = textContent
-                    span.className = className
-                    line.appendChild(span)
-                }
-                span('key', key)
-                span('sym', sym)
-                span('text', text)
-                quickHint.appendChild(line)
-            }
             function codeToName(x) {
                 if (x >= 48 && x <= 57) return ""+(x-48)
                 if (x >= 96 && x <= 105) return "num"+(x-96)
                 if (x >= 65 && x <= 90) return x-65+"a".charCodeAt(0)
                 return "[" + x + "]"
             }
-            var keys = Object.keys(window.bakaconf.quickTemplates).sort()
-            for (var i = 0; i < keys.length; i++) {
-                var name = codeToName(+keys[i].substr(1))
-                var t = window.bakaconf.quickTemplates[keys[i]]
-                if (t.length >= 1)
-                    add(name, t[0][0], t[0][1])
-                if (t.length >= 2)
-                    add("Mod + " + name, t[1][0], t[1][1])
+            function list(prefix, what) {
+                var keys = Object.keys(what)
+                for (var i = 0; i < keys.length; i++) {
+                    var key = keys[i]
+                    var keyName = (key[0] === '_'?'':'⇧') + codeToName(+key.substr(1))
+
+                    if (what[key] instanceof Array) {
+                        var line = document.createElement('div')
+                        function span(className, textContent) {
+                            var span = document.createElement('span')
+                            span.textContent = textContent
+                            span.className = className
+                            line.appendChild(span)
+                        }
+                        span('key', prefix + keyName)
+                        span('sym', what[key][0])
+                        span('text', what[key][1])
+                        quickHint.appendChild(line)
+                    } else {
+                        list(prefix + keyName + " ", what[key])
+                    }
+                }
             }
+            list("", window.bakaconf.quickTemplates)
             document.body.appendChild(quickHint)
         },
         hide: function() {
