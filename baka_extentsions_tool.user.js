@@ -75,6 +75,8 @@
              fogOfWar: false,
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
+             bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
+             bakaSkinBig: false,
             })
     var myName = null
     var hasConnected = false
@@ -980,6 +982,7 @@
             this.waitReply = false
             this.data = data
             this.range = range
+            bakaSkin.updateIds(data)
             this.draw()
         },
         blink: function(ids, sym) {
@@ -1181,6 +1184,52 @@
         },
     }
 
+    var bakaSkin = {
+        cached: null,
+        ids: [],
+        attrs: [],
+        init: function() {
+            if (window.agar) {
+                this.image()
+                window.agar.skinF = this.skinF.bind(this)
+            }
+        },
+        updateIds: function(mapCells) {
+            if (!window.agar || !window.agar.allCells)
+                return
+            this.ids = []
+            this.attrs = []
+            for (var id in mapCells) {
+                var c = mapCells[id]
+                if (c.a) {
+                    if (c.n === "")
+                        this.ids.push(c.i)
+                    else
+                        this.attrs.push(c.c + c.n)
+                }
+            }
+        },
+        image: function() {
+            var uri = window.bakaconf.bakaSkinUri
+            if (!uri)
+                return this.cached = null
+            if (this.cached !== null && this.cached.src === uri)
+                return (this.cached.big = window.bakaconf.bakaSkinBig), this.cached
+            this.cached = new Image()
+            this.cached.crossOrigin = 'anonymous'
+            this.cached.src = uri
+            this.cached.big = window.bakaconf.bakaSkinBig
+            return this.cached
+        },
+        skinF: function(cell, prev) {
+            if (prev || cell.size <= 30)
+                return prev
+            if (this.attrs.indexOf(cell.color + cell.name) !== -1 ||
+                this.ids.indexOf(cell.id) !== -1)
+                return this.image()
+        },
+    }
+
     var quick = {
         state: undefined,
         key: function(e, state) {
@@ -1304,6 +1353,7 @@
         ignore.init()
         connector.status.init()
         notificator.init()
+        bakaSkin.init()
 
         setInterval(function() {
             send({t:'ping'})
