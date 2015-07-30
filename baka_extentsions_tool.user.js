@@ -72,7 +72,7 @@
              defaultTeamAura: "#A55",
              timeFormat: 0,
              mouseControls: true,
-             fogOfWar: false,
+             fogOfWar: true,
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
              bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
