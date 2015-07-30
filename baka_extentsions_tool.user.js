@@ -881,6 +881,8 @@
         // Mouse controls
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
         g("canvas").onmousedown = function(e) {
+            if (e.which === 2 && window.agar && window.agar.scale !== undefined)
+                return window.agar.scale = 1, false
             if (!window.bakaconf.mouseControls)
                 return true
             switch (e.which) {
