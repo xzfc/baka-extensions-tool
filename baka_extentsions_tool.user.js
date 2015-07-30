@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.25.1
+// @version     1.26
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,32 +10,37 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.25.1"
+    var version = "1.26"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
-                 _049: [['К', 'Покорми'],
-                        ['!К', 'Не корми']],
-                 _050: [['ВК', 'Взорви колючку'],
-                        ['ПК', 'Пульни колючку']],
-                 _051: [['Е', 'Возьми мои ошмётки'],
-                        ['!Е', 'Не бери мои ошмётки']],
-                 _052: [['⧀', 'Отходим'],
-                        ['⧁', 'Наступаем']],
-                 _097: [['↙', 'Левый нижний угол']],
-                 _098: [['↓', 'Центр внизу']],
-                 _099: [['↘', 'Правый нижний угол']],
-                 _100: [['←', 'Центр слева']],
-                 _101: [['⨀', 'Центр']],
-                 _102: [['→', 'Центр справа']],
-                 _103: [['↖', 'Левый верхний угол']],
-                 _104: [['↑', 'Центр сверху']],
-                 _105: [['↗', 'Правый верхний угол']],
+                 _052: {
+                     _049: ['К',  'Покорми!'],
+                     S049: ['!К', 'Не корми!'],
+                     _050: ['ПК', 'Пульни колючку!'],
+                     S050: ['ЧК', 'Чисти колючки!'],
+                     _051: ['Х',  'Скушай хвостик!'],
+                     S051: ['!Х', 'Не кушай хвостик!'],
+                     _052: ['✖',  'Отходим!'],
+                     S052: ['⧁', 'Наступаем!'],
+                     _053: ['Д',  'Делись!'],
+                     S053: ['!Д', 'Не делись!'],
+                 },
+                 _097: ['↙', 'Левый нижний угол'],
+                 _098: ['↓', 'Центр внизу'],
+                 _099: ['↘', 'Правый нижний угол'],
+                 _100: ['←', 'Центр слева'],
+                 _101: ['⨀', 'Центр'],
+                 _102: ['→', 'Центр справа'],
+                 _103: ['↖', 'Левый верхний угол'],
+                 _104: ['↑', 'Центр сверху'],
+                 _105: ['↗', 'Правый верхний угол'],
              },
              teams:{
                  baka:{aura: "#00f",
-                       names: [/[⑨Ø]/]},
+                       names: [/⑨/]},
                  zt: {aura: "#a5a",
                       names: [/ƵŦ/]},
+                 brazil: {names: /ᴳᴀᴮ|ŦḰΔ|βҜǤ|ǤΔβ/},
                  turkey: {names: [/ek[sşŞ\$][iİ]/i,
                                   /[iİ][╦T][µÜ]/i,
                                   /[ʍm][εe][†t][υuü]|ʍε†/i,
@@ -67,9 +72,11 @@
              defaultTeamAura: "#A55",
              timeFormat: 0,
              mouseControls: true,
-             fogOfWar: false,
+             fogOfWar: true,
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
+             bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
+             bakaSkinBig: false,
             })
     var myName = null
     var hasConnected = false
@@ -137,12 +144,17 @@
         cached: [],
         list: "",
         unreadCount: 0,
+        oldTitle: null,
         init: function() {
             var el = document.createElement('div')
             el.id = "notification"
             document.body.appendChild(el)
             el.onclick = chat.toggle.bind(chat, true)
             this.cache()
+            window.addEventListener("focus", function() {
+                if (!chat.hidden)
+                    notificator.clear()
+            })
         },
         cache: function() {
             var list = window.bakaconf.soundList.join("\n")
@@ -157,11 +169,21 @@
         clear: function() {
             this.unreadCount = 0
             g("notification").style.visibility = 'hidden'
+            if (this.oldTitle !== null) {
+                document.title = this.oldTitle
+                this.oldTitle = null
+            }
         },
         notify: function(what) {
+            if (document.hidden || chat.hidden) {
+                this.unreadCount++
+                if (this.oldTitle === null)
+                    this.oldTitle = document.title
+                document.title = '[' + this.unreadCount + '] ' + this.oldTitle
+            }
             if (chat.hidden) {
                 g("notification").style.visibility = ''
-                g("notification").textContent = ++this.unreadCount
+                g("notification").textContent = this.unreadCount
             }
             if (window.bakaconf.sound[what]) {
                 this.cache()
@@ -821,11 +843,8 @@
         window.onkeydown = function(e) {
             if (extended) {
                 if (e.keyCode >= 16 && e.keyCode <= 18) return false
-                var cmd = quick.eventToAction(e)
-                if (cmd !== undefined)
-                    send({t:"quick", symbol:cmd[0], text:cmd[1], cells:map.myCells()})
-                quick.hide()
-                extended = false
+                if (!quick.key(e))
+                    extended = false
                 return false
             }
 
@@ -846,10 +865,11 @@
                 case 9: return chat.focus(), false
                 case 49: return chat.toggle(), true
                 case 51: return chat.move(), true
-                case 52: extended = true; quick.show(); return true
                 case 53: map.toggle(); return true
                 case 81: repeat = 1; return true
                 }
+                if (quick.key(e))
+                    return extended = true
             }
             return olddown(e)
         }
@@ -863,6 +883,8 @@
         // Mouse controls
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
         g("canvas").onmousedown = function(e) {
+            if (e.which === 2 && window.agar && window.agar.scale !== undefined)
+                return window.agar.scale = 1, false
             if (!window.bakaconf.mouseControls)
                 return true
             switch (e.which) {
@@ -960,6 +982,7 @@
             this.waitReply = false
             this.data = data
             this.range = range
+            bakaSkin.updateIds(data)
             this.draw()
         },
         blink: function(ids, sym) {
@@ -988,9 +1011,9 @@
                     return window.bakaconf.myAura
                 if (cell.a)
                     return window.bakaconf.bakaAura
+                if (window.bakaconf.showOnlyBakaAura)
+                    return
                 for (var i in teams) {
-                    if (i !== 'baka' && window.bakaconf.showOnlyBakaAura)
-                        continue
                     var names = teams[i].names
                     if (names instanceof RegExp || typeof names === 'string')
                         names = [names]
@@ -1161,52 +1184,109 @@
         },
     }
 
-    var quick = {
-        eventToAction: function(e) {
-            var key
-            if (e.keyCode < 10) key = "_00" + e.keyCode
-            else if (e.keyCode < 100) key = "_0" + e.keyCode
-            else key = "_" + e.keyCode
-            var t = window.bakaconf.quickTemplates[key]
-            if (t === undefined || t.length === 0)
+    var bakaSkin = {
+        cached: null,
+        ids: [],
+        attrs: [],
+        init: function() {
+            if (window.agar) {
+                this.image()
+                window.agar.skinF = this.skinF.bind(this)
+            }
+        },
+        updateIds: function(mapCells) {
+            if (!window.agar || !window.agar.allCells)
                 return
-            var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
-            if (mod && t.length >= 2)
-                return t[1]
-            return t[0]
+            this.ids = []
+            this.attrs = []
+            for (var id in mapCells) {
+                var c = mapCells[id]
+                if (c.a) {
+                    if (c.n === "")
+                        this.ids.push(c.i)
+                    else
+                        this.attrs.push(c.c + c.n)
+                }
+            }
+        },
+        image: function() {
+            var uri = window.bakaconf.bakaSkinUri
+            if (!uri)
+                return this.cached = null
+            if (this.cached !== null && this.cached.src === uri)
+                return (this.cached.big = window.bakaconf.bakaSkinBig), this.cached
+            this.cached = new Image()
+            this.cached.crossOrigin = 'anonymous'
+            this.cached.src = uri
+            this.cached.big = window.bakaconf.bakaSkinBig
+            return this.cached
+        },
+        skinF: function(cell, prev) {
+            if (prev || cell.size <= 30)
+                return prev
+            if (this.attrs.indexOf(cell.color + cell.name) !== -1 ||
+                this.ids.indexOf(cell.id) !== -1)
+                return this.image()
+        },
+    }
+
+    var quick = {
+        state: undefined,
+        key: function(e, state) {
+            if (e.keyCode >= 16 && e.keyCode <= 18) return true
+            var key = (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey)? "S" : "_"
+            if (e.keyCode < 10) key += "00" + e.keyCode
+            else if (e.keyCode < 100) key += "0" + e.keyCode
+            else key += e.keyCode
+            if (this.state === undefined) {
+                this.show()
+                this.state = window.bakaconf.quickTemplates
+            }
+            this.state = this.state[key]
+            if (this.state === undefined || this.state instanceof Array) {
+                if (this.state)
+                    send({t:"quick", symbol:this.state[0], text:this.state[1],
+                          cells:map.myCells()})
+                this.state = undefined
+                this.hide()
+                return false
+            }
+            return true
         },
         show: function() {
             this.hide()
             var quickHint = document.createElement('div')
             quickHint.id = "quickHint"
-            function add(key, sym, text) {
-                var line = document.createElement('div')
-                function span(className, textContent) {
-                    var span = document.createElement('span')
-                    span.textContent = textContent
-                    span.className = className
-                    line.appendChild(span)
-                }
-                span('key', key)
-                span('sym', sym)
-                span('text', text)
-                quickHint.appendChild(line)
-            }
             function codeToName(x) {
                 if (x >= 48 && x <= 57) return ""+(x-48)
                 if (x >= 96 && x <= 105) return "num"+(x-96)
                 if (x >= 65 && x <= 90) return x-65+"a".charCodeAt(0)
                 return "[" + x + "]"
             }
-            var keys = Object.keys(window.bakaconf.quickTemplates).sort()
-            for (var i = 0; i < keys.length; i++) {
-                var name = codeToName(+keys[i].substr(1))
-                var t = window.bakaconf.quickTemplates[keys[i]]
-                if (t.length >= 1)
-                    add(name, t[0][0], t[0][1])
-                if (t.length >= 2)
-                    add("Mod + " + name, t[1][0], t[1][1])
+            function list(prefix, what) {
+                var keys = Object.keys(what)
+                for (var i = 0; i < keys.length; i++) {
+                    var key = keys[i]
+                    var keyName = (key[0] === '_'?'':'⇧') + codeToName(+key.substr(1))
+
+                    if (what[key] instanceof Array) {
+                        var line = document.createElement('div')
+                        function span(className, textContent) {
+                            var span = document.createElement('span')
+                            span.textContent = textContent
+                            span.className = className
+                            line.appendChild(span)
+                        }
+                        span('key', prefix + keyName)
+                        span('sym', what[key][0])
+                        span('text', what[key][1])
+                        quickHint.appendChild(line)
+                    } else {
+                        list(prefix + keyName + " ", what[key])
+                    }
+                }
             }
+            list("", window.bakaconf.quickTemplates)
             document.body.appendChild(quickHint)
         },
         hide: function() {
@@ -1273,6 +1353,7 @@
         ignore.init()
         connector.status.init()
         notificator.init()
+        bakaSkin.init()
 
         setInterval(function() {
             send({t:'ping'})
