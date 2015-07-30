@@ -37,9 +37,10 @@
              },
              teams:{
                  baka:{aura: "#00f",
-                       names: [/[⑨Ø]/]},
+                       names: [/⑨/]},
                  zt: {aura: "#a5a",
                       names: [/ƵŦ/]},
+                 brazil: {names: /ᴳᴀᴮ|ŦḰΔ|βҜǤ|ǤΔβ/},
                  turkey: {names: [/ek[sşŞ\$][iİ]/i,
                                   /[iİ][╦T][µÜ]/i,
                                   /[ʍm][εe][†t][υuü]|ʍε†/i,
