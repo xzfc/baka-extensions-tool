@@ -139,12 +139,17 @@
         cached: [],
         list: "",
         unreadCount: 0,
+        oldTitle: null,
         init: function() {
             var el = document.createElement('div')
             el.id = "notification"
             document.body.appendChild(el)
             el.onclick = chat.toggle.bind(chat, true)
             this.cache()
+            window.addEventListener("focus", function() {
+                if (!chat.hidden)
+                    notificator.clear()
+            })
         },
         cache: function() {
             var list = window.bakaconf.soundList.join("\n")
@@ -159,11 +164,21 @@
         clear: function() {
             this.unreadCount = 0
             g("notification").style.visibility = 'hidden'
+            if (this.oldTitle !== null) {
+                document.title = this.oldTitle
+                this.oldTitle = null
+            }
         },
         notify: function(what) {
+            if (document.hidden || chat.hidden) {
+                this.unreadCount++
+                if (this.oldTitle === null)
+                    this.oldTitle = document.title
+                document.title = '[' + this.unreadCount + '] ' + this.oldTitle
+            }
             if (chat.hidden) {
                 g("notification").style.visibility = ''
-                g("notification").textContent = ++this.unreadCount
+                g("notification").textContent = this.unreadCount
             }
             if (window.bakaconf.sound[what]) {
                 this.cache()
