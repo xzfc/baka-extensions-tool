@@ -1005,9 +1005,9 @@
                     return window.bakaconf.myAura
                 if (cell.a)
                     return window.bakaconf.bakaAura
+                if (window.bakaconf.showOnlyBakaAura)
+                    return
                 for (var i in teams) {
-                    if (i !== 'baka' && window.bakaconf.showOnlyBakaAura)
-                        continue
                     var names = teams[i].names
                     if (names instanceof RegExp || typeof names === 'string')
                         names = [names]
