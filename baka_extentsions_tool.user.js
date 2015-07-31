@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.26
+// @version     1.26.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.26"
+    var version = "1.26.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _052: {
@@ -83,6 +83,9 @@
 
     var defaultName = "Безымянная сырно"
     function g(id) {return document.getElementById(id)}
+    function isArray(obj, type) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
 
     function setConf(defaults) {
         function setDefault(record, field, value) {
@@ -1015,11 +1018,11 @@
                     return
                 for (var i in teams) {
                     var names = teams[i].names
-                    if (names instanceof RegExp || typeof names === 'string')
+                    if (!isArray(names))
                         names = [names]
                     for (var j = 0; j < names.length; j++)
                         if (names[j] === cell.n ||
-                            (names[j] instanceof RegExp && names[j].test(cell.n)))
+                            (names[j].test && names[j].test(cell.n)))
                             return teams[i].aura || window.bakaconf.defaultTeamAura
                 }
             }
@@ -1243,7 +1246,7 @@
                 this.state = window.bakaconf.quickTemplates
             }
             this.state = this.state[key]
-            if (this.state === undefined || this.state instanceof Array) {
+            if (this.state === undefined || isArray(this.state)) {
                 if (this.state)
                     send({t:"quick", symbol:this.state[0], text:this.state[1],
                           cells:map.myCells()})
@@ -1269,7 +1272,7 @@
                     var key = keys[i]
                     var keyName = (key[0] === '_'?'':'⇧') + codeToName(+key.substr(1))
 
-                    if (what[key] instanceof Array) {
+                    if (isArray(what[key])) {
                         var line = document.createElement('div')
                         function span(className, textContent) {
                             var span = document.createElement('span')
