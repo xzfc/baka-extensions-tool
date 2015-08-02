@@ -1263,7 +1263,7 @@
             function codeToName(x) {
                 if (x >= 48 && x <= 57) return ""+(x-48)
                 if (x >= 96 && x <= 105) return "num"+(x-96)
-                if (x >= 65 && x <= 90) return x-65+"a".charCodeAt(0)
+                if (x >= 65 && x <= 90) return String.fromCharCode(x)
                 return "[" + x + "]"
             }
             function list(prefix, what) {
