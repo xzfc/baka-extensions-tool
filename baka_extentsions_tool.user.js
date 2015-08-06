@@ -1244,8 +1244,9 @@
             if (e.keyCode < 10) key += "00" + e.keyCode
             else if (e.keyCode < 100) key += "0" + e.keyCode
             else key += e.keyCode
+            var show = false
             if (this.state === undefined) {
-                this.show()
+                show = true
                 this.state = window.bakaconf.quickTemplates
             }
             this.state = this.state[key]
@@ -1257,6 +1258,8 @@
                 this.hide()
                 return false
             }
+            if (show)
+                this.show()
             return true
         },
         show: function() {
