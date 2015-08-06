@@ -861,6 +861,11 @@
                 return false
             }
 
+            var active = document.activeElement
+            if (["INPUT", "BUTTON", "SELECT"].indexOf(active.tagName) != -1 &&
+                active.offsetParent !== null)
+                return olddown(e)
+
             if (!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
                 switch(e.keyCode) {
                 case 9: return chat.focus(), false
