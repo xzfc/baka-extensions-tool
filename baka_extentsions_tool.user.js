@@ -1222,7 +1222,8 @@
             if (this.cached !== null && this.cached.src === uri)
                 return (this.cached.big = window.bakaconf.bakaSkinBig), this.cached
             this.cached = new Image()
-            this.cached.crossOrigin = 'anonymous'
+            if (!(/^\s*data\s*:/i).test(uri))
+                this.cached.crossOrigin = 'anonymous'
             this.cached.src = uri
             this.cached.big = window.bakaconf.bakaSkinBig
             return this.cached
