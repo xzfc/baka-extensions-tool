@@ -843,8 +843,7 @@
         var extended = false
         window.onkeydown = function(e) {
             if (extended) {
-                if (e.keyCode >= 16 && e.keyCode <= 18) return false
-                if (!quick.key(e))
+                if (quick.key(e) === false)
                     extended = false
                 return false
             }
@@ -1240,7 +1239,7 @@
     var quick = {
         state: undefined,
         key: function(e, state) {
-            if (e.keyCode >= 16 && e.keyCode <= 18) return true
+            if (e.keyCode >= 16 && e.keyCode <= 18) return
             var key = (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey)? "S" : "_"
             if (e.keyCode < 10) key += "00" + e.keyCode
             else if (e.keyCode < 100) key += "0" + e.keyCode
