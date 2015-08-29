@@ -1,3 +1,19 @@
+# 🔰 BakaCobbler 🔰
+## ⑨ Что это? ⑨
+BakaCobbler — это адаптация мода [ZeachCobbler], совместимая с [baka-extensions-tool].
+
+## Ø Установка Ø
+1. Поставить [Tampermonkey].
+2. Поставить [`ZeachCobbler.user.js`] и [`baka_extentsions_tool.user.js`].
+3. Убедиться, что `Agar.io Expose` и оригинальный `Zeach Cobbler` выключены или не установлены.
+4. Убедиться, что `Baka extensions tool` исполняется позже `Baka Cobbler`.
+
+[ZeachCobbler]: https://github.com/RealDebugMonkey/ZeachCobbler
+[baka-extensions-tool]: https://github.com/xzfc/baka-extensions-tool/tree/master
+[Tampermonkey]: https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo
+[`baka_extentsions_tool.user.js`]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
+[`ZeachCobbler.user.js`]: https://raw.githubusercontent.com/xzfc/baka-extensions-tool/bakacobbler/ZeachCobbler.user.js
+
 # ZeachCobbler
 ## What is Zeach Cobbler?
 ZeachCobbler is a mod for the web game Agario ( http://agar.io ) It included several unique features found in no other mods. Please note that the Agario community at large considers many of the features contained in this mod hacks or cheats as it could be argued that they give you an unfair advantage over others.
