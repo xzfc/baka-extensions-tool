@@ -174,7 +174,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         var optionsAndDefaults = {
             "isLiteBrite"       : true,
             "sfxVol"            : 0.5,
-            "bgmVol"            : 0.5,
             "drawTail"          : false,
             "splitGuide"        : true,
             "rainbowPellets"    : true,
@@ -4365,7 +4364,6 @@ function DrawStats(game_over) {
     if (game_over){
         stats.time_of_death = Date.now();
         sfx_play(1);
-        StopBGM();
         ShowZCStats();
         if(window.cobbler.autoRespawn && window.cobbler.grazingMode){setTimeout(function(){jQuery(".btn-play-guest").click();},3000);}
     }
@@ -4496,7 +4494,6 @@ unsafeWindow.OnGameStart = function(cells) {
     ResetChart();
     ResetStats();
     RenderStats(true);
-    StartBGM();
     sfx_play(0);
 };
 
@@ -4529,7 +4526,7 @@ unsafeWindow.OnDraw = function(context) {
     display_stats && stat_canvas && context.drawImage(stat_canvas, 10, 10);
 };
 
-// ====================== Music & SFX System ==============================================================
+// ====================== SFX System ==============================================================
 //sfx play on event (only one of each sfx can play - for sfx that won't overlap with itself)
 var ssfxlist = [
     'spawn',
@@ -4576,55 +4573,16 @@ function sfx_event(id) {
     event.play();
 }
 
-var StartBGM = function () {
-    if (document.getElementById("bgm").value==0) return;
-    if (bgmusic.src == ""){
-        bgmusic.src = _.sample(tracks, 1);
-        bgmusic.load()
-    }
-    bgmusic.volume = document.getElementById("bgm").value;
-    bgmusic.play();
-};
-
-var StopBGM = function () {
-    bgmusic.pause();
-    if (document.getElementById("bgm").value==0) return;
-    bgmusic.src = _.sample(tracks, 1);
-    bgmusic.load()
-};
-
-volBGM = function (vol) {
-    console.log(vol.toString() + " - " + document.getElementById("bgm").value)
-    bgmusic.volume = document.getElementById("bgm").value;
-    window.cobbler.bgmVol = document.getElementById("bgm").value;
-};
-
 volSFX = function (vol) {
     window.cobbler.sfxVol = vol;
 };
 
-var tracks = ['http://incompetech.com/music/royalty-free/mp3-preview2/Frost%20Waltz.mp3',
-    'http://incompetech.com/music/royalty-free/mp3-preview2/Frozen%20Star.mp3',
-    'http://incompetech.com/music/royalty-free/mp3-preview2/Groove%20Grove.mp3',
-    'http://incompetech.com/music/royalty-free/mp3-preview2/Dreamy%20Flashback.mp3',
-    'http://incompetech.com/music/royalty-free/mp3-preview2/Impact%20Lento.mp3',
-    'http://incompetech.com/music/royalty-free/mp3-preview2/Wizardtorium.mp3'];
 /*sfx*/
 var nodeAudio = document.createElement("audio");
 nodeAudio.id = 'audiotemplate';
 nodeAudio.preload = "auto";
 jQuery(".agario-panel").get(0).appendChild(nodeAudio);
 
-
-var bgmusic = $('#audiotemplate').clone()[0];
-bgmusic.src = tracks[Math.floor(Math.random() * tracks.length)];
-bgmusic.load();
-bgmusic.loop = false;
-bgmusic.onended = function() {
-    var track = tracks[Math.floor(Math.random() * tracks.length)];
-    bgmusic.src = track;
-    bgmusic.play();
-};
 
 function uiOnLoadTweaks(){
     $("label:contains('Dark theme') input").prop('checked', true);
@@ -4824,9 +4782,8 @@ $('#hybrid-textbox').on('input propertychange paste', function() {
 
 
 var col3 = $("#col3");
-col3.append("<h4>Music/Sound</h4>");
+col3.append("<h4>Sound</h4>");
 col3.append('<p>Sound Effects<input id="sfx" type="range" value=' + window.cobbler.sfxVol + ' step=".1" min="0" max="1" oninput="volSFX(this.value);"></p>');
-col3.append('<p>Music<input type="range" id="bgm" value=' + window.cobbler.bgmVol + ' step=".1" min="0" max="1" oninput="volBGM(this.value);"></p>');
 col3.append('<h4>Skins Support</h4>');
 AppendCheckboxP(col3, 'amConnect-checkbox', ' AgarioMods Connect *skins', window.cobbler.amConnectSkins, function(val){window.cobbler.amConnectSkins = val;});
 AppendCheckboxP(col3, 'amExtended-checkbox', ' AgarioMods Extended skins', window.cobbler.amExtendedSkins, function(val){window.cobbler.amExtendedSkins = val;});
