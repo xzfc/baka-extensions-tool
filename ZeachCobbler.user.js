@@ -186,7 +186,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             "drawTail"          : false,
             "splitGuide"        : true,
             "rainbowPellets"    : true,
-            "debugLevel"        : 1,
+            "debugLevel"        : 0,
             "imgurSkins"        : true,
             "amExtendedSkins"   : true,
             "amConnectSkins"    : true,
@@ -203,7 +203,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             "enableBlobLock"    : false,
             'nextOnBlobLock'    : false,
             'rightClickFires'   : false,
-            'showZcStats'       : true,
+            'showZcStats'       : false,
         };
         simpleSavedSettings(optionsAndDefaults);
     }
@@ -4081,6 +4081,7 @@ jQuery('body').append('<div id="ZCOverlay" class="bs-example-modal-lg" style="po
 '</div><!-- /.modal -->');
 
 jQuery("#ZCPlay").hide();
+jQuery("#ZCOverlay").hide();
 
 jQuery("#agario-main-buttons")
     .append('<button type="button" class="btn btn-danger" id="opnZC" onclick="showZCOverlay()" style="margin-top:5px;position:relative;width:100%;">ZeachCobbler Options</button>');
@@ -4089,15 +4090,15 @@ jQuery("#agario-main-buttons")
 
 jQuery('#ZCOverlayBody').append('<div id="ZCStats" style="position:relative;width:100%; background-color: #FFFFFF; border-radius: 15px; padding: 5px 15px 5px 15px;">'+
     '<ul class="nav nav-pills" role="tablist">' +
-    '<li role="presentation" class="active" > <a href="#page0" id="newsTab"   role="tab" data-toggle="tab">News</a></li>' +
+    '<li role="presentation">                 <a href="#page0" id="newsTab"   role="tab" data-toggle="tab">News</a></li>' +
     '<li role="presentation">                 <a href="#page1" id="statsTab"  role="tab" data-toggle="tab">Stats</a></li>' +
-    '<li role="presentation">                 <a href="#page2" id="configTab" role="tab" data-toggle="tab">Extended Options</a></li>' +
+    '<li role="presentation" class="active" > <a href="#page2" id="configTab" role="tab" data-toggle="tab">Extended Options</a></li>' +
     '<li role="presentation">                 <a href="#page3" id="helpTab" role="tab" data-toggle="tab">Help</a></li>' +
         //'<li role="presentation"><a href="#page3" role="tab" data-toggle="tab">IP Connect</a></li>' +
     '</ul>'+
 
     '<div id="bigbox" class="tab-content">' +
-    '<div id="page0" role="tabpanel" class="tab-pane active">'+ debugMonkeyReleaseMessage +'</div>' +
+    '<div id="page0" role="tabpanel" class="tab-pane">'+ debugMonkeyReleaseMessage +'</div>' +
 
     '<div id="page1" role="tabpanel" class="tab-pane">' +
     '<div class="row">' +
@@ -4114,7 +4115,7 @@ jQuery('#ZCOverlayBody').append('<div id="ZCStats" style="position:relative;widt
     '<div id="XPArea" class="col-sm-4"></div>' +
     '</div>' +
     '</div>' +
-    '<div id="page2" role="tabpanel" class="tab-pane">' +
+    '<div id="page2" role="tabpanel" class="tab-pane active">' +
     '<div class="row">' +
     '<div id="col1" class="col-sm-4 checkbox" style="padding-left: 5%; padding-right: 1%;"></div>' +
     '<div id="col2" class="col-sm-4" style="padding-left: 2%; padding-right: 2%;"></div>' +
@@ -4180,7 +4181,7 @@ var my_color = "#ff8888";
 var pie = null;
 var stats_chart;
 
-var display_chart = LS_getValue('display_chart', 'true') === 'true';
+var display_chart = LS_getValue('display_chart', 'false') === 'true';
 var display_stats = LS_getValue('display_stats', 'false') === 'true';
 
 function AppendCheckbox(e, id, label, checked, on_change)
