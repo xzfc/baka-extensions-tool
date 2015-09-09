@@ -94,7 +94,6 @@ function exposeReset() {
     unsafeWindow.agar.rawViewport={x:0,y:0,scale:1};
 }
 exposeReset();
-$( "<style>#mini-map { display:none; }</style>" ).appendTo( "head" )
 
 var _version_ = GM_info.script.version;
 
@@ -149,11 +148,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
     var ghostBlobs = [];
 
 
-    var miniMapCtx=jQuery('<canvas id="mini-map" width="175" height="175" style="border:2px solid #999;text-align:center;position:fixed;bottom:5px;right:5px;"></canvas>')
-        .appendTo(jQuery('body'))
-        .get(0)
-        .getContext("2d");
-
     // cobbler is the object that holds all user options. Options that should never be persisted can be defined here.
     // If an option setting should be remembered it can
     var cobbler = {
@@ -162,8 +156,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         _isAcid : false,
         set isAcid(val)         {this._isAcid = val; setAcid(val);},
         get isAcid()            {return this._isAcid;},
-        minimapScaleCurrentValue : 1,
-        "displayMiniMap" : true,
 
     };
     // utility function to simplify creation of options whose state should be persisted to disk
@@ -198,8 +190,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             "autoRespawn"       : false,
             "visualizeGrazing"  : true,
             "msDelayBetweenShots" : 100,
-            "miniMapScale"      : false,
-            "miniMapScaleValue" : 64,
             "enableBlobLock"    : false,
             'nextOnBlobLock'    : false,
             'rightClickFires'   : false,
@@ -1000,7 +990,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
 
 
             drawSplitGuide(ctx, getSelectedBlob());
-            drawMiniMap();
         }
     }
 
@@ -1141,43 +1130,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         }
     }
 
-    // Probably isn't necessary to throttle it ... but what the hell.
-    var rescaleMinimap = _.throttle(function(){
-        var minimapScale = cobbler.miniMapScaleValue;
-        var scaledWidth = ~~(zeach.mapWidth/minimapScale);
-        var scaledHeight = ~~(zeach.mapHeight/minimapScale);
-        var minimap = jQuery("#mini-map");
-
-        if(minimap.width() != scaledWidth || minimap.height() != scaledHeight || cobbler.minimapScaleCurrentValue != minimapScale){
-            // rescale the div
-            minimap.width(scaledWidth);
-            minimap.height(scaledHeight);
-            // rescale the canvas element
-            minimap[0].width = scaledWidth;
-            minimap[0].height = scaledHeight;
-            cobbler.minimapScaleCurrentValue = minimapScale;
-        }
-    }, 5*1000);
-
-    function drawMiniMap() {
-        rescaleMinimap();
-        var minimapScale = cobbler.miniMapScaleValue;
-        miniMapCtx.clearRect(0, 0, ~~(zeach.mapWidth/minimapScale), ~~(zeach.mapHeight/minimapScale));
-
-        _.forEach(_.values(getOtherBlobs()), function(blob){
-            miniMapCtx.strokeStyle = blob.isVirus ?  "#33FF33" : 'rgb(52,152,219)' ;
-            miniMapCtx.beginPath();
-            miniMapCtx.arc((blob.nx+Math.abs(zeach.mapLeft)) / minimapScale, (blob.ny+Math.abs(zeach.mapTop)) / minimapScale, blob.size / minimapScale, 0, 2 * Math.PI);
-            miniMapCtx.stroke();
-        });
-
-        _.forEach(zeach.myPoints, function(myBlob){
-            miniMapCtx.strokeStyle = "#FFFFFF";
-            miniMapCtx.beginPath();
-            miniMapCtx.arc((myBlob.nx+Math.abs(zeach.mapLeft)) / minimapScale, (myBlob.ny+Math.abs(zeach.mapTop)) / minimapScale, myBlob.size / minimapScale, 0, 2 * Math.PI);
-            miniMapCtx.stroke();
-        });
-    }
     function drawLine(ctx, point1, point2, color){
         ctx.strokeStyle = color;
         ctx.beginPath();
@@ -1646,11 +1598,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             showVisualCues = !showVisualCues;
             if(!showVisualCues) {
                 zoomFactor = 10;
-                jQuery("#mini-map").hide();
-            }
-            else
-            {
-                jQuery("#mini-map").show();
             }
         }
         else if('E'.charCodeAt(0) === d.keyCode && isPlayerAlive()){
@@ -4842,29 +4789,6 @@ $('#mspershot-textbox').on('input propertychange paste', function() {
     }
     else{
         $("#mspershot-group").addClass('has-error');
-    }
-});
-
-col2.append('<h4>Minimap Scale</h4>' +
-    '<div id="minimap-group" class="input-group input-group-sm"><span class="input-group-addon"><input id="minimap-checkbox" type="checkbox"></span>' +
-    '<input id="minimap-textbox" type="text" placeholder="64 = 1/64 scale" class="form-control" value='+ cobbler.miniMapScaleValue +'></div>');
-$('#minimap-checkbox').change(function(){
-    if(!!this.checked){
-        $('#minimap-textbox').removeAttr("disabled");
-    } else {
-        $('#minimap-textbox').attr({disabled:"disabled"})
-    }
-    cobbler.miniMapScale = !!this.checked;
-});
-if(cobbler.miniMapScale){$('#minimap-checkbox').prop('checked', true);}else{ $('#minimap-textbox').attr({disabled:"disabled"})}
-$('#minimap-textbox').on('input propertychange paste', function() {
-    var newval = parseInt(this.value);
-    if(!_.isNaN(newval) && newval > 1 && newval < 999) {
-        $("#minimap-group").removeClass('has-error');
-        cobbler.miniMapScaleValue = newval;
-    }
-    else{
-        $("#minimap-group").addClass('has-error');
     }
 });
 
