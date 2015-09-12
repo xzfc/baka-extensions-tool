@@ -172,11 +172,9 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
     // defines all options that should be persisted along with their default values.
     function makeCobbler(){
         var optionsAndDefaults = {
-            "isLiteBrite"       : true,
             "sfxVol"            : 0.5,
             "drawTail"          : false,
             "splitGuide"        : true,
-            "rainbowPellets"    : true,
             "debugLevel"        : 0,
             "imgurSkins"        : true,
             "amExtendedSkins"   : true,
@@ -1004,27 +1002,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         return extras;
     }
 
-    function drawCellInfos(noColors, ctx) {
-        var color = this.color;
-        if (showVisualCues) {
-            color = setCellColors(this, zeach.myPoints);
-            if (this.isVirus) {
-                if (!zeach.allNodes.hasOwnProperty(nearestVirusID))
-                    nearestVirusID = this.id;
-                else if (distanceFromCellZero(this) < distanceFromCellZero(zeach.allNodes[nearestVirusID]))
-                    nearestVirusID = this.id;
-            }
-            if(noColors) {
-                ctx.fillStyle = "#FFFFFF";
-                ctx.strokeStyle = "#AAAAAA"
-            }
-            else {
-                ctx.fillStyle = color;
-                ctx.strokeStyle = (this.id == nearestVirusID) ? "red" : color
-            }
-        }
-    }
-
     function drawMapBorders(ctx) {
         if (zeach.isNightMode) {
             ctx.strokeStyle = '#FFFFFF';
@@ -1064,33 +1041,30 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         return (zeach.gameMode === ":teams");
     }
     function setCellColors(cell,myPoints){
-        if(!showVisualCues){
-            return cell.color;
+        var res = {c:cell.color, a:undefined};
+        if(!showVisualCues || isFood(cell)) {
+            return res;
         }
-        if(cobbler.rainbowPellets && isFood(cell)){
-            return cell.color;
-        }
-        var color = cell.color;
         if (myPoints.length > 0 && !isTeamMode()) {
             var size_this =  getMass(cell.size);
             var size_that =  ~~(getSelectedBlob().size * getSelectedBlob().size / 100);
             if (cell.isVirus || myPoints.length === 0) {
-                color = virusColor;
+                res.a = virusColor;
             } else if (~myPoints.indexOf(cell)) {
-                color = myColor;
+                res.a = myColor;
             } else if (size_this > size_that * Huge) {
-                color = Huge_Color;
+                res.a = Huge_Color;
             } else if (size_this > size_that * Large) {
-                color = Large_Color;
+                res.a = Large_Color;
             } else if (size_this > size_that * Small) {
-                color = Same_Color;
+                res.a = Same_Color;
             } else if (size_this > size_that * Tiny) {
-                color = Small_Color;
+                res.a = Small_Color;
             } else {
-                color = Tiny_Color;
+                res.a = Tiny_Color;
             }
         }
-        return color;
+        return res;
     }
 
     function displayDebugText(ctx, agarTextFunction) {
@@ -3528,7 +3502,26 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                             a.fillStyle = this.color;
                             a.strokeStyle = this.color;
                         }
-                        /*new*/drawCellInfos.call(this, zeach.isColors, zeach.ctx);
+
+                        var color = {c:this.color, a:undefined};
+                        if (showVisualCues) {
+                            color = setCellColors(this, zeach.myPoints);
+                            if (this.isVirus) {
+                                if (!zeach.allNodes.hasOwnProperty(nearestVirusID))
+                                    nearestVirusID = this.id;
+                                else if (distanceFromCellZero(this) < distanceFromCellZero(zeach.allNodes[nearestVirusID]))
+                                    nearestVirusID = this.id;
+                            }
+                            if(zeach.isColors) {
+                                zeach.ctx.fillStyle = "#FFFFFF";
+                                zeach.ctx.strokeStyle = "#AAAAAA"
+                            }
+                            else {
+                                zeach.ctx.fillStyle = color.c;
+                                zeach.ctx.strokeStyle = (this.id == nearestVirusID) ? "red" : color.a;
+                            }
+                        }
+
                         if (c) {
                             a.beginPath();
                             a.arc(this.x, this.y, this.size + 5, 0, 2 * Math.PI, false);
@@ -3560,11 +3553,10 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                         //}
                         /*new*//*remap*/var b = customSkins(this, zeach.defaultSkins, zeach.imgCache, zeach.isShowSkins, zeach.gameMode);
                         b = (d = b) ? -1 != Cb.indexOf(e) : false;
-                        /*new*///if (!c) {
+                        a.globalAlpha = 0.5;
+                        a.fill();
+                        a.globalAlpha = 1.0;
                         a.stroke();
-                        /*new*///}}
-                        /*new*/if(!cobbler.isLiteBrite)
-                            a.fill();
 
                         if (!(null == d)) {
                             if (!b) {
@@ -4713,11 +4705,9 @@ col1.append("<h4>Options</h4>");
 AppendCheckbox(col1, 'showZcStats-checkbox', ' Show ZC Stats On Death', window.cobbler.showZcStats, function(val){window.cobbler.showZcStats = val;});
 col1.append("<h4>Modes</h4>");
 AppendCheckbox(col1, 'isacid-checkbox', ' Enable Acid Mode', window.cobbler.isAcid, function(val){window.cobbler.isAcid = val;});
-AppendCheckbox(col1, 'litebrite-checkbox', ' Enable Lite Brite Mode', window.cobbler.isLiteBrite, function(val){window.cobbler.isLiteBrite = val;});
 col1.append("<h4>Visual</h4>");
 AppendCheckbox(col1, 'trailingtail-checkbox', ' Draw Trailing Tail', window.cobbler.drawTail, function(val){window.cobbler.drawTail = val;});
 AppendCheckbox(col1, 'splitguide-checkbox', ' Draw Split Guide', window.cobbler.splitGuide, function(val){window.cobbler.splitGuide = val;});
-AppendCheckbox(col1, 'rainbow-checkbox', ' Rainbow Pellets', window.cobbler.rainbowPellets, function(val){window.cobbler.rainbowPellets = val;});
 AppendCheckbox(col1, 'namesunder-checkbox', ' Names under blobs', window.cobbler.namesUnderBlobs, function(val){window.cobbler.namesUnderBlobs = val;});
 AppendCheckbox(col1, 'gridlines-checkbox', ' Show Gridlines', window.cobbler.gridLines, function(val){window.cobbler.gridLines = val;});
 col1.append("<h4>Stats</h4>");
@@ -4788,13 +4778,6 @@ col3.append('<h4>Skins Support</h4>');
 AppendCheckboxP(col3, 'amConnect-checkbox', ' AgarioMods Connect *skins', window.cobbler.amConnectSkins, function(val){window.cobbler.amConnectSkins = val;});
 AppendCheckboxP(col3, 'amExtended-checkbox', ' AgarioMods Extended skins', window.cobbler.amExtendedSkins, function(val){window.cobbler.amExtendedSkins = val;});
 AppendCheckboxP(col3, 'imgur-checkbox', ' Imgur.com  i/skins', window.cobbler.imgurSkins, function(val){window.cobbler.imgurSkins = val;});
-
-// ---- Tooltips
-$("#rainbow-checkbox").attr({"data-toggle": "tooltip", "data-placement": "right",
-    "title": "Allow food pellets to be rainbow colored rather than purple. Combines well with Lite Brite Mode"});
-$("#litebrite-checkbox").attr({"data-toggle": "tooltip", "data-placement": "right",
-    "title": "Leaves blob centers empty except for skins."});
-setTimeout(function(){$(function () { $('[data-toggle="tooltip"]').tooltip()})}, 5000); // turn on all tooltips.
 
 // Ugly ass hack to fix effects of official code loading before mod
 //$("#canvas").remove();
