@@ -84,6 +84,7 @@
 // ==/UserScript==
 
 unsafeWindow.agar = {};
+unsafeWindow.agar.region = "";
 function exposeReset() {
     var dd = 7071.067811865476;
     unsafeWindow.agar.allCells = {};
@@ -1621,14 +1622,18 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         F = xa = document.getElementById("canvas");
         g = F.getContext("2d");
         // /*old*/ (/*new*/ /remap/) F.onmousewheel = function (e) {zoomFactor = e.wheelDelta > 0 ? 10 : 11;}
-        /*new*/ F.onmousewheel = function (e) {
+        /*new*/ function Na(e) {
             if (e.wheelDelta > 0) {
                 zoomFactor = zoomFactor <= 9.50 ? 9.50 : +(zoomFactor - 0.05).toFixed(2);
             } else {
                 zoomFactor = zoomFactor >= 11 ? 11 : +(zoomFactor + 0.05).toFixed(2);
             }
-            
         };
+        Object.defineProperty(unsafeWindow.agar, "scale", {
+            get: function(){ return zoomFactor/10; },
+            set: function(){ zoomFactor = arguments[0]*10; },
+            enumerable: true
+        });
         F.onmousedown = function(a) {
             /*new*/if(cobbler.enableBlobLock) {lockCurrentBlob();}
             /*new*/if(isPlayerAlive() && cobbler.rightClickFires){fireAtVirusNearestToCursor();}return;
@@ -1890,6 +1895,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
     function Ua() {
         var a = ++za;
         console.log("Find " + x + O);
+        unsafeWindow.agar.region = x + O;
         f.ajax("https://m.agar.io/", {
             error : function() {
                 setTimeout(Ua, 1E3);
@@ -2367,8 +2373,8 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             u = (29 * u + Z) / 30;
             k = (9 * k + $ * cb()) / 10;
         }
-        unsafeWindow.agar.rawViewport.x = t;
-        unsafeWindow.agar.rawViewport.y = u;
+        unsafeWindow.agar.rawViewport.x = Y;
+        unsafeWindow.agar.rawViewport.y = Z;
         lb();
         ya();
         if (!Fa) {
@@ -3445,6 +3451,12 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                         //}
                         /*new*//*remap*/var b = customSkins(this, zeach.defaultSkins, zeach.imgCache, zeach.isShowSkins, zeach.gameMode);
                         b = (d = b) ? -1 != Cb.indexOf(e) : false;
+                        if(typeof unsafeWindow.agar.skinF === 'function'){
+                            // b == big
+                            // d == skin
+                            d = unsafeWindow.agar.skinF(this, d);
+                            b = d ? !!d.big : false;
+                        }
                         a.globalAlpha = 0.5;
                         a.fill();
                         a.globalAlpha = 1.0;
