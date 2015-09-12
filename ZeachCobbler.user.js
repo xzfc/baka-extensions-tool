@@ -1356,8 +1356,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                 var virusSize = this.nSize;
                 var shotsNeeded = getVirusShotsNeededForSplit(virusSize).toString();
                 this.setName(shotsNeeded);
-            } else if(!isFood(this)) {
-                this.setName(this.nSize.toString()); // Stupid blank cells. Give them a name.
             }
         }
 
