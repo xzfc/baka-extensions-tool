@@ -4,7 +4,7 @@
 // @updateURL    https://raw.githubusercontent.com/xzfc/BakaCobbler/bakacobbler/ZeachCobbler.user.js
 // @downloadURL  https://raw.githubusercontent.com/xzfc/BakaCobbler/bakacobbler/ZeachCobbler.user.js
 // @contributer  See full list at https://github.com/RealDebugMonkey/ZeachCobbler#contributors-and-used-code
-// @version      0.28.5
+// @version      1.0
 // @description  Agario powerups
 // @author       DebugMonkey
 // @match        http://agar.io
