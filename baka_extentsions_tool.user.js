@@ -13,7 +13,7 @@
     var version = "1.26.2"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
-                 _052: {
+                 _192: {
                      _049: ['К',  'Покорми!'],
                      S049: ['!К', 'Не корми!'],
                      _050: ['ПК', 'Пульни колючку!'],
@@ -865,24 +865,30 @@
                 active.offsetParent !== null)
                 return olddown(e)
 
-            if (!e.altKey && !e.shiftKey && !e.ctrKey && !e.metaKey) {
-                switch(e.keyCode) {
-                case 9: return chat.focus(), false
-                case 49: return chat.toggle(), true
-                case 51: return chat.move(), true
-                case 53: map.toggle(); return true
-                case 81: repeat = 1; return true
+            if (!e.altKey && !e.ctrlKey && !e.metaKey) {
+                if (e.shiftKey)
+                    switch(e.keyCode) {
+                    case 9: return chat.focus(), false
+                    case 87: return olddown(key_w)
+                    case 188: return chat.move(), false
+                    }
+                else {
+                    switch(e.keyCode) {
+                    case 13: return chat.focus(), false
+                    case 87: return repeat = 1, false
+                    case 188: return chat.toggle(), false
+                    case 190: return map.toggle(), false
+                    }
+                    if (quick.key(e))
+                        return extended = true, false
                 }
-                if (quick.key(e))
-                    return extended = true
             }
             return olddown(e)
         }
         window.onkeyup = function(e) {
-            switch(e.keyCode) {
-            case 81: repeat = 0;break
-            default: return oldup(e)
-            }
+            if (e.keyCode == 87)
+                repeat = 0
+            return oldup(e)
         }
 
         // Mouse controls
@@ -1267,6 +1273,7 @@
             var quickHint = document.createElement('div')
             quickHint.id = "quickHint"
             function codeToName(x) {
+                if (x == 192) return "`"
                 if (x >= 48 && x <= 57) return ""+(x-48)
                 if (x >= 96 && x <= 105) return "num"+(x-96)
                 if (x >= 65 && x <= 90) return String.fromCharCode(x)
