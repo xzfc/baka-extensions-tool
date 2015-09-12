@@ -96,6 +96,8 @@ function exposeReset() {
 exposeReset();
 
 var _version_ = GM_info.script.version;
+var zc_name = GM_info.script.name;
+var zc_short_name = zc_name.replace(/[^A-Z]/g, '');
 
 var debugMonkeyReleaseMessage = "<h3>Protocol Changes and Burnout</h3><p>" +
     "Hey guys. I've patched the no-movement issue. Sorry for the inconvenience and for the delay in making a fix. <br><br>" +
@@ -3926,7 +3928,7 @@ jQuery('body').append('<div id="ZCOverlay" class="bs-example-modal-lg" style="po
 '    <div class="modal-content">'+
 '    <div class="modal-header">'+
 '    <button type="button" class="close" onclick="hideZCOverlay();")><span>×</span></button>'+
-'<h4 class="modal-title">Zeach Cobbler v' +GM_info.script.version + '</h4>'+
+'<h4 class="modal-title">' + zc_name + ' v' +GM_info.script.version + '</h4>'+
 '</div>'+
 '<div id="ZCOverlayBody" class="modal-body" style="height:675px;">'+
 '    </div>'+
@@ -3942,7 +3944,7 @@ jQuery("#ZCPlay").hide();
 jQuery("#ZCOverlay").hide();
 
 jQuery("#agario-main-buttons")
-    .append('<button type="button" class="btn btn-danger" id="opnZC" onclick="showZCOverlay()" style="margin-top:5px;position:relative;width:100%;">ZeachCobbler Options</button>');
+    .append('<button type="button" class="btn btn-danger" id="opnZC" onclick="showZCOverlay()" style="margin-top:5px;position:relative;width:100%;">' + zc_name + ' Options</button>');
 jQuery("#agario-main-buttons")
 
 jQuery('#ZCOverlayBody').append('<div id="ZCStats" style="position:relative;width:100%; background-color: #FFFFFF; border-radius: 15px; padding: 5px 15px 5px 15px;">'+
@@ -4508,7 +4510,7 @@ uiOnLoadTweaks();
 
 var col1 = $("#col1");
 col1.append("<h4>Options</h4>");
-AppendCheckbox(col1, 'showZcStats-checkbox', ' Show ZC Stats On Death', window.cobbler.showZcStats, function(val){window.cobbler.showZcStats = val;});
+AppendCheckbox(col1, 'showZcStats-checkbox', ' Show ' + zc_short_name + ' Stats On Death', window.cobbler.showZcStats, function(val){window.cobbler.showZcStats = val;});
 col1.append("<h4>Modes</h4>");
 AppendCheckbox(col1, 'isacid-checkbox', ' Enable Acid Mode', window.cobbler.isAcid, function(val){window.cobbler.isAcid = val;});
 col1.append("<h4>Visual</h4>");
