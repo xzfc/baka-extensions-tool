@@ -1363,7 +1363,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
 
             itemToDraw = nameCache;
             itemToDraw.setValue(this.name);
-            setCellName(this, itemToDraw);
             itemToDraw.setSize(this.maxNameSize());
             var scale = Math.ceil(10 * zeach.scale) / 10;
             itemToDraw.setScale(scale);
@@ -1387,40 +1386,52 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
     }
 
     function drawCellMass(yBasePos, itemToDraw){
-        var massValue = (~~(getMass(this.size))).toString();
-        // Append shots to mass if visual cues are enabled
-        if(showVisualCues && _.contains(zeach.myIDs, this.id)){
-            massValue += " (" + getBlobShotsAvailable(this).toString() + ")";
+        if(!zeach.isShowMass){
+            return;
+        }
+        if(!(itemToDraw || (0 == zeach.myPoints.length || showVisualCues) && ((!this.isVirus || this.isAgitated) && 20 < this.size))) {
+            return;
         }
 
-        if(zeach.isShowMass) {
-            var scale;
-            if(itemToDraw || (0 == zeach.myPoints.length || showVisualCues) && ((!this.isVirus || this.isAgitated) && 20 < this.size)) {
-                if(null == this.massText) {
-                    this.massText = new zeach.CachedCanvas(this.maxNameSize() / 2, "#FFFFFF", true, "#000000");
-                }
-                itemToDraw = this.massText;
-                itemToDraw.setSize(this.maxNameSize() / 2);
-                itemToDraw.setValue(massValue); // precalculated & possibly appended
-                scale = Math.ceil(10 * zeach.scale) / 10;
-                itemToDraw.setScale(scale);
-
-                // Tweak : relocated mass is line is bigger than stock
-                itemToDraw.setScale(scale * ( shouldRelocateName.call(this) ? 2 : 1));
-
-                var e = itemToDraw.render();
-                var xPos = ~~(e.width / scale);
-                var yPos = ~~(e.height / scale);
-                if(shouldRelocateName.call(this)) {
-                    // relocate mass to UNDER the cell rather than on top of it
-                    zeach.ctx.drawImage(e, ~~this.x - ~~(xPos / 2), yBasePos + ~~(yPos), xPos, yPos);
-                }
-                else {
-                    zeach.ctx.drawImage(e, ~~this.x - ~~(xPos / 2), yBasePos - ~~(yPos / 2), xPos, yPos);
+        var massValue = (~~(getMass(this.size))).toString();
+        if(showVisualCues){
+            var pct="", shots="", ttr="";
+            var isMy = _.contains(zeach.myIDs, this.id);
+            if(isPlayerAlive()){
+                pct = " " + ~~(this.nSize*this.nSize*100/(getSelectedBlob().nSize*getSelectedBlob().nSize)) + "%";
+                if(isMy && _.min(zeach.myPoints, "splitTime").id != this.id){
+                    ttr = " ~" + calcTTR(this) + "s"
                 }
             }
+            if(isMy){
+                shots = " (" + getBlobShotsAvailable(this).toString() + ")";
+            }
+            massValue = massValue + pct + shots + ttr;
         }
 
+        var scale;
+        if(null == this.massText) {
+            this.massText = new zeach.CachedCanvas(this.maxNameSize() / 1.4, "#FFFFFF", true, "#000000");
+        }
+        itemToDraw = this.massText;
+        itemToDraw.setSize(this.maxNameSize() / 1.4);
+        itemToDraw.setValue(massValue); // precalculated & possibly appended
+        scale = Math.ceil(10 * zeach.scale) / 10;
+        itemToDraw.setScale(scale);
+
+        // Tweak : relocated mass is line is bigger than stock
+        itemToDraw.setScale(scale * ( shouldRelocateName.call(this) ? 2 : 1));
+
+        var e = itemToDraw.render();
+        var xPos = ~~(e.width / scale);
+        var yPos = ~~(e.height / scale);
+        if(shouldRelocateName.call(this)) {
+            // relocate mass to UNDER the cell rather than on top of it
+            zeach.ctx.drawImage(e, ~~this.x - ~~(xPos / 2), yBasePos + ~~(yPos), xPos, yPos);
+        }
+        else {
+            zeach.ctx.drawImage(e, ~~this.x - ~~(xPos / 2), yBasePos - ~~(yPos / 2), xPos, yPos);
+        }
     }
 
 // ======================   Misc    ==================================================================
@@ -1539,23 +1550,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
     function onBeforeNewPointPacket() {
         if (0 == _.size(zeach.myPoints)){
             timeSpawned = Date.now();
-        }
-    }
-
-    function setCellName(cell, d) {
-        if (showVisualCues) {
-            var pct;
-            if (_.size(zeach.myPoints) > 1 && _.contains(zeach.myIDs, cell.id)) {
-                var oldestSplitTime = _.min(zeach.myPoints, "splitTime");
-                if(oldestSplitTime.id == cell.id){
-                    d.setValue(cell.name);
-                } else {
-                    pct = (cell.nSize * cell.nSize) * 100 / (getSelectedBlob().nSize * getSelectedBlob().nSize);
-                    d.setValue(calcTTR(cell) + " ttr" + " " + ~~(pct) + "%");}
-            } else if (!cell.isVirus && isPlayerAlive()) {
-                pct = ~~((cell.nSize * cell.nSize) * 100 / (getSelectedBlob().nSize * getSelectedBlob().nSize));
-                d.setValue(cell.name + " " + pct.toString() + "%");
-            }
         }
     }
 
