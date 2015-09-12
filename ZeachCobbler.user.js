@@ -9,73 +9,6 @@
 // @author       DebugMonkey
 // @match        http://agar.io
 // @match        https://agar.io
-// @changes     0.28.0 - Revamped UI
-//                     - Stats now detects viruses being eaten
-//                   1 - Updated @updateURL and @downloadURL to not use rawgit
-//                   2 - Upgraded zoom functions
-//                   3 - Some zoom bug fixes
-//                   4 - protocol breakage fix
-//                   5 - fixed my fuckup
-//              0.27.0 - Click-to-lock added
-//                     - Added ability to lock blob at some pos
-//                     - Added ability to select n-th size blob
-//                   2 - Fixed virus shot counter, improved shots remaining calculation
-//                     - General code cleanup
-//                     - shots per ms field added
-//                     - options screen cleanup/reorg
-//                   6 - Hack to get mod loading again.
-//                   7 - proper fix for xp bar rename
-//                   8 - added isAgitated
-//                     - changed multiblob grazer var name to reset multiblob default to 'false'
-//              0.26.0 - Configurable Minimap scale & Agariomod private server location update
-//              0.25.0 - Facebook Update
-//                   1 - Tons of bug fixes
-//              0.24.0 - Switched back to hacky method of loading & added hotkey reference
-//                   1 - Guest play fix
-//                   2 - UI Tweaks and a new message
-//              0.23.0 - Agariomods.com private server support
-//              0.22.0 - Added hybrid grazer option & fixed music
-//                   1 - music restored, viruses excluded from relocated names
-//                     - Hybrid grazer goes back to old grazer if it loses enough mass
-//                   2 - Hybrid grazer checkbox fix
-//                   3 - volume fix
-//                   4 - Blank cell fix
-//                     - Option to remove grid lines
-//                     - Oldest cell now just displays name rather than negative Time To Remerge (TTR)
-//                   5 - Grazer auto-respawn
-//                   6 - G and H act equivalently in hybrid-grazer mode
-//                     - if old grazer has no targets it will try to switch into new grazer mode
-//              0.21.0 - Changed way script is loaded.
-//              0.20.0 - Version leap due to updated grazer
-//                     - Fixes for new client behavior
-//              0.15.0 - Fixed Minimap (Zeach broke it)
-//                     - Fixed Borders(Zeach broke them too)
-//                     - Lite Brite mode added (and some UI issues fixed)
-//                   2 - Lite Brite, SFX, and BGM settings all saved
-//                   3 - hack for overflowing chart & updated hardcoded agariomods skins
-//              0.14.0 - Major refactoring to help with future updates
-//                     - Support for AgarioMods connect skins
-//              0.13.0 - Fixed break caused by recent code changes
-//                   1 - bug fixes
-//                     - removed direct connect UI (for now)
-//                   2 - grazer speed improved by removing debug logging & adding artifical 200ms throttle
-//                   3 - fixed virus poppers
-//                     - fixed ttr calculation
-//                   6 - fixed flickering grazer lines
-//              0.12.0 - Added music and sound effects.
-//                     - Sound effects from agariomods.com
-//                     - Music from http://incompetech.com/music/royalty-free/most/kerbalspaceprogram.php
-//                     - Fix: scroll wheel function
-//                     - Fixed blank cell not displaying % diff issue
-//                     - Fixed key bindings triggering while changing name
-//                   4 - bug fix courtesy of Gjum
-//                   5 - updated handshake for v548
-//              0.11.0 - Fix for v538 fix
-//                   1 - grazer fixed, time alive and ttr fixed
-//                   2 - more fixes for stuff I missed
-//                   3 - onDestroy bugfix
-//                   4 - update with mikeyk730's latest changes
-//                   5 - skins should now display in experimental
 // @require      https://cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.0/lodash.min.js
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -99,12 +32,6 @@ exposeReset();
 var _version_ = GM_info.script.version;
 var zc_name = GM_info.script.name;
 var zc_short_name = zc_name.replace(/[^A-Z]/g, '');
-
-var debugMonkeyReleaseMessage = "<h3>Protocol Changes and Burnout</h3><p>" +
-    "Hey guys. I've patched the no-movement issue. Sorry for the inconvenience and for the delay in making a fix. <br><br>" +
-    "I've been a bit burnt out on Agar.io so I've been taking it easy. I'd like to thank PepinCZ, Gjum, and all " +
-    "the others who have been helpful in the github issues area during my away time. You guys are the real MVPs.<br>" +
-    "<img src='http://i.imgur.com/p4zv6vx.jpg'><br><br>-debugmonkey";
 
 //if (window.top != window.self)  //-- Don't run on frames or iframes
 //    return;
@@ -3931,7 +3858,6 @@ jQuery("#agario-main-buttons")
 
 jQuery('#ZCOverlayBody').append('<div id="ZCStats" style="position:relative;width:100%; background-color: #FFFFFF; border-radius: 15px; padding: 5px 15px 5px 15px;">'+
     '<ul class="nav nav-pills" role="tablist">' +
-    '<li role="presentation">                 <a href="#page0" id="newsTab"   role="tab" data-toggle="tab">News</a></li>' +
     '<li role="presentation">                 <a href="#page1" id="statsTab"  role="tab" data-toggle="tab">Stats</a></li>' +
     '<li role="presentation" class="active" > <a href="#page2" id="configTab" role="tab" data-toggle="tab">Extended Options</a></li>' +
     '<li role="presentation">                 <a href="#page3" id="helpTab" role="tab" data-toggle="tab">Help</a></li>' +
@@ -3939,8 +3865,6 @@ jQuery('#ZCOverlayBody').append('<div id="ZCStats" style="position:relative;widt
     '</ul>'+
 
     '<div id="bigbox" class="tab-content">' +
-    '<div id="page0" role="tabpanel" class="tab-pane">'+ debugMonkeyReleaseMessage +'</div>' +
-
     '<div id="page1" role="tabpanel" class="tab-pane">' +
     '<div class="row">' +
     '<div id="statArea" class="col-sm-6" style="vertical-align:top;"></div>' +
