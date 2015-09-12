@@ -1395,7 +1395,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
 
         if(zeach.isShowMass) {
             var scale;
-            if(itemToDraw || 0 == zeach.myPoints.length && ((!this.isVirus || this.isAgitated) && 20 < this.size)) {
+            if(itemToDraw || (0 == zeach.myPoints.length || showVisualCues) && ((!this.isVirus || this.isAgitated) && 20 < this.size)) {
                 if(null == this.massText) {
                     this.massText = new zeach.CachedCanvas(this.maxNameSize() / 2, "#FFFFFF", true, "#000000");
                 }
