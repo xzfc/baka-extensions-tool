@@ -179,7 +179,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             "splitGuide"        : true,
             "debugLevel"        : 0,
             "namesUnderBlobs"   : false,
-            "grazerMultiBlob2"  : false,
             "grazerHybridSwitch": false,
             "grazerHybridSwitchMass" : 300,
             "gridLines"         : true,
@@ -473,14 +472,13 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         var target;
 
 
-        var targets = findFoodToEat(!cobbler.grazerMultiBlob2);
+        var targets = findFoodToEat();
         for(i = 0; i < zeach.myPoints.length; i++) {
             var point = zeach.myPoints[i];
             
-            if (!cobbler.grazerMultiBlob2 && point.id != getSelectedBlob().id) {
+            if (point.id != getSelectedBlob().id)
                 continue;
-            }
-                    
+
             point.grazingMode = isGrazing;
             if(cobbler.grazerHybridSwitch) {
                 var mass = getMass(point.nSize);
@@ -504,22 +502,13 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                     } else {
                         target = zeach.allNodes[point.grazingTargetID];
                     }
-                    if (!cobbler.grazerMultiBlob2) {
-                        sendMouseUpdate(zeach.webSocket, target.x + Math.random(), target.y + Math.random());
-                    } else {
-                        sendMouseUpdate(zeach.webSocket, target.x + Math.random(), target.y + Math.random(), point);
-                    }
+                    sendMouseUpdate(zeach.webSocket, target.x + Math.random(), target.y + Math.random());
                 
                 break;
                 }
                 case 2: {
-                    if (!cobbler.grazerMultiBlob2) {
-                        target = _.max(targets, "v");
-                        sendMouseUpdate(zeach.webSocket, target.x + Math.random(), target.y + Math.random());
-                    } else {
-                        target = targets[point.id];
-                        sendMouseUpdate(zeach.webSocket, target.x + Math.random(), target.y + Math.random(), point);
-                    }
+                    target = _.max(targets, "v");
+                    sendMouseUpdate(zeach.webSocket, target.x + Math.random(), target.y + Math.random());
                     
                     break;
                 }
@@ -648,7 +637,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
 
         return blobArray;
     }
-    function findFoodToEat(useGradient) {
+    function findFoodToEat() {
         blobArray = augmentBlobArray(zeach.allItems);
 
         zeach.myPoints.forEach(function(cell) {
@@ -670,10 +659,6 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                 per_threat: per_threat,
                 cumulatives: [ { x: 0, y: 0}, { x: 0, y: 0} ],
             };
-            
-            if (!useGradient && cell.grazingMode != 2) {
-                return acc;
-            }
             
             var totalMass = _.sum(_.pluck(zeach.myPoints, "nSize").map(getMass));
 
@@ -832,43 +817,36 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             return acc;
         });
         
-        if (useGradient) {
-            var funcs = accs.map(function(acc) {
-                return new dasMouseSpeedFunction(acc.id, acc.x, acc.y, 200, acc.fx, acc.fy);
-            });
+        var funcs = accs.map(function(acc) {
+            return new dasMouseSpeedFunction(acc.id, acc.x, acc.y, 200, acc.fx, acc.fy);
+        });
 
-            // Pick gradient ascent step size for better convergence
-            // so that coord jumps don't exceed ~50 units
-            var step = _.sum(accs.map(function(acc) {
-                return Math.sqrt(acc.fx * acc.fx + acc.fy * acc.fy);
-            }));
-            step = 50 / step;
-            if(!isFinite(step)) {
-                step = 50;
-            }
-
-            var viewport = getViewport(false);
-            funcs.push(
-                new dasBorderFunction(
-                    viewport.x - viewport.dx,
-                    viewport.y - viewport.dy,
-                    viewport.x + viewport.dx,
-                    viewport.y + viewport.dy,
-                    -1000
-                )
-            );
-
-            var func = new dasSumFunction(funcs);
-
-            var results = accs.map(function(acc) {
-                return gradient_ascend(func, step, 100, acc.id, acc.x, acc.y);
-            });
-        } else {
-            results = accs.map(function(acc) { 
-                var norm = Math.sqrt(acc.fx * acc.fx + acc.fy * acc.fy);
-                return {id: acc.id, x: acc.x + 200 * acc.fx / norm, y: acc.y + 200 * acc.fy / norm };
-            });
+        // Pick gradient ascent step size for better convergence
+        // so that coord jumps don't exceed ~50 units
+        var step = _.sum(accs.map(function(acc) {
+            return Math.sqrt(acc.fx * acc.fx + acc.fy * acc.fy);
+        }));
+        step = 50 / step;
+        if(!isFinite(step)) {
+            step = 50;
         }
+
+        var viewport = getViewport(false);
+        funcs.push(
+            new dasBorderFunction(
+                viewport.x - viewport.dx,
+                viewport.y - viewport.dy,
+                viewport.x + viewport.dx,
+                viewport.y + viewport.dy,
+                -1000
+            )
+        );
+
+        var func = new dasSumFunction(funcs);
+
+        var results = accs.map(function(acc) {
+            return gradient_ascend(func, step, 100, acc.id, acc.x, acc.y);
+        });
 
 
         var reply = {};
@@ -4552,7 +4530,6 @@ col2.append('<h4>Grazer</h4><div id="grazer-checks" class="checkbox" ></div>');
 var grazerChecks = $("#grazer-checks");
 AppendCheckbox(grazerChecks, 'autorespawn-checkbox', ' Grazer Auto-Respawns', window.cobbler.autoRespawn, function(val){window.cobbler.autoRespawn = val;});
 AppendCheckbox(grazerChecks, 'option5', ' Visualize Grazer', window.cobbler.visualizeGrazing, function(val){window.cobbler.visualizeGrazing = val;});
-AppendCheckbox(grazerChecks, 'grazer-multiBlob-checkbox', ' Grazer MultiBlob', window.cobbler.grazerMultiBlob2, function(val){window.cobbler.grazerMultiBlob2 = val;});
 
 col2.append('<h5>Hybrid Grazer</h5>' +
     '<div id="hybrid-group" class="input-group input-group-sm"><span class="input-group-addon"><input id="hybrid-checkbox" type="checkbox"></span>' +
