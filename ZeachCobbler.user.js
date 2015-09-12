@@ -3779,6 +3779,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
 
             d.joinParty = function(a) {
                 f("#helloContainer").attr("data-party-state", "4");
+                a = decodeURIComponent(a).replace(/.*#/gim, '');
                 f.ajax(Ja + "//m.agar.io/getToken", {
                     error : function() {
                         f("#helloContainer").attr("data-party-state", "6");
