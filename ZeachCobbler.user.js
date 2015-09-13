@@ -4,7 +4,7 @@
 // @updateURL    https://raw.githubusercontent.com/xzfc/BakaCobbler/bakacobbler/ZeachCobbler.user.js
 // @downloadURL  https://raw.githubusercontent.com/xzfc/BakaCobbler/bakacobbler/ZeachCobbler.user.js
 // @contributer  See full list at https://github.com/RealDebugMonkey/ZeachCobbler#contributors-and-used-code
-// @version      1.0
+// @version      1.1
 // @description  Agario powerups
 // @author       DebugMonkey
 // @match        http://agar.io
@@ -26,6 +26,7 @@ function exposeReset() {
     unsafeWindow.agar.ws = "";
     unsafeWindow.agar.dimensions = [-dd,-dd,dd,dd];
     unsafeWindow.agar.rawViewport={x:0,y:0,scale:1};
+    unsafeWindow.agar.disableRendering = false;
 }
 exposeReset();
 
@@ -2302,6 +2303,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         }
         unsafeWindow.agar.rawViewport.x = Y;
         unsafeWindow.agar.rawViewport.y = Z;
+        if (unsafeWindow.agar.disableRendering) return;
         lb();
         ya();
         if (!Fa) {
@@ -3298,6 +3300,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                     return 0 >= this.id ? true : this.x + this.size + 40 < t - q / 2 / k || (this.y + this.size + 40 < u - s$$0 / 2 / k || (this.x - this.size - 40 > t + q / 2 / k || this.y - this.size - 40 > u + s$$0 / 2 / k)) ? false : true;
                 },
                 w : function(a) {
+                    if (unsafeWindow.agar.disableRendering) return;
                     if (this.N()) {
                         ++this.Y;
                         var c = 0 < this.id && (!this.h && (!this.n && 0.4 > k));
