@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.27
+// @version     1.28
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.27"
+    var version = "1.28"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  _192: {
@@ -49,6 +49,8 @@
                                   /[Ծo][dԺ][tԵ][uü]/i,
                                   /ΆǾĢ|ⒶⓄⒼ/, /ŦĪŦ/,
                                   /\bDH\b/, /[つマづĐÐ][みℋんĦн]|ⒹⒽ|매|Ďℍ|⊃Ⓗ|đħ/]},
+                 reddit: {aura: "#aa5",
+                          names: [/《ℝ》/]},
                  other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T|EXER)\]/i,
                                  /ヴ[いぃ]ｐ/,
                                  /ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
