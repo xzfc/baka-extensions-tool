@@ -78,6 +78,7 @@
              fogOfWar: true,
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
+             mapSize: 256,
              bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
              bakaSkinBig: false,
             })
@@ -978,8 +979,7 @@
         init: function() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
-            this.canvas.width = 256
-            this.canvas.height = 256
+
             document.body.appendChild(this.canvas)
             this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
             this.draw()
@@ -1016,6 +1016,7 @@
         draw: function() {
             if (this.hidden)
                 return
+            var size = this.canvas.width = this.canvas.height = window.bakaconf.mapSize
             var context = this.canvas.getContext('2d')
             var myCells = this.myCells() || []
             var teams = window.bakaconf.teams
@@ -1045,7 +1046,7 @@
                 proj = [0, parseFloat(region.replace(/.*\bMap([0-9.]+)K\b.*/, "$1"))*1000]
             } else if ((window.agar||{}).dimensions)
                 proj = [window.agar.dimensions[0], window.agar.dimensions[2]]
-            proj = [proj[0], 256/(proj[1]-proj[0])]
+            proj = [proj[0], size/(proj[1]-proj[0])]
             function t(v) { return (v-proj[0])*proj[1] } // shift+scale
             function s(v) { return v * proj[1] }         // scale
             var i
@@ -1067,11 +1068,11 @@
 
             if (this.blackRibbon) {
                 context.beginPath()
-                context.lineWidth = 32
+                context.lineWidth = size/8
                 context.strokeStyle = "#000"
                 context.beginPath();
-                context.moveTo(256-96-32,256+32);
-                context.lineTo(256+32,256-96-32);
+                context.moveTo(size/2, size*9/8);
+                context.lineTo(size*9/8, size/2);
                 context.stroke()
                 context.fill()
             }

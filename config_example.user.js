@@ -59,6 +59,9 @@ window.bakaconf.quickTemplates = {
 // Выключить туман войны
 // window.bakaconf.fogOfWar = false;
 
+// Размер карты, в пикселях
+// window.bakaconf.mapSize = 256;
+
 // Выключить звук
 // window.bakaconf.sound = {chat:0, quick:0};
 
