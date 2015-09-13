@@ -40,6 +40,8 @@
                        names: [/⑨/]},
                  zt: {aura: "#a5a",
                       names: [/ƵŦ/]},
+                 reddit: {aura: "#aa5",
+                          names: [/《ℝ》/]},
                  brazil: {names: /ᴳᴀᴮ|ŦḰΔ|βҜǤ|ǤΔβ/},
                  turkey: {names: [/ek[sşŞ\$][iİ]/i,
                                   /[iİ][╦T][µÜ]/i,
