@@ -463,6 +463,15 @@
         websocket = ws
     }
 
+    function toggleCanvas() {
+        if (window.agar === undefined || window.agar.disableRendering === undefined)
+            return console.error("Could not find window.agar.disableRendering"), undefined
+        if (window.agar.disableRendering = !window.agar.disableRendering)
+            document.body.setAttribute("baka-off", true)
+        else
+            document.body.removeAttribute("baka-off")
+    }
+
     function topScreenshot() {
         var canvas = document.getElementById("canvas")
         var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
@@ -882,6 +891,7 @@
                     case 87: return repeat = 1, false
                     case 188: return chat.toggle(), false
                     case 190: return map.toggle(), false
+                    case 191: return toggleCanvas(), false
                     }
                     if (quick.key(e))
                         return extended = true, false
@@ -1364,7 +1374,15 @@
                 '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
                 'body[dark] #map { border-color: #aaa }' +
                 '.agario-promo { width: 220px !important; height: 274px !important; background-size: contain }' +
-                '.tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }'
+                '.tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }' +
+                '@keyframes baka-turn-off {' +
+                ' 0% { transform: scale(1, 1.3) translate3d(0, 0, 0); -webkit-filter: brightness(1); filter: brightness(1); opacity: 1 }' +
+                ' 60% { transform: scale(1.3, 0.001) translate3d(0, 0, 0); -webkit-filter: brightness(10); filter: brightness(10) }' +
+                ' 100% { animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06); transform: scale(0, 0.0001) translate3d(0, 0, 0); -webkit-filter: brightness(50); filter: brightness(50) }' +
+                '}' +
+                'body[baka-off] { background-color: black }' +
+                'body[baka-off] #canvas { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }' +
+                '/* Sırno en güçlü olduğu! */'
             document.head.appendChild(stl)
         }
 
