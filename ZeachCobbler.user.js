@@ -3387,7 +3387,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                             d = unsafeWindow.agar.skinF(this, d);
                             b = d ? !!d.big : false;
                         }
-                        a.globalAlpha = 0.5;
+                        a.globalAlpha = 0.8;
                         a.fill();
                         a.globalAlpha = 1.0;
                         a.stroke();
@@ -3395,7 +3395,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                         if (!(null == d)) {
                             if (!b) {
                                 a.save();
-                                /*new*/zeach.ctx.globalAlpha = _.contains(zeach.myIDs, this.id) ? 1 : 0.5;
+                                /*new*/zeach.ctx.globalAlpha = 0.8;
                                 a.clip();
                                 a.drawImage(d, this.x - this.size, this.y - this.size, 2 * this.size, 2 * this.size);
                                 a.restore();
