@@ -106,6 +106,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             "sfxVol"            : 0.5,
             "drawTail"          : false,
             "splitGuide"        : true,
+            "absorptionGuide"   : true,
             "debugLevel"        : 0,
             "namesUnderBlobs"   : false,
             "grazerHybridSwitch": false,
@@ -1540,6 +1541,54 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         }
     }
 
+    function calculateAbsorptionGuide(eatenCells, aliveCells) {
+        if (!showVisualCues || !cobbler.absorptionGuide)
+            return;
+        var i, j, ci, cj;
+        var bigEnough = [];
+        for (i = 0; i < eatenCells.length; i++) {
+            ci = eatenCells[i];
+            delete ci.zcEatees;
+            delete ci.zcEater;
+            delete ci.zcProgress;
+        }
+        for (i = 0; i < aliveCells.length; i++) {
+            ci = aliveCells[i];
+            ci.zcEatees = [];
+            ci.zcEater = undefined;
+            ci.zcProgress = Number.POSITIVE_INFINITY;
+            if (ci.size > 32)
+                bigEnough.push(ci);
+        }
+
+        for (i = 0; i < bigEnough.length; i++) {
+            ci = bigEnough[i];
+            if (ci.isVirus)
+                continue;
+            for (j = 0; j < bigEnough.length; j++) {
+                cj = bigEnough[j];
+                if (ci.size <= cj.size)
+                    continue
+                var dist_min = ci.size - 0.354*cj.size + 11;
+                var dist_max = ci.size + cj.size;
+                var dist = lineDistance(ci, cj);
+                if (dist >= dist_max)
+                    continue;
+                var progress = (dist - dist_min) / (dist_max - dist_min);
+                ci.zcEatees.push({
+                    cell: cj,
+                    radius: dist_min,
+                    angle: Math.atan2(cj.y-ci.y, cj.x-ci.x),
+                    progress: progress,
+                    max_angle: Math.atan2(cj.size, dist_max),
+                })
+                if (cj.zcEater === undefined && cj.zcProgress > progress) {
+                    cj.zcProgress = progress;
+                    cj.zcEater = ci;
+                }
+            }
+        }
+    }
 
 // ======================   Start main    ==================================================================
 
@@ -2324,6 +2373,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         g.translate(q / 2, s$$0 / 2);
         g.scale(k, k);
         g.translate(-t, -u);
+        /*new*/calculateAbsorptionGuide(P, v);
         e = 0;
         for (;e < P.length;e++) {
             P[e].w(g);
@@ -3450,6 +3500,39 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                             /*new*//*remap*/var vertical_offset = drawCellName.call(this,b,e,d);
                             /*new*//*remap*/ drawCellMass.call(this,vertical_offset,b);
                         }
+
+                        /*new↓*/
+                        a.strokeStyle = "#000000";
+                        a.fillStyle = "#000000";
+                        if(this.zcEatees && showVisualCues && cobbler.absorptionGuide)
+                            for(var zcI = 0; zcI < this.zcEatees.length; zcI++) {
+                                var zcW = this.zcEatees[zcI]
+                                var zcAngle = Math.max(0.2, zcW.progress)*zcW.max_angle;
+                                a.globalAlpha = 1-zcW.progress;
+
+                                a.beginPath();
+                                a.arc(this.x, this.y,
+                                      zcW.radius,
+                                      zcW.angle-zcAngle, zcW.angle+zcAngle);
+                                a.stroke();
+
+                                if (zcW.progress < 0) {
+                                    a.beginPath();
+                                    a.moveTo(this.x + zcW.radius*Math.cos(zcW.angle),
+                                             this.y + zcW.radius*Math.sin(zcW.angle));
+                                    a.lineTo(zcW.cell.x, zcW.cell.y);
+                                    a.stroke();
+                                }
+
+                                if (this === zcW.cell.zcEater) {
+                                    a.beginPath();
+                                    a.arc(zcW.cell.x, zcW.cell.y,
+                                          20,
+                                          0, 2 * Math.PI);
+                                    a.fill();
+                                }
+                            }
+                        /*new↑*/
                         a.restore();
                     }
                 }
@@ -4426,6 +4509,7 @@ AppendCheckbox(col1, 'isacid-checkbox', ' Enable Acid Mode', window.cobbler.isAc
 col1.append("<h4>Visual</h4>");
 AppendCheckbox(col1, 'trailingtail-checkbox', ' Draw Trailing Tail', window.cobbler.drawTail, function(val){window.cobbler.drawTail = val;});
 AppendCheckbox(col1, 'splitguide-checkbox', ' Draw Split Guide', window.cobbler.splitGuide, function(val){window.cobbler.splitGuide = val;});
+AppendCheckbox(col1, 'absorptionguide-checkbox', ' Draw Absorption Guide', window.cobbler.absorptionGuide, function(val){window.cobbler.absorptionGuide = val;});
 AppendCheckbox(col1, 'namesunder-checkbox', ' Names under blobs', window.cobbler.namesUnderBlobs, function(val){window.cobbler.namesUnderBlobs = val;});
 AppendCheckbox(col1, 'gridlines-checkbox', ' Show Gridlines', window.cobbler.gridLines, function(val){window.cobbler.gridLines = val;});
 col1.append("<h4>Stats</h4>");
