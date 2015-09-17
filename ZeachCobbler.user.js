@@ -112,6 +112,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             "grazerHybridSwitch": false,
             "grazerHybridSwitchMass" : 300,
             "gridLines"         : true,
+            "mouseCoordLines"   : false,
             "autoRespawn"       : false,
             "visualizeGrazing"  : true,
             "msDelayBetweenShots" : 100,
@@ -891,6 +892,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             if(cobbler.drawTail){
                 drawTrailTail(ctx);
             }
+            drawMouseCoordLines(ctx);
 
 
             drawSplitGuide(ctx, getSelectedBlob());
@@ -1138,6 +1140,21 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
             drawLine(ctx,playerBlob, {x: playerBlob.x - d.x * trailScale, y: playerBlob.y - d.y * trailScale }, myColor );
             //drawLine(ctx,{x: playerBlob.ox, y: playerBlob.oy }, {x: playerBlob.nx, y: playerBlob.ny }, "green" );
         });
+    }
+
+    function drawMouseCoordLines(ctx) {
+        if (cobbler.mouseCoordLines) {
+            ctx.globalAlpha = 0.5;
+            ctx.lineWidth = 2;
+            zeach.myPoints.forEach(function(playerBlob) {
+                if (playerBlob.sentMouseCoords)
+                    drawLine(ctx,
+                             playerBlob,
+                             playerBlob.sentMouseCoords,
+                             zeach.isNightMode ? '#FFFFFF' : '#000000');
+            });
+            ctx.globalAlpha = 1;
+        }
     }
 
     function drawGrazingLines_old(ctx) {
@@ -2249,6 +2266,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                 if (!(0.01 > Math.abs($a - fa) && 0.01 > Math.abs(ab - ga))) {
                         $a = fa;
                         ab = ga;
+                        /*new*/zeach.myPoints.forEach(function(playerBlob){playerBlob.sentMouseCoords = {x:$a,y:ab};});
                         a = L(13);
                         a.setUint8(0, 16);
                         a.setInt32(1, fa, true);
@@ -4512,6 +4530,7 @@ AppendCheckbox(col1, 'splitguide-checkbox', ' Draw Split Guide', window.cobbler.
 AppendCheckbox(col1, 'absorptionguide-checkbox', ' Draw Absorption Guide', window.cobbler.absorptionGuide, function(val){window.cobbler.absorptionGuide = val;});
 AppendCheckbox(col1, 'namesunder-checkbox', ' Names under blobs', window.cobbler.namesUnderBlobs, function(val){window.cobbler.namesUnderBlobs = val;});
 AppendCheckbox(col1, 'gridlines-checkbox', ' Show Gridlines', window.cobbler.gridLines, function(val){window.cobbler.gridLines = val;});
+AppendCheckbox(col1, 'mousecoordlines-checkbox', ' Show Mouse Lines', window.cobbler.mouseCoordLines, function(val){window.cobbler.mouseCoordLines = val;});
 col1.append("<h4>Stats</h4>");
 AppendCheckbox(col1, 'chart-checkbox', ' Show in-game chart', display_chart, OnChangeDisplayChart);
 AppendCheckbox(col1, 'stats-checkbox', ' Show in-game stats', display_stats, OnChangeDisplayStats);
