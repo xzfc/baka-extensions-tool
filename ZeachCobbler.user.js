@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Baka Cobbler
 // @namespace    baka-extensions-tool
-// @updateURL    https://raw.githubusercontent.com/xzfc/BakaCobbler/bakacobbler/ZeachCobbler.user.js
-// @downloadURL  https://raw.githubusercontent.com/xzfc/BakaCobbler/bakacobbler/ZeachCobbler.user.js
+// @updateURL    https://raw.githubusercontent.com/xzfc/baka-extensions-tool/bakacobbler/ZeachCobbler.user.js
+// @downloadURL  https://raw.githubusercontent.com/xzfc/baka-extensions-tool/bakacobbler/ZeachCobbler.user.js
 // @contributer  See full list at https://github.com/RealDebugMonkey/ZeachCobbler#contributors-and-used-code
 // @version      1.1
 // @description  Agario powerups
