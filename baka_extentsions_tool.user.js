@@ -354,8 +354,6 @@
                 chat.setUsersCount(false, d.names.length)
                 break
             case "message":
-                if (d.legacy <= 1)
-                    break
                 addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
                 notify("chat")
                 break
