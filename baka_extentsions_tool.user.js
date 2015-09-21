@@ -920,6 +920,7 @@
                     switch(e.code) {
                     case "Tab": return chat.focus(), false
                     case "KeyW": return olddown(key_w)
+                    case "Period": return map.move(), false
                     case "Comma": return chat.move(), false
                     }
                 else {
@@ -1028,6 +1029,7 @@
         range: [],
         blackRibbon: true,
         hidden: false,
+        defaultPosition: true,
         blinks: {},
         blinkIdsCounter: 0,
         waitReply: true,
@@ -1047,6 +1049,17 @@
         toggle: function() {
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
+        },
+        move: function() {
+            var stl = this.canvas.style
+            if (this.defaultPosition = !this.defaultPosition) {
+                stl.bottom = stl.left  = '5px'
+                stl.top    = stl.right = 'initial'
+            } else {
+                stl.bottom = stl.left  = 'initial'
+                stl.top = '5px'
+                stl.right = '220px'
+            }
         },
         update: function(data, range) {
             this.waitReply = false
