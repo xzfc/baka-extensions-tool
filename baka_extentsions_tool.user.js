@@ -1378,10 +1378,12 @@
         if (g('baka-style') === null) {
             var stl = document.createElement('style')
             stl.id = 'baka-style'
-            stl.textContent = '#cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; width:400px; color:#000; opacity:0.7 }' +
+            stl.textContent =
+                '#cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; max-width:400px; color:#000; opacity:0.7 }' +
                 '#carea { width:100%; color:black }' +
                 '#form { margin:0 }' +
-                '#msgsbox { overflow:auto; word-wrap:break-word; width:400px; height:250px }' +
+                '#msgsbox { overflow:auto; word-wrap:break-word; height:250px }' +
+                '#cbox tbody, #cbox tbody tr:first-child, #cbox tbody tr:first-child td:first-child { max-width: inherit }' +
                 '#msgsbox .name.name /* oh my CSS specificity */ { color:#333 }' +
                 '#msgsbox .name.premium { color:#550;font-weight:bold }' +
                 '#msgsbox .higlight { color:#055 }' +
@@ -1398,7 +1400,7 @@
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
                 '#quickHint .sym { color:#000; float:left; width:2em }' +
                 '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
-                'body[dark] #map { border-color: #aaa }' +
+                'body[dark] #map, body[baka-off] #map { border-color: #aaa }' +
                 '.agario-promo { width: 220px !important; height: 274px !important; background-size: contain }' +
                 '.tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }' +
                 '@keyframes baka-turn-off {' +
@@ -1407,7 +1409,9 @@
                 ' 100% { animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06); transform: scale(0, 0.0001) translate3d(0, 0, 0); -webkit-filter: brightness(50); filter: brightness(50) }' +
                 '}' +
                 'body[baka-off] { background-color: black }' +
-                'body[baka-off] #canvas { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }' +
+                'body[baka-off] #canvas, body[baka-off] #overlays { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }' +
+                'body[baka-off] #cbox { max-width:500px }' +
+                'body[baka-off] #msgsbox { height:600px }' +
                 '/* Sırno en güçlü olduğu! */'
             document.head.appendChild(stl)
         }
