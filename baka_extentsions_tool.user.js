@@ -967,15 +967,22 @@
             oldSetNick(n)
         }
         var oldSetDarkTheme = window.setDarkTheme
-        window.setDarkTheme = function(n) {
-            if (n) {
-                if (document.body.hasAttribute("dark"))
-                    document.body.removeAttribute("dark")
+        var parity = false
+        function bakaDarkTheme(n) {
+            if (n)
+                document.body.setAttribute("dark", "")
+            else
+                document.body.removeAttribute("dark")
+            if (parity = !parity) {
+                if (document.body.hasAttribute("baka-dark"))
+                    document.body.removeAttribute("baka-dark")
                 else
-                    document.body.setAttribute("dark", n)
+                    document.body.setAttribute("baka-dark", "")
             }
-            oldSetDarkTheme(n)
         }
+        window.setDarkTheme = function(n) { bakaDarkTheme(n); oldSetDarkTheme(n) }
+        if (document.querySelector('label input[onchange*=setDarkTheme]').checked)
+            bakaDarkTheme(true)
     }
 
     var map = {
@@ -1358,17 +1365,17 @@
                 '#carea { width:100%; color:black }' +
                 '#form { margin:0 }' +
                 '#msgsbox { overflow:auto; word-wrap:break-word; width:400px; height:250px }' +
-                '#msgsbox .name { color:#333 }' +
+                '#msgsbox .name.name /* oh my CSS specificity */ { color:#333 }' +
                 '#msgsbox .name.premium { color:#550;font-weight:bold }' +
                 '#msgsbox .higlight { color:#055 }' +
                 '#msgsbox .time { font-size:70%; color:#777 }' +
                 '#msgsbox .greentext { color:#3b5000 }' +
-                'body:not([dark]) a { color:#275d8b }' +
-                'body[dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
-                'body[dark] #msgsbox .name { color:#CCC }' +
-                'body[dark] #msgsbox .name.premium { color:#EEA }' +
-                'body[dark] #msgsbox .higlight { color:#faa }' +
-                'body[dark] #msgsbox .greentext { color:#789922 }' +
+                'body:not([baka-dark]) #cbox a { color:#275d8b }' +
+                'body[baka-dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
+                'body[baka-dark] #msgsbox .name { color:#CCC }' +
+                'body[baka-dark] #msgsbox .name.premium { color:#EEA }' +
+                'body[baka-dark] #msgsbox .higlight { color:#faa }' +
+                'body[baka-dark] #msgsbox .greentext { color:#789922 }' +
                 '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
                 '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
                 '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
