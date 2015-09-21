@@ -924,6 +924,7 @@
                     }
                 else {
                     switch(e.code) {
+                    case "Tab": return g("ZCOverlay")?olddown(e):chat.focus(), false
                     case "Enter": return chat.focus(), false
                     case "KeyW": return repeat = 1, false
                     case "Period": return map.toggle(), false
