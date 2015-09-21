@@ -909,7 +909,7 @@
 
         // Mouse controls
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
-        g("canvas").onmousedown = function(e) {
+        g("canvas").onmousedown = g("map").onmousedown = function(e) {
             if (e.which === 2 && window.agar && window.agar.scale !== undefined)
                 return window.agar.scale = 1, false
             if (!window.bakaconf.mouseControls)
@@ -922,7 +922,7 @@
         g("canvas").onmouseup = g("map").onmouseup = g("notification").onmouseup =
             g("cbox").onmouseup =
             function(e) { if (e.which === 1) repeatm = false }
-        g("canvas").oncontextmenu =
+        g("canvas").oncontextmenu = g("map").oncontextmenu =
             function(e) { return !window.bakaconf.mouseControls }
 
         // Mouse controls: hover tracker
