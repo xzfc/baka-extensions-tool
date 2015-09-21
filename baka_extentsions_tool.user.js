@@ -13,7 +13,7 @@
     var version = "1.28"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
-                 _192: {
+                 Backquote: {
                      _049: ['К',  'Покорми!'],
                      S049: ['!К', 'Не корми!'],
                      _050: ['ПК', 'Пульни колючку!'],
@@ -860,6 +860,22 @@
         return false
     }
 
+    function codeWorkaround(e) {
+        /* As of September 2015, `KeyboardEvent.code` is supported only in Firefox */
+        if (e.code === undefined)
+            e.code = {
+                "9": "Tab",
+                "13": "Enter",
+                "27": "Escape",
+                "83": "KeyS",
+                "87": "KeyW",
+                "188": "Comma",
+                "190": "Period",
+                "191": "Slash",
+                "192": "Backquote",
+            }[e.keyCode]
+    }
+
     function handleEvents() {
         // Autofire
         var repeat = 0, repeatm = 0
@@ -874,6 +890,8 @@
         var olddown = window.onkeydown, oldup = window.onkeyup
         var extended = false
         window.onkeydown = function(e) {
+            codeWorkaround(e)
+
             if (extended) {
                 if (quick.key(e) === false)
                     extended = false
@@ -881,13 +899,13 @@
             }
 
             if (chat.active) {
-                if (e.keyCode === 27 || e.keyCode === 9)
+                if (e.code === "Escape" || e.code === "Tab")
                     return chat.blur(), false
                 else
                     return true
             }
 
-            if (e.ctrlKey && e.keyCode === 83) {
+            if (e.ctrlKey && e.code === "KeyS") {
                 downloadTopScreenshot()
                 return false
             }
@@ -899,27 +917,28 @@
 
             if (!e.altKey && !e.ctrlKey && !e.metaKey) {
                 if (e.shiftKey)
-                    switch(e.keyCode) {
-                    case 9: return chat.focus(), false
-                    case 87: return olddown(key_w)
-                    case 188: return chat.move(), false
+                    switch(e.code) {
+                    case "Tab": return chat.focus(), false
+                    case "KeyW": return olddown(key_w)
+                    case "Comma": return chat.move(), false
                     }
                 else {
-                    switch(e.keyCode) {
-                    case 13: return chat.focus(), false
-                    case 87: return repeat = 1, false
-                    case 188: return chat.toggle(), false
-                    case 190: return map.toggle(), false
-                    case 191: return toggleCanvas(), false
+                    switch(e.code) {
+                    case "Enter": return chat.focus(), false
+                    case "KeyW": return repeat = 1, false
+                    case "Period": return map.toggle(), false
+                    case "Comma": return chat.toggle(), false
+                    case "Slash": return toggleCanvas(), false
                     }
-                    if (quick.key(e))
-                        return extended = true, false
                 }
+                if (quick.key(e))
+                    return extended = true, false
             }
             return olddown(e)
         }
         window.onkeyup = function(e) {
-            if (e.keyCode == 87)
+            codeWorkaround(e)
+            if (e.code == "KeyW")
                 repeat = 0
             return oldup(e)
         }
@@ -1285,17 +1304,19 @@
     var quick = {
         state: undefined,
         key: function(e, state) {
-            if (e.keyCode >= 16 && e.keyCode <= 18) return
-            var key = (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey)? "S" : "_"
-            if (e.keyCode < 10) key += "00" + e.keyCode
-            else if (e.keyCode < 100) key += "0" + e.keyCode
-            else key += e.keyCode
+            if (e.keyCode >= 16 && e.keyCode <= 18 && e.keyCode) return
+            var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
+            var key1 = mod ? "S" : "_"
+            if (e.keyCode < 10) key1 += "00" + e.keyCode
+            else if (e.keyCode < 100) key1 += "0" + e.keyCode
+            else key1 += e.keyCode
+            var key2 = (mod ? "Shift_" + e.code : e.code)
             var show = false
             if (this.state === undefined) {
                 show = true
                 this.state = window.bakaconf.quickTemplates
             }
-            this.state = this.state[key]
+            this.state = this.state[key1] || this.state[key2]
             if (this.state === undefined || isArray(this.state)) {
                 if (this.state)
                     send({t:"quick", symbol:this.state[0], text:this.state[1],
@@ -1313,6 +1334,11 @@
             var quickHint = document.createElement('div')
             quickHint.id = "quickHint"
             function codeToName(x) {
+                if (x == "Backquote") return "`"
+                if (x.startsWith("Key")) return x.substr(3)
+                return x
+            }
+            function keyCodeToName(x) {
                 if (x == 192) return "`"
                 if (x >= 48 && x <= 57) return ""+(x-48)
                 if (x >= 96 && x <= 105) return "num"+(x-96)
@@ -1323,7 +1349,13 @@
                 var keys = Object.keys(what)
                 for (var i = 0; i < keys.length; i++) {
                     var key = keys[i]
-                    var keyName = (key[0] === '_'?'':'⇧') + codeToName(+key.substr(1))
+                    var keyName = ""
+                    if (/^[_S][0-9]{3}$/.test(key))
+                        keyName = (key[0] === '_'?'':'⇧') + keyCodeToName(+key.substr(1))
+                    else
+                        keyName = key.startsWith('Shift_')
+                        ? '⇧' + codeToName(key.substr(6))
+                        : codeToName(key)
 
                     if (isArray(what[key])) {
                         var line = document.createElement('div')
