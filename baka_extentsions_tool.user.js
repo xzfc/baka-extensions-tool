@@ -354,6 +354,11 @@
                 chat.setUsersCount(false, d.names.length)
                 break
             case "message":
+                var tokens = d.text.trim().split(/ +/)
+                if (tokens[0] === "/me") {
+                    d.text = tokens.slice(1).join(" ")
+                    sender.mode = "me"
+                }
                 addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
                 notify("chat")
                 break
@@ -577,6 +582,10 @@
                 d.appendChild(aName(p.sender))
                 d.appendChild(document.createTextNode(": "))
                 break
+            case "me":
+                d.appendChild(document.createTextNode("•"))
+                d.appendChild(aName(p.sender))
+                d.appendChild(document.createTextNode(" "))
             }
             d.setAttribute("bakaid", p.sender.i)
         }
@@ -797,7 +806,7 @@
             var tokens = ca.value.trim().split(/ +/)
             if (tokens.length === 0)
                 return false
-            if (tokens[0][0] === "/") {
+            if (tokens[0][0] === "/" && tokens[0] != "/me") {
                 switch(tokens[0]) {
                 case "/names":
                     send({t:"names"}); break
@@ -836,6 +845,7 @@
                     addLine({message: ["/ignore [действия] — работа со списком игнорирования. " +
                                        "Пример: `/ignore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
                     addLine({message: ["/auth — авторизация"]})
+                    addLine({message: ["/me — отправить сообщение от третьего лица"]})
                 }
             } else {
                 sendName()
