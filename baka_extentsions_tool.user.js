@@ -332,7 +332,7 @@
                 onmessage_json(JSON.parse(evt.data))
         }
         function onmessage_json(d) {
-            var sender = {i:d.i, name:d.f, premium:d.premium}
+            var sender = {i:d.i, name:d.f, premium:d.premium, mode:"message"}
             function notify(what) {
                 if (myId !== d.i && myId !== null)
                     notificator.notify(what)
@@ -369,7 +369,10 @@
             case "name":
                 var oldName = aName(sender)
                 sender.name = d.name
-                addLine({time:d.T, message: [oldName, " теперь ", aName(sender), "."]})
+                sender.mode = "none"
+                addLine({time: d.T,
+                         sender: sender,
+                         message: [oldName, " теперь ", aName(sender), "."]})
                 break
             case "map":
                 map.update(d.data, d.range)
@@ -569,8 +572,12 @@
         }
 
         if (p.sender !== undefined) {
-            d.appendChild(aName(p.sender))
-            d.appendChild(document.createTextNode(": "))
+            switch (p.sender.mode) {
+            case "message":
+                d.appendChild(aName(p.sender))
+                d.appendChild(document.createTextNode(": "))
+                break
+            }
             d.setAttribute("bakaid", p.sender.i)
         }
 
