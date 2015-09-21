@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.28
+// @version     1.29
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.28"
+    var version = "1.29"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  Backquote: {
@@ -88,6 +88,7 @@
             })
     var myName = null
     var hasConnected = false
+    var nextMessageId = 0
 
     var defaultName = "Безымянная сырно"
     function g(id) {return document.getElementById(id)}
@@ -280,6 +281,7 @@
         var reconnect = false, closed = false
         var ws = new WebSocket(window.bakaconf.wsUri)
         var myId = null
+        var welcomed = false
         ws.binaryType = "arraybuffer"
         ws.onopen = function(evt) {
             map.reset()
@@ -290,6 +292,8 @@
                 send({t:"auth", token:auth_token})
             if (myName !== null)
                 send({t: "name", "name": myName})
+            send({t:"messages", startingFromId: nextMessageId})
+            send({t:"names"})
         }
         ws.onclose = function(evt) {
             if (closed) return
@@ -334,9 +338,11 @@
         function onmessage_json(d) {
             var sender = {i:d.i, name:d.f, premium:d.premium, mode:"message"}
             function notify(what) {
-                if (myId !== d.i && myId !== null)
+                if (myId !== d.i && welcomed)
                     notificator.notify(what)
             }
+            if (d.I !== undefined)
+                nextMessageId = d.I + 1
             switch(d.t) {
             case "names":
                 var namesList = d.names.
@@ -393,7 +399,9 @@
                 chat.setUsersCount(true, -1)
                 break
             case "welcome":
-                myId = d.i
+                welcomed = true
+                if (d.i !== undefined)
+                    myId = d.i
                 break
             case "ping":
                 d.t = 'pong'
