@@ -574,6 +574,13 @@
         return document.createElement('br')
     }
 
+    function spinner() {
+        var span = document.createElement('span')
+        span.className = 'baka-spinner'
+        span.textContent = '☯'
+        return span
+    }
+
     function addLine(p) {
         var d = document.createElement('div')
 
@@ -1466,6 +1473,11 @@
                 'body[baka-off] #canvas, body[baka-off] #overlays { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }' +
                 'body[baka-off] #cbox { max-width:500px }' +
                 'body[baka-off] #msgsbox { height:600px }' +
+                '.baka-spinner { animation-name:baka-spin; animation-duration:3s; animation-iteration-count:infinite; animation-timing-function:linear }' +
+                '@keyframes baka-spin {' +
+                ' from { transform:rotate(0deg) }' +
+                ' to { transform: rotate(360deg) }' +
+                '}' +
                 '/* Sırno en güçlü olduğu! */'
             document.head.appendChild(stl)
         }
