@@ -513,7 +513,6 @@
 
     function aButton(text, action, className, tooltip) {
         var a = document.createElement('a')
-        a.href = "javascript:void(0)"
         if (className)
             a.className = className
         a.onclick = action
@@ -1444,6 +1443,7 @@
                 '#carea { width:100%; color:black }' +
                 '#form { margin:0 }' +
                 '#msgsbox { overflow:auto; word-wrap:break-word; height:250px }' +
+                '#cbox a { cursor:pointer }' +
                 '#cbox tbody, #cbox tbody tr:first-child, #cbox tbody tr:first-child td:first-child { max-width: inherit }' +
                 '#msgsbox .name.name /* oh my CSS specificity */ { color:#333 }' +
                 '#msgsbox .name.premium { color:#550;font-weight:bold }' +
