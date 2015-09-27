@@ -692,7 +692,10 @@
     var connector = {
         maxAttempts: 10,
         autoConnectParty: function(ws, token, region, top) {
+            if (!this.checkExpose()) {
+                token && joinParty(token)
                 return
+            }
             this.stop()
             this.attempt = 0
             this.ws = ws
