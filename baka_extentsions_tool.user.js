@@ -717,7 +717,7 @@
                 else
                     window.createParty()
                 this.state = 'check'
-                this.timer = setTimeout(thisMethod, 1000)
+                this.timer = setTimeout(thisMethod, 2500)
             } else {
                 var partyState = g('helloContainer').getAttribute('data-party-state')
                 if (partyState === '5' || partyState === '1' && this.checkConnection()) {
@@ -727,7 +727,7 @@
                         this.status.trying()
                         this.attempt++
                         this.state = 'connect'
-                        this.timer = setTimeout(thisMethod, 4000)
+                        this.timer = setTimeout(thisMethod, 2500)
                     } else {
                         this.status.fail()
                     }
