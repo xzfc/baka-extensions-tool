@@ -409,19 +409,7 @@
                 break
             case "addr":
                 var connect = ""
-                if (d.game === undefined || d.game === "agar.io") {
-                    if (d.token)
-                        connect = aButton(
-                            d.token + " " + d.region,
-                            connector.autoConnectParty.bind(
-                                connector, d.token, d.region, d.top))
-                    else
-                        connect = "!brute " + d.ws + " " + d.region
-                } else
-                    connect = "connect(" + d.ws + ")"
-                addLine({time:d.T, sender:sender, message:[
-                    d.game !== undefined? "(" + d.game + ") " : "",
-                    "Топ: " + joinTop(d.top), br(), connect]})
+                showAddr({time:d.T, sender:sender}, d)
                 notify("chat")
                 break
             case "addrs":
@@ -654,13 +642,60 @@
         send(m)
     }
 
+    var fullInfo = {
+        region: function(ws, fun) {
+            this._addCallback(function(data) { fun(data.regions[ws]) })
+        },
+        _request: function() {
+            this.req = new XMLHttpRequest()
+            this.req.open('GET', 'http://m.agar.io/fullInfo', true)
+            this.req.addEventListener('load', load)
+            this.req.addEventListener('error', error)
+            this.req.send()
+            console.log('get')
+            this.funs = []
+
+            function load() {
+                delete fullInfo.req
+                fullInfo.data = {regions:{}}
+                try {
+                    JSON.parse(this.responseText).servers.forEach(function(serv) {
+                        fullInfo.data.regions[serv.ip] = serv.region
+                    })
+                } catch (e) {
+                    error(e)
+                    return
+                }
+                runFuns()
+            }
+            function error(e) {
+                delete fullInfo.req
+                delete fullInfo.data
+                runFuns()
+                console.error('fullInfo.startRequest', e)
+            }
+            function runFuns() {
+                fullInfo.funs.forEach(function(fun){ fun(fullInfo.data) })
+                fullInfo.funs = []
+            }
+        },
+        _addCallback: function(fun) {
+            if (this.req) {
+                this.funs.push(fun)
+            } else {
+                this._request()
+                this.funs.push(fun)
+            }
+        },
+    }
+
     var connector = {
         maxAttempts: 10,
-        autoConnectParty: function(token, region, top) {
-            if (!this.checkExpose())
+        autoConnectParty: function(ws, token, region, top) {
                 return
             this.stop()
             this.attempt = 0
+            this.ws = ws
             this.token = token
             window.setRegion(region.replace(/:.*$/, ""))
             this.region = region
@@ -757,6 +792,39 @@
         return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
     }
 
+    function showAddr(context, addr) {
+        var addrElem
+        var spinner_ = spinner()
+        var region
+        if (addr.token) {
+            addrElem = aButton(addr.token + ' ', click, undefined)
+        } else {
+            addrElem = document.createElement('span')
+            addrElem.textContent = '!brute ' + addr.ws + ' '
+        }
+        context.message = [
+            addr.alive + '/' + addr.players,
+            ' Топ: ' + joinTop(addr.top), br(),
+            addrElem, spinner_,
+        ]
+        addLine(context)
+        fullInfo.region(addr.ws.replace(/^wss?:\/\//, ''), update)
+
+        function click() {
+            if (region)
+                connector.autoConnectParty(addr.ws, addr.token, region, addr.top)
+        }
+        function update(region_) {
+            spinner_.parentNode.removeChild(spinner_)
+            region = region_
+            if (region && addrElem.tagName === 'SPAN' && region.endsWith(':party'))
+                addrElem.parentNode.replaceChild(aButton(region, click, undefined),
+                                                 addrElem)
+            else
+                addrElem.textContent += region || "???"
+        }
+    }
+
     function showAddrs(addrs, time) {
         addrs = addrs.filter(function(x) { return (x.alive || x.players > 2) && x.ws })
         if (addrs.length === 0)
@@ -768,13 +836,7 @@
             if (x.players > y.players) return +1
             if (x.players < y.players) return -1
             return 0
-        }).forEach(function(x, idx) {
-            addLine({message:[
-                idx?br():"",
-                "• " + x.alive +"/" + x.players + " Топ: " + joinTop(x.top),
-                br(),
-                "!brute " + x.ws]})
-        })
+        }).forEach(showAddr.bind(null, {}))
     }
 
     var submitHistory = {
