@@ -81,6 +81,8 @@
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
              mapSize: 256,
+             mySkinUri: "http://89.31.114.117/agar-skins/bread.png",
+             mySkinBig: false,
              bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
              bakaSkinBig: false,
             })
@@ -1345,12 +1347,13 @@
     }
 
     var bakaSkin = {
-        cached: null,
+        cached: {my:null, baka:null},
         ids: [],
         attrs: [],
         init: function() {
             if (window.agar) {
-                this.image()
+                this.image('my')
+                this.image('baka')
                 window.agar.skinF = this.skinF.bind(this)
             }
         },
@@ -1369,25 +1372,32 @@
                 }
             }
         },
-        image: function() {
-            var uri = window.bakaconf.bakaSkinUri
+        image: function(id) {
+            var uri = window.bakaconf[id + 'SkinUri']
             if (!uri)
-                return this.cached = null
-            if (this.cached !== null && this.cached.src === uri)
-                return (this.cached.big = window.bakaconf.bakaSkinBig), this.cached
-            this.cached = new Image()
+                return this.cached[id] = null
+            if (this.cached[id] !== null && this.cached.src === uri) {
+                this.cached[id].big = window.bakaconf[id + 'SkinBig']
+                return this.cached[id]
+            }
+            this.cached[id] = new Image()
             if (!(/^\s*data\s*:/i).test(uri))
-                this.cached.crossOrigin = 'anonymous'
-            this.cached.src = uri
-            this.cached.big = window.bakaconf.bakaSkinBig
-            return this.cached
+                this.cached[id].crossOrigin = 'anonymous'
+            this.cached[id].src = uri
+            this.cached[id].big = window.bakaconf[id + 'SkinBig']
+            return this.cached[id]
         },
         skinF: function(cell, prev) {
             if (prev || cell.size <= 30)
                 return prev
+
+            if (cell.isMy || window.agar.myCells.indexOf(cell.id) !== -1) {
+                cell.isMy = true
+                return this.image('my')
+            }
             if (this.attrs.indexOf(cell.color + cell.name) !== -1 ||
                 this.ids.indexOf(cell.id) !== -1)
-                return this.image()
+                return this.image('baka')
         },
     }
 

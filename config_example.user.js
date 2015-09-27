@@ -80,11 +80,14 @@ window.bakaconf.quickTemplates = {
 // Выключить скины для бак
 // bakaconf.bakaSkinUri = null;
 
-// Включить скин с крыльями
+// Включить для бак скин с крыльями
 /*
 bakaconf.bakaSkinUri = "http://89.31.114.117/agar-skins/cirno-wings.svg";
 bakaconf.bakaSkinBig = true;
 */
+
+// Включить обычный сырноскин для себя
+// bakaconf.mySkinUri = "http://89.31.114.117/agar-skins/cirno.svg";
 
 // Переопределить встроенный в скрипт стиль
 /*
