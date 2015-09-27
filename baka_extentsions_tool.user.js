@@ -697,7 +697,7 @@
                 return
             }
             this.stop()
-            this.attempt = 0
+            this.attempt = token ? 0 : 1
             this.ws = ws
             this.token = token
             window.setRegion(region.replace(/:.*$/, ""))
@@ -723,8 +723,9 @@
                 if (partyState === '5' || partyState === '1' && this.checkConnection()) {
                     this.status.ok()
                 } else {
-                    if (++this.attempt !== this.maxAttempts) {
+                    if (this.attempt !== this.maxAttempts-1) {
                         this.status.trying()
+                        this.attempt++
                         this.state = 'connect'
                         this.timer = setTimeout(thisMethod, 4000)
                     } else {
