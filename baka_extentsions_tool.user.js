@@ -49,8 +49,6 @@
                                   /[Ծo][dԺ][tԵ][uü]/i,
                                   /ΆǾĢ|ⒶⓄⒼ/, /ŦĪŦ/,
                                   /\bDH\b/, /[つマづĐÐ][みℋんĦн]|ⒹⒽ|매|Ďℍ|⊃Ⓗ|đħ/]},
-                 reddit: {aura: "#aa5",
-                          names: [/《ℝ》/]},
                  other: {names: [/\[(\$|402λ|WAR|AOG|DH|FBI|TUC|EU|TW|AGU|R[iİ]PO|T[iİ]T|EXER)\]/i,
                                  /ヴ[いぃ]ｐ/,
                                  /ⒷⓀ|ⓂⓋⓅ|RZCW|MZDK|Mezdeke/,
