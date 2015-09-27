@@ -735,8 +735,6 @@
             }
         },
         checkConnection: function() {
-            if (this.top === undefined)
-                return true
             var top1 = window.agar.top, top2 = this.top
             for (var i = 0; i < top1.length; i++)
                 for (var j = 0; j < top2.length; j++)
