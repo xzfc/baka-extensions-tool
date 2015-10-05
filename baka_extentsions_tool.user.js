@@ -477,7 +477,13 @@
         else
             document.body.removeAttribute("baka-off")
     }
-
+    
+    function togglePellets() {
+        if (window.agar === undefined || window.agar.drawPellets === undefined)
+            return console.error("Could not find window.agar.drawPellets"), undefined
+        window.agar.drawPellets = !window.agar.drawPellets;
+    }
+    
     function topScreenshot() {
         var canvas = document.getElementById("canvas")
         var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
@@ -951,6 +957,7 @@
                 "190": "Period",
                 "191": "Slash",
                 "192": "Backquote",
+                "220": "Backslash",
             }[e.keyCode]
     }
 
@@ -1009,6 +1016,7 @@
                     case "Period": return map.toggle(), false
                     case "Comma": return chat.toggle(), false
                     case "Slash": return toggleCanvas(), false
+                    case "Backslash": return togglePellets(), false
                     }
                 }
                 if (quick.key(e))
