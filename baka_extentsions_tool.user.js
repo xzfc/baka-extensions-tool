@@ -484,6 +484,15 @@
         window.agar.drawPellets = !window.agar.drawPellets;
     }
     
+    function safetyBelt(e) {
+        if(!e) e = window.event;
+        e.returnValue = 'Выйти из agar.io?'
+        if (e.stopPropagation) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    }
+    
     function topScreenshot() {
         var canvas = document.getElementById("canvas")
         var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
@@ -1568,6 +1577,8 @@
         connector.status.init()
         notificator.init()
         bakaSkin.init()
+
+        window.onbeforeunload=safetyBelt;
 
         setInterval(function() {
             send({t:'ping'})
