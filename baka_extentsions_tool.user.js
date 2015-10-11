@@ -85,6 +85,15 @@
              mySkinBig: false,
              bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
              bakaSkinBig: false,
+             //new config:
+             scoreX: 0,
+             scoreY: 0,
+             cellNameOffsetY: 1,
+             cellMassOffsetY: 1,
+             cellMassScale: 1,
+             splitGuideWidth: 3,
+             pelletColor: "#ADD8E6",
+             virusColor: "rgba(128,128,128,0.6)",
             })
     var myName = null
     var hasConnected = false
@@ -484,6 +493,64 @@
         window.agar.drawPellets = !window.agar.drawPellets;
     }
     
+    function toggleColorCoding(){
+        if (window.agar === undefined)
+            return console.error("Could not find window.agar"), undefined
+        if(window.agar.enableColorCoding===undefined)
+            window.agar.enableColorCoding=true;            
+        else
+            window.agar.enableColorCoding=!window.agar.enableColorCoding;
+    }
+    
+    function toggleColorMode(){
+        if (window.agar === undefined)
+            return console.error("Could not find window.agar"), undefined
+        if(window.agar.colorOffensive===undefined)
+            window.agar.colorOffensive=true;            
+        else
+            window.agar.colorOffensive=!window.agar.colorOffensive;
+    }
+    
+    function toggleSplitGuides(){
+        if (window.agar === undefined)
+            return console.error("Could not find window.agar"), undefined
+        if(window.agar.enableSplitGuides===undefined)
+            window.agar.enableSplitGuides=true;            
+        else
+            window.agar.enableSplitGuides=!window.agar.enableSplitGuides;
+    }
+    
+    function safetyBelt(e) {
+        if(!e) e = window.event;
+        e.returnValue = 'Выйти из agar.io?'
+        if (e.stopPropagation) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    }
+    
+    function agarProbe() //continuously gather necessary information
+    {
+        window.agar.myCellsMax=0;
+        window.agar.myCellsMin=1500;
+        var mc=window.agar.myCells;
+        var ac=window.agar.allCells;
+        //cell mass data for highlighting
+        for(var i=0; i<window.agar.myCells.length; i++)
+        {
+            if (ac[mc[i]]===undefined)
+                continue;
+            var size=ac[mc[i]].size;;
+            if(size>window.agar.myCellsMax)
+                window.agar.myCellsMax=size;
+            if(size<window.agar.myCellsMin)
+                window.agar.myCellsMin=size;
+        }
+        //console.log(window.agar.myCellsMax);
+        //console.log(window.agar.myCellsMin);
+    }
+    
+
     function topScreenshot() {
         var canvas = document.getElementById("canvas")
         var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
@@ -958,6 +1025,9 @@
                 "191": "Slash",
                 "192": "Backquote",
                 "220": "Backslash",
+                "219": "OpenBracket",
+                "221": "CloseBracket",
+                "222": "SingleQuote",
             }[e.keyCode]
     }
 
@@ -1017,6 +1087,9 @@
                     case "Comma": return chat.toggle(), false
                     case "Slash": return toggleCanvas(), false
                     case "Backslash": return togglePellets(), false
+                    case "OpenBracket": return toggleColorCoding(), false
+                    case "CloseBracket": return toggleSplitGuides(), false
+                    case "SingleQuote": return toggleColorMode(), false
                     }
                 }
                 if (quick.key(e))
@@ -1568,6 +1641,10 @@
         connector.status.init()
         notificator.init()
         bakaSkin.init()
+        
+        setInterval(agarProbe,200);
+
+        window.onbeforeunload=safetyBelt;
 
         setInterval(function() {
             send({t:'ping'})
