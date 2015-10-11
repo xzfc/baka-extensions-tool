@@ -520,6 +520,15 @@
             window.agar.enableSplitGuides=!window.agar.enableSplitGuides;
     }
     
+    function safetyBelt(e) {
+        if(!e) e = window.event;
+        e.returnValue = 'Выйти из agar.io?'
+        if (e.stopPropagation) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+    }
+    
     function agarProbe() //continuously gather necessary information
     {
         window.agar.myCellsMax=0;
@@ -1634,6 +1643,8 @@
         bakaSkin.init()
         
         setInterval(agarProbe,200);
+
+        window.onbeforeunload=safetyBelt;
 
         setInterval(function() {
             send({t:'ping'})
