@@ -4,7 +4,7 @@
 // @updateURL    https://raw.githubusercontent.com/xzfc/baka-extensions-tool/bakacobbler/ZeachCobbler.user.js
 // @downloadURL  https://raw.githubusercontent.com/xzfc/baka-extensions-tool/bakacobbler/ZeachCobbler.user.js
 // @contributer  See full list at https://github.com/RealDebugMonkey/ZeachCobbler#contributors-and-used-code
-// @version      1.2
+// @version      1.3
 // @description  Agario powerups
 // @author       DebugMonkey
 // @match        http://agar.io
@@ -16,7 +16,7 @@
 
 // ==/UserScript==
 
-unsafeWindow.agar = {};
+unsafeWindow.agar = {hooks:{}};
 unsafeWindow.agar.region = "";
 function exposeReset() {
     var dd = 7071.067811865476;
@@ -27,6 +27,7 @@ function exposeReset() {
     unsafeWindow.agar.dimensions = [-dd,-dd,dd,dd];
     unsafeWindow.agar.rawViewport={x:0,y:0,scale:1};
     unsafeWindow.agar.disableRendering = false;
+    unsafeWindow.agar.drawPellets = true;
 }
 exposeReset();
 
@@ -949,8 +950,8 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
     function isTeamMode(){
         return (zeach.gameMode === ":teams");
     }
-    function setCellColors(cell,myPoints){
-        var res = {c:cell.color, a:undefined};
+    function setCellColors(cell, color, myPoints){
+        var res = {c:color, a:undefined};
         if(!showVisualCues || isFood(cell)) {
             return res;
         }
@@ -1945,6 +1946,8 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         D = {};
         v = [];
         P = [];
+        /*new*/unsafeWindow.agar.eatenCellsList = P;
+        /*new*/unsafeWindow.agar.aliveCellsList = v;
         E = [];
         y = z = null;
         Q = 0;
@@ -2391,6 +2394,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
         g.translate(q / 2, s$$0 / 2);
         g.scale(k, k);
         g.translate(-t, -u);
+        /*new*/unsafeWindow.agar.beforeDraw && unsafeWindow.agar.beforeDraw();
         /*new*/calculateAbsorptionGuide(P, v);
         e = 0;
         for (;e < P.length;e++) {
@@ -3368,7 +3372,9 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                     return 0 >= this.id ? true : this.x + this.size + 40 < t - q / 2 / k || (this.y + this.size + 40 < u - s$$0 / 2 / k || (this.x - this.size - 40 > t + q / 2 / k || this.y - this.size - 40 > u + s$$0 / 2 / k)) ? false : true;
                 },
                 w : function(a) {
-                    if (unsafeWindow.agar.disableRendering) return;
+                    /*new*/if (unsafeWindow.agar.disableRendering) return;
+                    /*new*/if (!unsafeWindow.agar.drawPellets && this.size < 20) return;
+
                     if (this.N()) {
                         ++this.Y;
                         var c = 0 < this.id && (!this.h && (!this.n && 0.4 > k));
@@ -3391,17 +3397,19 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                         a.lineWidth = 10;
                         a.lineCap = "round";
                         a.lineJoin = this.h ? "miter" : "round";
+                        /*new*/var zcColor;
                         if (Ka) {
                             a.fillStyle = "#FFFFFF";
                             a.strokeStyle = "#AAAAAA";
                         } else {
-                            a.fillStyle = this.color;
-                            a.strokeStyle = this.color;
+                            /*new*/zcColor = unsafeWindow.agar.hooks.cellColor && unsafeWindow.agar.hooks.cellColor(this);
+                            /*new*/a.fillStyle = zcColor || this.color;
+                            /*new*/a.strokeStyle = zcColor || this.color;
                         }
 
-                        var color = {c:this.color, a:undefined};
+                        var color = {c:zcColor || this.color, a:undefined};
                         if (showVisualCues) {
-                            color = setCellColors(this, zeach.myPoints);
+                            color = setCellColors(this, zcColor, zeach.myPoints);
                             if (this.isVirus) {
                                 if (!zeach.allNodes.hasOwnProperty(nearestVirusID))
                                     nearestVirusID = this.id;
@@ -3482,6 +3490,7 @@ jQuery("#connecting").after('<canvas id="canvas" width="800" height="600"></canv
                                 a.drawImage(d, this.x - 2 * this.size, this.y - 2 * this.size, 4 * this.size, 4 * this.size);
                             }
                         }
+                        /*new*/unsafeWindow.agar.hooks.afterDrawSkin && unsafeWindow.agar.hooks.afterDrawSkin(a, this);
                         b = -1 != m.indexOf(this);
                         c = ~~this.y;
                         //if (0 != this.id && ((va || b) && (this.name && (this.o && (null == d || -1 == Bb.indexOf(e)))))) {
