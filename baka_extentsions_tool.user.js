@@ -1590,6 +1590,9 @@
 
         if (window.agar !== undefined && window.agar.minScale !== undefined)
             window.agar.minScale = 1/4
+
+        if (window.agar !== undefined && agar.showStartupBg !== undefined)
+            agar.showStartupBg = false
     }
 
     function wait() {
