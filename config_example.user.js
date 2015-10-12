@@ -89,6 +89,12 @@ bakaconf.bakaSkinBig = true;
 // Включить обычный сырноскин для себя
 // bakaconf.mySkinUri = "http://89.31.114.117/agar-skins/cirno.svg";
 
+// Цвет точечек
+// window.bakaconf.pelletColor = "#ADD8E6";
+
+// Вернуть стандартный цвет вирусов
+// window.bakaconf.virusColor = null;
+
 // Переопределить встроенный в скрипт стиль
 /*
 bakaStyle('#cbox,#map {visibility: hidden;}',

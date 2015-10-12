@@ -85,6 +85,8 @@
              mySkinBig: false,
              bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
              bakaSkinBig: false,
+             pelletColor: null,
+             virusColor: "rgba(128,128,128,0.6)",
             })
     var myName = null
     var hasConnected = false
@@ -1412,6 +1414,10 @@
             cell.baka_skin =
                 cell.baka_isMy ? this.image('my') :
                 cell.baka_isBaka ? this.image('baka') :
+                undefined
+            cell.baka_color =
+                cell.size < 20 ? window.bakaconf.pelletColor :
+                cell.isVirus ? window.bakaconf.virusColor :
                 undefined
         },
         skinHook: function(cell, prev) {
