@@ -1365,35 +1365,35 @@
 
     var bakaSkin = {
         cached: {my:null, baka:null},
-        ids: [],
-        attrs: [],
+        byAttr: {},
         init: function() {
-            if (window.agar) {
-                this.image('my')
-                this.image('baka')
-                window.agar.skinF = this.skinF.bind(this)
-            }
+            if (!window.agar)
+                return
+            this.image('my')
+            this.image('baka')
+            window.agar.skinF = this.skinHook.bind(this)
+            if (window.agar.hooks)
+                window.agar.hooks.cellColor = this.cellColorHook.bind(this)
         },
         updateIds: function(mapCells) {
             if (!window.agar || !window.agar.allCells)
                 return
-            this.ids = []
-            this.attrs = []
-            for (var id in mapCells) {
-                var c = mapCells[id]
-                if (c.a) {
-                    if (c.n === "")
-                        this.ids.push(c.i)
-                    else
-                        this.attrs.push(c.c + c.n)
-                }
-            }
+            var byAttr = this.byAttr = {}
+            mapCells.forEach(function(c) {
+                if (!c.a)
+                    return
+                var o = window.agar.allCells[c.i]
+                if (o)
+                    o.baka_isBaka = true
+                if (c.n !== "")
+                    byAttr[c.c + c.n] = c.a
+            })
         },
         image: function(id) {
             var uri = window.bakaconf[id + 'SkinUri']
             if (!uri)
                 return this.cached[id] = null
-            if (this.cached[id] !== null && this.cached.src === uri) {
+            if (this.cached[id] !== null && this.cached[id].src === uri) {
                 this.cached[id].big = window.bakaconf[id + 'SkinBig']
                 return this.cached[id]
             }
@@ -1404,17 +1404,24 @@
             this.cached[id].big = window.bakaconf[id + 'SkinBig']
             return this.cached[id]
         },
-        skinF: function(cell, prev) {
-            if (prev || cell.size <= 30)
-                return prev
-
-            if (cell.isMy || window.agar.myCells.indexOf(cell.id) !== -1) {
-                cell.isMy = true
-                return this.image('my')
-            }
-            if (this.attrs.indexOf(cell.color + cell.name) !== -1 ||
-                this.ids.indexOf(cell.id) !== -1)
-                return this.image('baka')
+        handleCell: function(cell) {
+            if (cell.baka_isBaka === undefined)
+                cell.baka_isBaka = this.byAttr[cell.color + cell.name] ? true : false
+            if (cell.baka_isMy === undefined)
+                cell.baka_isMy = window.agar.myCells.indexOf(cell.id) !== -1
+            cell.baka_skin =
+                cell.baka_isMy ? this.image('my') :
+                cell.baka_isBaka ? this.image('baka') :
+                undefined
+        },
+        skinHook: function(cell, prev) {
+            if (!window.agar.hooks)
+                this.handleCell(cell)
+            return cell.baka_skin || prev
+        },
+        cellColorHook: function(cell) {
+            this.handleCell(cell)
+            return cell.baka_color
         },
     }
 
