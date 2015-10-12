@@ -140,13 +140,13 @@
     }
 
     var storage = {
-        get: function(key) {
+        get(key) {
             if (typeof GM_getValue === 'function')
                 return GM_getValue(key, null)
             else
                 return localStorage.getItem(key)
         },
-        set: function(key, value) {
+        set(key, value) {
             if (typeof GM_setValue === 'function')
                 GM_setValue(key, value)
             else
@@ -159,28 +159,23 @@
         list: "",
         unreadCount: 0,
         oldTitle: null,
-        init: function() {
+        init() {
             var el = document.createElement('div')
             el.id = "notification"
             document.body.appendChild(el)
             el.onclick = chat.toggle.bind(chat, true)
             this.cache()
-            window.addEventListener("focus", function() {
-                if (!chat.hidden)
-                    notificator.clear()
-            })
+            window.addEventListener("focus", () => { chat.hidden || this.clear() })
         },
-        cache: function() {
+        cache() {
             var list = window.bakaconf.soundList.join("\n")
             if (list === this.list)
                 return
             this.list = list
             console.log("Update!")
-            this.cached = window.bakaconf.soundList.map(function(x) {
-                return new Audio(x)
-            })
+            this.cached = window.bakaconf.soundList.map((x) => new Audio(x))
         },
-        clear: function() {
+        clear() {
             this.unreadCount = 0
             g("notification").style.visibility = 'hidden'
             if (this.oldTitle !== null) {
@@ -188,7 +183,7 @@
                 this.oldTitle = null
             }
         },
-        notify: function(what) {
+        notify(what) {
             if (document.hidden || chat.hidden) {
                 this.unreadCount++
                 if (this.oldTitle === null)
@@ -213,7 +208,7 @@
         active: false,
         defaultPosition: true,
         usersCount: 0,
-        init: function() {
+        init() {
             var cbox = document.createElement('table')
             cbox.cellpadding = cbox.cellspacing = 0
             cbox.id = 'cbox'
@@ -225,46 +220,46 @@
                 '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
             document.body.appendChild(cbox)
 
-            g("chat_users").onclick = function() { send({t:'names'}) }
+            g("chat_users").onclick = () => send({t:'names'})
             g('form').onsubmit = submit
-            g('carea').onfocus = function () {
-                chat.active = true
+            g('carea').onfocus = () => {
+                this.active = true
                 cbox.style.opacity = '1'
             }
-            g('carea').onblur = function () {
-                chat.active = false
+            g('carea').onblur = () => {
+                this.active = false
                 cbox.style.opacity = '0.7'
             }
-            g('carea').onkeydown = function(e) {
+            g('carea').onkeydown = (e) => {
                 switch (e.keyCode) {
                 case 38: return submitHistory.up(), false
                 case 40: return submitHistory.down(), false
                 }
             }
         },
-        move: function() {
+        move() {
             var dp = this.defaultPosition = !this.defaultPosition
             var stl = g('cbox').style
             stl.bottom = stl.right = dp?'0':''
             stl.top    = stl.left  = dp?'' :'0'
         },
-        toggle: function(show) {
+        toggle(show) {
             this.hidden = show === undefined ? !this.hidden : !show
             g('cbox').style.visibility = (this.hidden ? 'hidden' : '')
             notificator.clear()
         },
-        focus: function() {
+        focus() {
             this.toggle(true)
             document.getElementById('carea').focus()
         },
-        blur: function() { g('carea').blur() },
-        clickName: function(e) {
+        blur() { g('carea').blur() },
+        clickName(e) {
             e = e || window.event; e = e.target || e.srcElement
             var ca = document.getElementById('carea')
             ca.value = e.textContent + ": " + ca.value
-            chat.focus()
+            this.focus()
         },
-        setUsersCount: function(add, value) {
+        setUsersCount(add, value) {
             if (add)
                 this.usersCount += value
             else
@@ -285,7 +280,7 @@
         var myId = null
         var welcomed = false
         ws.binaryType = "arraybuffer"
-        ws.onopen = function(evt) {
+        ws.onopen = (evt) => {
             map.reset()
             send({t: "version", version: version,
                   expose: (window.agar===undefined?0:1) })
@@ -297,7 +292,7 @@
             send({t:"messages", startingFromId: nextMessageId})
             send({t:"names"})
         }
-        ws.onclose = function(evt) {
+        ws.onclose = (evt) => {
             if (closed) return
             chat.setUsersCount(false, -1)
             if (reconnect) {
@@ -314,22 +309,22 @@
             }
             notificator.notfy('system')
         }
-        ws.onerror = function(evt) {
+        ws.onerror = (evt) => {
             if (closed) return
             console.log(evt)
             addLine({message:"Ошибка вебсокета"})
         }
-        ws.reconnect = function() {
+        ws.reconnect = () => {
             reconnect = true
             ws.close()
-            setTimeout(function() {
+            setTimeout(() => {
                 if (closed) return
                 closed = true
                 addLine({message:['Переподключаюсь~~']})
                 connectChat()
             }, 1000)
         }
-        ws.onmessage = function(evt) {
+        ws.onmessage = (evt) => {
             hasConnected = true
             if (closed) return
             if (evt.data instanceof window.ArrayBuffer)
@@ -347,9 +342,9 @@
                 nextMessageId = d.I + 1
             switch(d.t) {
             case "names":
-                var namesList = d.names.
-                    filter(function(n) { return n.name !== "" }).
-                    map(aName)
+                var namesList = d.names
+                    .filter((n) => n.name !== "")
+                    .map(aName)
                 var nonameCount = d.names.length - namesList.length
                 if (nonameCount === 0) {/* do nothing */}
                 else if (nonameCount === 1)
@@ -613,7 +608,7 @@
             if (typeof p.message === "string")
                 p.message = [p.message]
             var message = document.createElement('span')
-            p.message.forEach(function(i) {
+            p.message.forEach((i) => {
                 if (typeof i === "string")
                     message.appendChild(document.createTextNode(i))
                 else
@@ -653,17 +648,17 @@
             m.region = a.region
             if (a.region.endsWith(":party"))
                 m.token =
-                    document.getElementsByClassName("partyToken")[0].
-                    value.replace(/^agar\.io\//, "")
+                    document.getElementsByClassName("partyToken")[0]
+                    .value.replace(/^agar\.io\//, "")
         }
         send(m)
     }
 
     var fullInfo = {
-        region: function(ws, fun) {
-            this._addCallback(function(data) { fun(data.regions[ws]) })
+        region(ws, fun) {
+            this._addCallback((data) => fun(data.regions[ws]))
         },
-        _request: function() {
+        _request() {
             this.req = new XMLHttpRequest()
             this.req.open('GET', 'http://m.agar.io/fullInfo', true)
             this.req.addEventListener('load', load)
@@ -676,9 +671,8 @@
                 delete fullInfo.req
                 fullInfo.data = {regions:{}}
                 try {
-                    JSON.parse(this.responseText).servers.forEach(function(serv) {
-                        fullInfo.data.regions[serv.ip] = serv.region
-                    })
+                    JSON.parse(this.responseText).servers
+                        .forEach((serv) => fullInfo.data.regions[serv.ip] = serv.region)
                 } catch (e) {
                     error(e)
                     return
@@ -692,11 +686,11 @@
                 console.error('fullInfo.startRequest', e)
             }
             function runFuns() {
-                fullInfo.funs.forEach(function(fun){ fun(fullInfo.data) })
+                fullInfo.funs.forEach((fun) => fun(fullInfo.data))
                 fullInfo.funs = []
             }
         },
-        _addCallback: function(fun) {
+        _addCallback(fun) {
             if (this.req) {
                 this.funs.push(fun)
             } else {
@@ -708,7 +702,7 @@
 
     var connector = {
         maxAttempts: 10,
-        autoConnectParty: function(ws, token, region, top) {
+        autoConnectParty(ws, token, region, top) {
             if (!this.checkExpose()) {
                 token && joinParty(token)
                 return
@@ -723,7 +717,7 @@
             this.state = 'connect'
             this.autoConnectIteration()
         },
-        autoConnectIteration: function() {
+        autoConnectIteration() {
             var thisMethod = this.autoConnectIteration.bind(this)
             if (this.timer !== undefined)
                 delete this.timer
@@ -751,7 +745,7 @@
                 }
             }
         },
-        checkConnection: function() {
+        checkConnection() {
             var top1 = window.agar.top, top2 = this.top
             for (var i = 0; i < top1.length; i++)
                 for (var j = 0; j < top2.length; j++)
@@ -759,13 +753,13 @@
                         return true
             return false
         },
-        checkExpose: function() {
+        checkExpose() {
             return window.agar !== undefined &&
                 window.agar.ws !== undefined &&
                 window.agar.region !== undefined &&
                 window.agar.top !== undefined
         },
-        stop: function() {
+        stop() {
             if (this.timer !== undefined) {
                 this.status.stop()
                 clearTimeout(this.timer)
@@ -773,24 +767,22 @@
             }
         },
         status: {
-            init: function() {
+            init() {
                 var t = this
                 t._element = g("connector")
                 t._stop = aButton("стоп", connector.stop.bind(connector))
-                t._close = aButton("закрыть",
-                                   function() { t._element.style.display = 'none' })
+                t._close = aButton("закрыть", () => {t._element.style.display = 'none'})
                 t._text = document.createElement('span')
 
-                ;["_text", "_close", "_stop"].
-                    forEach(function(e) { t._element.appendChild(t[e])})
+                ;["_text", "_close", "_stop"].forEach((e) => t._element.appendChild(t[e]))
             },
-            _set: function(text, stop) {
+            _set(text, stop) {
                 this._element.style.display = ''
                 this._text.textContent = text
                 this._stop.style.display = stop ? '' : 'none'
                 this._close.style.display = stop ? 'none' : ''
             },
-            trying: function() {
+            trying() {
                 var attempt = "[" + connector.attempt + "/" + connector.maxAttempts + "] "
                 if (connector.state === 'connect') {
                     if (connector.attempt === 0)
@@ -801,14 +793,14 @@
                 else if (connector.state === 'check')
                     this._set("Проверяю... " + attempt, true)
             },
-            ok: function() { this._set("Подключился! ", false) },
-            fail: function() { this._set("Не удалось подключиться. ", false) },
-            stop: function() { this._set("Подключение прервано. ", false) }
+            ok() { this._set("Подключился! ", false) },
+            fail() { this._set("Не удалось подключиться. ", false) },
+            stop() { this._set("Подключение прервано. ", false) }
         },
     }
 
     function joinTop(top) {
-        return top.map(function(x){return x.name || "An unnamed cell"}).join(", ")
+        return top.map((x) => x.name || "An unnamed cell").join(", ")
     }
 
     function showAddr(context, addr) {
@@ -845,11 +837,11 @@
     }
 
     function showAddrs(addrs, time) {
-        addrs = addrs.filter(function(x) { return (x.alive || x.players > 2) && x.ws })
+        addrs = addrs.filter((x) => (x.alive || x.players > 2) && x.ws)
         if (addrs.length === 0)
             return addLine({time:time, message:["Сырны нигде не играют."]})
         addLine({time:time, message:["Сырны играют тут:"]})
-        addrs.sort(function(x, y){
+        addrs.sort((x, y) => {
             if (x.alive > y.alive) return +1
             if (x.alive < y.alive) return -1
             if (x.players > y.players) return +1
@@ -862,7 +854,7 @@
         list: [],
         idx: -1,
         text: "",
-        up: function() {
+        up() {
             if (this.list.length === 0)
                 return
             if (this.idx === -1) {
@@ -871,7 +863,7 @@
             } else if (this.idx !== 0)
                 g('carea').value = this.list[--this.idx]
         },
-        down: function() {
+        down() {
             if (this.list.length === 0)
                 return
             if (this.idx === this.list.length-1) {
@@ -880,7 +872,7 @@
             } else if (this.idx !== -1)
                g('carea').value = this.list[++this.idx]
         },
-        push: function(t) {
+        push(t) {
             this.idx = -1
             if (this.list[this.list.length -1] !== t)
                 this.list.push(t)
@@ -975,7 +967,7 @@
     function handleEvents() {
         // Autofire
         var repeat = 0, repeatm = 0
-        setInterval(function() {
+        setInterval(() => {
             if (!repeat && !repeatm) return
             if (!isHovered()) return repeat = repeatm = false
             olddown(key_w)
@@ -985,7 +977,7 @@
         // Keyboard controls
         var olddown = window.onkeydown, oldup = window.onkeyup
         var extended = false
-        window.onkeydown = function(e) {
+        window.onkeydown = (e) => {
             codeWorkaround(e)
 
             if (extended) {
@@ -1035,7 +1027,7 @@
             }
             return olddown(e)
         }
-        window.onkeyup = function(e) {
+        window.onkeyup = (e) => {
             codeWorkaround(e)
             if (e.code == "KeyW")
                 repeat = 0
@@ -1044,7 +1036,7 @@
 
         // Mouse controls
         var key_w = {keyCode: 87}, key_space = {keyCode: 32}
-        g("canvas").onmousedown = g("map").onmousedown = function(e) {
+        g("canvas").onmousedown = g("map").onmousedown = (e) => {
             if (e.which === 2 && window.agar && window.agar.scale !== undefined)
                 return window.agar.scale = 1, false
             if (!window.bakaconf.mouseControls)
@@ -1056,9 +1048,9 @@
         }
         g("canvas").onmouseup = g("map").onmouseup = g("notification").onmouseup =
             g("cbox").onmouseup =
-            function(e) { if (e.which === 1) repeatm = false }
+            (e) => { if (e.which === 1) repeatm = false }
         g("canvas").oncontextmenu = g("map").oncontextmenu =
-            function(e) { return !window.bakaconf.mouseControls }
+            (e) => !window.bakaconf.mouseControls
 
         // Mouse controls: hover tracker
         var hovered = {}
@@ -1092,7 +1084,7 @@
 
     function handleOptions() {
         var oldSetNick = window.setNick
-        window.setNick = function(n) {
+        window.setNick = (n) => {
             if (n !== myName) {
                 myName = n
                 if (window.location.hostname === 'petridish.pw')
@@ -1115,7 +1107,7 @@
                     document.body.setAttribute("baka-dark", "")
             }
         }
-        window.setDarkTheme = function(n) { bakaDarkTheme(n); oldSetDarkTheme(n) }
+        window.setDarkTheme = (n) => { bakaDarkTheme(n); oldSetDarkTheme(n) }
         if (document.querySelector('label input[onchange*=setDarkTheme]').checked)
             bakaDarkTheme(true)
     }
@@ -1131,23 +1123,23 @@
         blinkIdsCounter: 0,
         waitReply: true,
         myCellsAffected: false,
-        init: function() {
+        init() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
 
             document.body.appendChild(this.canvas)
-            this.canvas.onclick = function() { map.blackRibbon = false; map.draw() }
+            this.canvas.onclick = () => { this.blackRibbon = false; this.draw() }
             this.draw()
-            setInterval(function(){ map.send() }, 250)
+            setInterval(() => this.send(), 250)
         },
-        reset: function() {
+        reset() {
             this.waitReply = false
         },
-        toggle: function() {
+        toggle() {
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
         },
-        move: function() {
+        move() {
             var stl = this.canvas.style
             if (this.defaultPosition = !this.defaultPosition) {
                 stl.bottom = stl.left  = '5px'
@@ -1158,17 +1150,17 @@
                 stl.right = '220px'
             }
         },
-        update: function(data, range) {
+        update(data, range) {
             this.waitReply = false
             this.data = data
             this.range = range
             bakaSkin.updateIds(data)
             this.draw()
         },
-        blink: function(ids, sym) {
+        blink(ids, sym) {
             var c = this.blinkIdsCounter++
             var iteration = 12
-            var blink = map.blinks[c] = {ids:ids, sym:sym, hl:false}
+            var blink = this.blinks[c] = {ids:ids, sym:sym, hl:false}
             function toggle() {
                 if (--iteration)
                     window.setTimeout(toggle, 250)
@@ -1179,7 +1171,7 @@
             }
             toggle()
         },
-        draw: function() {
+        draw() {
             if (this.hidden)
                 return
             var size = this.canvas.width = this.canvas.height = window.bakaconf.mapSize
@@ -1306,18 +1298,18 @@
                 context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
             }
         },
-        myCells: function() {
+        myCells() {
             var a = window.agar
             if (a === undefined || a.myCells === undefined || a.allCells === undefined)
                 return undefined
-            var myCells = a.myCells.filter(function (x){return x in a.allCells})
+            var myCells = a.myCells.filter((x) => x in a.allCells)
             if (this.myCellsAffected && myCells.length !== a.myCells.length) {
                 this.myCellsAffected = true
                 send({t:'anime', myCellsAffected:1})
             }
             return myCells
         },
-        send: function() {
+        send() {
             function getViewport() {
                 var v = a.rawViewport
                 if (v) {
@@ -1325,7 +1317,7 @@
                     return {minX:v.x-dx, minY:v.y-dy, maxX:v.x+dx, maxY:v.y+dy}
                 } else {
                     var r = {minX:0, maxX:0, minY:0, maxY:0}
-                    allCellsArray.forEach(function(c, i) {
+                    allCellsArray.forEach((c, i) => {
                         if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
                         if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
                         if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
@@ -1343,19 +1335,17 @@
             }
             if (!a.top.length)
                 return
-            var allCellsArray = Object.keys(a.allCells).map(function(i){ return a.allCells[i] })
-            var cells = allCellsArray.filter(function(c){
-                return c.size >= 32 || myCells.indexOf(c.id) > -1
-            }).map(function(c){
-                return {x:c.x,
-                        y:c.y,
-                        i:c.id,
-                        n:c.name,
-                        c:c.color,
-                        s:c.size,
-                        v:c.isVirus?1:0}
-            })
-            var top = a.top.map(function(x){return [x.id, x.name]})
+            var allCellsArray = Object.keys(a.allCells).map((i) => a.allCells[i])
+            var cells = allCellsArray
+                .filter((c) => c.size >= 32 || myCells.indexOf(c.id) > -1)
+                .map((c) => ({x:c.x,
+                              y:c.y,
+                              i:c.id,
+                              n:c.name,
+                              c:c.color,
+                              s:c.size,
+                              v:c.isVirus?1:0}))
+            var top = a.top.map((x) => [x.id, x.name])
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
             var sent = send({t:'map', all:cells, my:myCells, top:top, reply:reply,
                              ws:a.ws, range:getViewport(), game:window.location.hostname})
@@ -1368,7 +1358,7 @@
     var bakaSkin = {
         cached: {my:null, baka:null},
         byAttr: {},
-        init: function() {
+        init() {
             if (!window.agar)
                 return
             this.image('my')
@@ -1377,11 +1367,11 @@
             if (window.agar.hooks)
                 window.agar.hooks.cellColor = this.cellColorHook.bind(this)
         },
-        updateIds: function(mapCells) {
+        updateIds(mapCells) {
             if (!window.agar || !window.agar.allCells)
                 return
             var byAttr = this.byAttr = {}
-            mapCells.forEach(function(c) {
+            mapCells.forEach((c) => {
                 if (!c.a)
                     return
                 var o = window.agar.allCells[c.i]
@@ -1391,7 +1381,7 @@
                     byAttr[c.c + c.n] = c.a
             })
         },
-        image: function(id) {
+        image(id) {
             var uri = window.bakaconf[id + 'SkinUri']
             if (!uri)
                 return this.cached[id] = null
@@ -1406,7 +1396,7 @@
             this.cached[id].big = window.bakaconf[id + 'SkinBig']
             return this.cached[id]
         },
-        handleCell: function(cell) {
+        handleCell(cell) {
             if (cell.baka_isBaka === undefined)
                 cell.baka_isBaka = this.byAttr[cell.color + cell.name] ? true : false
             if (cell.baka_isMy === undefined)
@@ -1420,12 +1410,12 @@
                 cell.isVirus ? window.bakaconf.virusColor :
                 undefined
         },
-        skinHook: function(cell, prev) {
+        skinHook(cell, prev) {
             if (!window.agar.hooks)
                 this.handleCell(cell)
             return cell.baka_skin || prev
         },
-        cellColorHook: function(cell) {
+        cellColorHook(cell) {
             this.handleCell(cell)
             return cell.baka_color
         },
@@ -1433,7 +1423,7 @@
 
     var quick = {
         state: undefined,
-        key: function(e, state) {
+        key(e, state) {
             if (e.keyCode >= 16 && e.keyCode <= 18 && e.keyCode) return
             var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
             var key1 = mod ? "S" : "_"
@@ -1459,7 +1449,7 @@
                 this.show()
             return true
         },
-        show: function() {
+        show() {
             this.hide()
             var quickHint = document.createElement('div')
             quickHint.id = "quickHint"
@@ -1507,7 +1497,7 @@
             list("", window.bakaconf.quickTemplates)
             document.body.appendChild(quickHint)
         },
-        hide: function() {
+        hide() {
             var quickHint = document.getElementById('quickHint')
             if (quickHint)
                 document.body.removeChild(quickHint)
@@ -1517,23 +1507,23 @@
     var ignore = {
         style: null,
         list: {},
-        init: function() {
+        init() {
             this.style = document.createElement('style')
             this.style.id = 'baka-style-ignore'
             document.head.appendChild(this.style)
         },
-        update: function() {
+        update() {
             var list = Object.keys(this.list)
             if (list.length === 0)
                 this.style.textContent = ""
             else
-                this.style.textContent = list.map(function(i) {
-                    return '#msgsbox > div[bakaid="'+i+'"]'
-                }).join(',\n') + "{ display:none }"
+                this.style.textContent = list
+                .map((i) => '#msgsbox > div[bakaid="'+i+'"]')
+                .join(',\n') + "{ display:none }"
         },
-        add: function(i) { this.list[i] = 1; this.update() },
-        remove: function(i) { delete this.list[i]; this.update() },
-        reset: function() { this.list = {}; this.update() },
+        add(i) { this.list[i] = 1; this.update() },
+        remove(i) { delete this.list[i]; this.update() },
+        reset() { this.list = {}; this.update() },
     }
 
     function init() {
@@ -1593,9 +1583,7 @@
 
         window.onbeforeunload=safetyBelt;
 
-        setInterval(function() {
-            send({t:'ping'})
-        }, 1000)
+        setInterval(() => send({t:'ping'}), 1000)
 
         handleOptions()
         handleEvents()
