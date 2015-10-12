@@ -1589,7 +1589,7 @@
         connectChat()
 
         if (window.agar !== undefined && window.agar.minScale !== undefined)
-            window.agar.minScale = 2/3
+            window.agar.minScale = 1/4
     }
 
     function wait() {
