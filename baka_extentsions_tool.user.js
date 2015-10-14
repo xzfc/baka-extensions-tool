@@ -91,11 +91,15 @@
     var myName = null
     var hasConnected = false
     var nextMessageId = 0
+    var zc = Boolean(g("ZCOverlay"))
 
     var defaultName = "Безымянная сырно"
-    function g(id) {return document.getElementById(id)}
+    function g(id) { return document.getElementById(id) }
     function isArray(obj, type) {
-        return Object.prototype.toString.call(obj) === '[object Array]';
+        return Object.prototype.toString.call(obj) === '[object Array]'
+    }
+    function includes(array, value) {
+        return array.indexOf(value) !== -1
     }
 
     function setConf(defaults) {
@@ -113,6 +117,8 @@
     }
 
     function join(l) {
+        if (!(l instanceof Array))
+            l = Array.from(l)
         if (l.length === 0)
             return ["никого"]
         if (l.length <= 1)
@@ -131,11 +137,13 @@
     function formatTime(t) {
         function pad(number) { return (number < 10) ? '0' + number : number }
         t = new Date(t*1000 + 1000*60*60*3)
-        var h = pad(t.getUTCHours()), m = pad(t.getUTCMinutes()), s = pad(t.getUTCSeconds())
-        switch(window.bakaconf.timeFormat % 3) {
-        case 0: return  h+':'+m+':'+s+' '
-        case 1: return  h+':'+m+' '
-        case 2: return ''
+        var h = pad(t.getUTCHours())
+        var m = pad(t.getUTCMinutes())
+        var s = pad(t.getUTCSeconds())
+        switch(window.bakaconf.timeFormat) {
+        case 0: return `${h}:${m}:${s} `
+        case 1: return `${h}:${m} `
+        case 2: return ``
         }
     }
 
@@ -163,9 +171,10 @@
             var el = document.createElement('div')
             el.id = "notification"
             document.body.appendChild(el)
-            el.onclick = chat.toggle.bind(chat, true)
+            el.onclick = () => chat.toggle(true)
             this.cache()
-            window.addEventListener("focus", () => { chat.hidden || this.clear() })
+            window.addEventListener("focus",
+                                    () => { chat.hidden || this.clear() })
         },
         cache() {
             var list = window.bakaconf.soundList.join("\n")
@@ -173,7 +182,7 @@
                 return
             this.list = list
             console.log("Update!")
-            this.cached = window.bakaconf.soundList.map((x) => new Audio(x))
+            this.cached = window.bakaconf.soundList.map(x => new Audio(x))
         },
         clear() {
             this.unreadCount = 0
@@ -188,7 +197,7 @@
                 this.unreadCount++
                 if (this.oldTitle === null)
                     this.oldTitle = document.title
-                document.title = '[' + this.unreadCount + '] ' + this.oldTitle
+                document.title = `[${this.unreadCount}] ${this.oldTitle}`
             }
             if (chat.hidden) {
                 g("notification").style.visibility = ''
@@ -212,12 +221,22 @@
             var cbox = document.createElement('table')
             cbox.cellpadding = cbox.cellspacing = 0
             cbox.id = 'cbox'
-            cbox.innerHTML = '<tr><td colspan="2"><div id="msgsbox"></div></td></tr>' +
-                '<tr height="0">' +
-                '<td width="100%"><form id="form"><input id="carea" autocomplete="off"></form></td>' +
-                '<td id="chat_users"></td>' +
-                '</tr>' +
-                '<tr><td colspan="2"><div id="connector" style="display:none"></div></td></tr>'
+            cbox.innerHTML = `
+                <tr>
+                  <td colspan="2"><div id="msgsbox"></div></td>
+                </tr>
+                <tr height="0">
+                  <td width="100%">
+                    <form id="form"><input id="carea" autocomplete="off"></form>
+                  </td>
+                  <td id="chat_users"></td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <div id="connector" style="display:none"></div>
+                  </td>
+                </tr>
+                `
             document.body.appendChild(cbox)
 
             g("chat_users").onclick = () => send({t:'names'})
@@ -256,7 +275,7 @@
         clickName(e) {
             e = e || window.event; e = e.target || e.srcElement
             var ca = document.getElementById('carea')
-            ca.value = e.textContent + ": " + ca.value
+            ca.value = `${e.textContent}: ${ca.value}`
             this.focus()
         },
         setUsersCount(add, value) {
@@ -264,7 +283,8 @@
                 this.usersCount += value
             else
                 this.usersCount = value
-            g("chat_users").textContent = (this.usersCount >= 0) ? this.usersCount : "#"
+            g("chat_users").textContent =
+                this.usersCount >= 0 ? this.usersCount : "#"
         },
     }
 
@@ -304,8 +324,9 @@
                 hasConnected = false
                 return setTimeout(connectChat, 1000)
             } else {
-                addLine({message:["Вебсокет закрыт. ",
-                                  aButton("переподключиться к вебсокету", reconnectButton)]})
+                addLine({message:[
+                    "Вебсокет закрыт. ",
+                    aButton("переподключиться к вебсокету", reconnectButton)]})
             }
             notificator.notfy('system')
         }
@@ -343,7 +364,7 @@
             switch(d.t) {
             case "names":
                 var namesList = d.names
-                    .filter((n) => n.name !== "")
+                    .filter(n => n.name !== "")
                     .map(aName)
                 var nonameCount = d.names.length - namesList.length
                 if (nonameCount === 0) {/* do nothing */}
@@ -353,7 +374,8 @@
                 else
                     namesList.push(nonameCount + " безымянных сырно" +
                                    (myName === ""?" (включая тебя)":""))
-                addLine({time:d.T, message: [].concat(["В чате "], join(namesList), ["."])})
+                addLine({time:d.T,
+                         message:["В чате ", ...join(namesList), "."]})
                 chat.setUsersCount(false, d.names.length)
                 break
             case "message":
@@ -362,14 +384,16 @@
                     d.text = tokens.slice(1).join(" ")
                     sender.mode = "me"
                 }
-                addLine({time:d.T, sender:sender, message:formatMessage(d.text)})
+                addLine({time:d.T, sender:sender,
+                         message:formatMessage(d.text)})
                 notify("chat")
                 break
             case "quick":
-                var message = "[" + d.text + "]"
-                if (d.symbol !== undefined)
-                    message = "[" + d.symbol + ":" + d.text + "]"
-                addLine({time:d.T, sender:sender, message:message})
+                addLine({time: d.T,
+                         sender: sender,
+                         message: d.symbol === undefined
+                         ? `[${d.text}]`
+                         : `[${d.symbol}:${d.text}]`})
                 notify("quick")
                 if (d.cells !== undefined)
                     map.blink(d.cells, d.symbol)
@@ -419,46 +443,48 @@
         }
         function onmessage_binary(d) {
             var c = 1
+            function getUint8  () { return d.getUint8  ((c += 1) - 1) }
+            function getUint16 () { return d.getUint16 ((c += 2) - 2) }
+            function getUint32 () { return d.getUint32 ((c += 4) - 4) }
+            function getFloat32() { return d.getFloat32((c += 4) - 4) }
             function getString() {
-                var result = ""
-                while (true) {
-                    var x = d.getUint16(c); c+=2
-                    if (x === 0)
-                        return result
+                var result = "", x = getUint16()
+                while (x !== 0) {
                     result += String.fromCharCode(x)
+                    x = getUint16()
                 }
+                return result
             }
             function getColor() {
-                var col = d.getUint8(c+2) + d.getUint8(c+1)*0x100 + d.getUint8(c)*0x10000
-                c += 3
+                var col = getUint8()<<16 | getUint8()<<8 | getUint8()
                 col = col.toString(16)
                 while (col.length < 6)
                     col = "0" + col
                 return "#" + col
             }
-            var data_size = d.getUint32(c); c += 4
+            var data_size = getUint32()
             var data = []
             for (var i = 0; i < data_size; i++) {
                 var cell = {}
-                cell.i = d.getUint32(c); c += 4
-                cell.s = d.getUint32(c); c += 4
-                cell.x = d.getFloat32(c); c += 4
-                cell.y = d.getFloat32(c); c += 4
+                cell.i = getUint32()
+                cell.s = getUint32()
+                cell.x = getFloat32()
+                cell.y = getFloat32()
                 cell.c = getColor()
                 cell.n = getString()
-                var flags = d.getUint8(c); c+= 1
+                var flags = getUint8()
                 cell.v = (flags & 1) !== 0
                 cell.a = (flags & 2) !== 0
                 data.push(cell)
             }
-            var range_size = d.getUint32(c); c += 4
+            var range_size = getUint32()
             var range = []
             for (var i = 0; i < range_size; i++) {
                 var r = {}
-                r.minX = d.getFloat32(c); c += 4
-                r.minY = d.getFloat32(c); c += 4
-                r.maxX = d.getFloat32(c); c += 4
-                r.maxY = d.getFloat32(c); c += 4
+                r.minX = getFloat32()
+                r.minY = getFloat32()
+                r.maxX = getFloat32()
+                r.maxY = getFloat32()
                 range.push(r)
             }
             map.update(data, range)
@@ -467,32 +493,25 @@
     }
 
     function toggleCanvas() {
-        if (window.agar === undefined || window.agar.disableRendering === undefined)
-            return console.error("Could not find window.agar.disableRendering"), undefined
+        if (window.agar === undefined ||
+            window.agar.disableRendering === undefined)
+            return console.error("Could not find window.agar.disableRendering")
         if (window.agar.disableRendering = !window.agar.disableRendering)
             document.body.setAttribute("baka-off", true)
         else
             document.body.removeAttribute("baka-off")
     }
-    
+
     function togglePellets() {
         if (window.agar === undefined || window.agar.drawPellets === undefined)
-            return console.error("Could not find window.agar.drawPellets"), undefined
-        window.agar.drawPellets = !window.agar.drawPellets;
+            return console.error("Could not find window.agar.drawPellets")
+        window.agar.drawPellets = !window.agar.drawPellets
     }
-    
-    function safetyBelt(e) {
-        if(!e) e = window.event;
-        e.returnValue = 'Выйти из agar.io?'
-        if (e.stopPropagation) {
-            e.stopPropagation();
-            e.preventDefault();
-        }
-    }
-    
+
     function topScreenshot() {
         var canvas = document.getElementById("canvas")
-        var data = canvas.getContext('2d').getImageData(canvas.width-220, 0, 220, 320)
+        var data = canvas.getContext('2d')
+                .getImageData(canvas.width-220, 0, 220, 320)
 
         var top_canvas = document.createElement("canvas")
         top_canvas.width = 220
@@ -608,11 +627,10 @@
             if (typeof p.message === "string")
                 p.message = [p.message]
             var message = document.createElement('span')
-            p.message.forEach((i) => {
-                if (typeof i === "string")
-                    message.appendChild(document.createTextNode(i))
-                else
-                    message.appendChild(i)
+            p.message.forEach(i => {
+                if (!(i instanceof Node))
+                    i = document.createTextNode(i)
+                message.appendChild(i)
             })
             message.className =
                 (p.message.greentext ? " greentext" : "") +
@@ -621,7 +639,8 @@
         }
 
         var msgbox = document.getElementById('msgsbox')
-        var scroll = msgbox.scrollTop + msgbox.offsetHeight - msgbox.scrollHeight === 0
+        var scroll = 0 ===
+                msgbox.scrollTop + msgbox.offsetHeight - msgbox.scrollHeight
         msgbox.appendChild(d)
         if (scroll)
             msgbox.lastChild.scrollIntoView()
@@ -642,7 +661,7 @@
             a.ws === undefined ||
             a.top === undefined ||
             a.top.length === 0)
-            return false
+            return
         var m = {t: "addr", ws:a.ws, top:a.top, game:window.location.hostname}
         if (a.region !== undefined) {
             m.region = a.region
@@ -656,7 +675,7 @@
 
     var fullInfo = {
         region(ws, fun) {
-            this._addCallback((data) => fun(data.regions[ws]))
+            this._addCallback(data => fun(data.regions[ws]))
         },
         _request() {
             this.req = new XMLHttpRequest()
@@ -672,7 +691,8 @@
                 fullInfo.data = {regions:{}}
                 try {
                     JSON.parse(this.responseText).servers
-                        .forEach((serv) => fullInfo.data.regions[serv.ip] = serv.region)
+                        .forEach(serv =>
+                                 fullInfo.data.regions[serv.ip] = serv.region)
                 } catch (e) {
                     error(e)
                     return
@@ -686,7 +706,7 @@
                 console.error('fullInfo.startRequest', e)
             }
             function runFuns() {
-                fullInfo.funs.forEach((fun) => fun(fullInfo.data))
+                fullInfo.funs.forEach(fun => fun(fullInfo.data))
                 fullInfo.funs = []
             }
         },
@@ -718,7 +738,7 @@
             this.autoConnectIteration()
         },
         autoConnectIteration() {
-            var thisMethod = this.autoConnectIteration.bind(this)
+            var thisMethod = () => this.autoConnectIteration()
             if (this.timer !== undefined)
                 delete this.timer
             if (this.state === 'connect') {
@@ -730,8 +750,10 @@
                 this.state = 'check'
                 this.timer = setTimeout(thisMethod, 2500)
             } else {
-                var partyState = g('helloContainer').getAttribute('data-party-state')
-                if (partyState === '5' || partyState === '1' && this.checkConnection()) {
+                var partyState = g('helloContainer')
+                        .getAttribute('data-party-state')
+                if (partyState === '5' ||
+                    partyState === '1' && this.checkConnection()) {
                     this.status.ok()
                 } else {
                     if (this.attempt !== this.maxAttempts-1) {
@@ -749,7 +771,8 @@
             var top1 = window.agar.top, top2 = this.top
             for (var i = 0; i < top1.length; i++)
                 for (var j = 0; j < top2.length; j++)
-                    if (top1[i].id === top2[j].id && top1[i].name === top2[j].name)
+                    if (top1[i].id === top2[j].id &&
+                        top1[i].name === top2[j].name)
                         return true
             return false
         },
@@ -770,11 +793,13 @@
             init() {
                 var t = this
                 t._element = g("connector")
-                t._stop = aButton("стоп", connector.stop.bind(connector))
-                t._close = aButton("закрыть", () => {t._element.style.display = 'none'})
+                t._stop = aButton("стоп", () => connector.stop())
+                t._close = aButton("закрыть",
+                                   () => {t._element.style.display = 'none'})
                 t._text = document.createElement('span')
 
-                ;["_text", "_close", "_stop"].forEach((e) => t._element.appendChild(t[e]))
+                ;["_text", "_close", "_stop"]
+                    .forEach(e => t._element.appendChild(t[e]))
             },
             _set(text, stop) {
                 this._element.style.display = ''
@@ -783,15 +808,15 @@
                 this._close.style.display = stop ? 'none' : ''
             },
             trying() {
-                var attempt = "[" + connector.attempt + "/" + connector.maxAttempts + "] "
+                var attempt = `[${connector.attempt}/${connector.maxAttempts}] `
                 if (connector.state === 'connect') {
                     if (connector.attempt === 0)
-                        this._set("Подключаюсь к " + connector.token + "..." + attempt, true)
+                        this._set(`Подключаюсь к ${connector.token}... ${attempt}`, true)
                     else
-                        this._set("Перебираю в " + connector.region + "... " + attempt, true)
+                        this._set(`Перебираю в ${connector.region}... ${attempt}`, true)
                 }
                 else if (connector.state === 'check')
-                    this._set("Проверяю... " + attempt, true)
+                    this._set(`Проверяю... ${attempt}`, true)
             },
             ok() { this._set("Подключился! ", false) },
             fail() { this._set("Не удалось подключиться. ", false) },
@@ -800,7 +825,7 @@
     }
 
     function joinTop(top) {
-        return top.map((x) => x.name || "An unnamed cell").join(", ")
+        return top.map(x => x.name || "An unnamed cell").join(", ")
     }
 
     function showAddr(context, addr) {
@@ -808,14 +833,13 @@
         var spinner_ = spinner()
         var region
         if (addr.token) {
-            addrElem = aButton(addr.token + ' ', click, undefined)
+            addrElem = aButton(addr.token + ' ', click)
         } else {
             addrElem = document.createElement('span')
-            addrElem.textContent = '!brute ' + addr.ws + ' '
+            addrElem.textContent = `!brute ${addr.ws} `
         }
         context.message = [
-            addr.alive + '/' + addr.players,
-            ' Топ: ' + joinTop(addr.top), br(),
+            `${addr.alive}/${addr.players} Топ: ${joinTop(addr.top)}`, br(),
             addrElem, spinner_,
         ]
         addLine(context)
@@ -823,13 +847,15 @@
 
         function click() {
             if (region)
-                connector.autoConnectParty(addr.ws, addr.token, region, addr.top)
+                connector.autoConnectParty(addr.ws, addr.token,
+                                           region, addr.top)
         }
         function update(region_) {
             spinner_.parentNode.removeChild(spinner_)
             region = region_
-            if (region && addrElem.tagName === 'SPAN' && region.endsWith(':party'))
-                addrElem.parentNode.replaceChild(aButton(region, click, undefined),
+            if (region && addrElem.tagName === 'SPAN' &&
+                region.endsWith(':party'))
+                addrElem.parentNode.replaceChild(aButton(region, click),
                                                  addrElem)
             else
                 addrElem.textContent += region || "???"
@@ -837,7 +863,7 @@
     }
 
     function showAddrs(addrs, time) {
-        addrs = addrs.filter((x) => (x.alive || x.players > 2) && x.ws)
+        addrs = addrs.filter(x => (x.alive || x.players > 2) && x.ws)
         if (addrs.length === 0)
             return addLine({time:time, message:["Сырны нигде не играют."]})
         addLine({time:time, message:["Сырны играют тут:"]})
@@ -847,7 +873,7 @@
             if (x.players > y.players) return +1
             if (x.players < y.players) return -1
             return 0
-        }).forEach(showAddr.bind(null, {}))
+        }).forEach(addr => showAddr({}, addr))
     }
 
     var submitHistory = {
@@ -915,7 +941,8 @@
                             else
                                 ignore.remove(id)
                         }
-                    addLine({message: ["Список игнорирования: "].concat(join(Object.keys(ignore.list)))})
+                    addLine({message: ["Список игнорирования: ",
+                                       ...join(ignore.list)]})
                     break
                 case "/auth":
                     if (tokens[1] !== undefined) {
@@ -924,15 +951,16 @@
                     }
                     break
                 default:
-                    addLine({message: ["Команды чата:"]})
-                    addLine({message: ["/names — получить список сырн в чате"]})
-                    addLine({message: ["/addr [регион] — отправить текущий севрер и топ (требуется expose)"]})
-                    addLine({message: ["/addrs — получить список комнат, на которых играют сырны"]})
-                    addLine({message: ["/reconnect — переподключиться к чатсерверу"]})
-                    addLine({message: ["/ignore [действия] — работа со списком игнорирования. " +
-                                       "Пример: `/ignore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка"]})
-                    addLine({message: ["/auth — авторизация"]})
-                    addLine({message: ["/me — отправить сообщение от третьего лица"]})
+                    ["Команды чата:",
+                     "/names — получить список сырн в чате",
+                     "/addr [регион] — отправить текущий севрер и топ (требуется expose)",
+                     "/addrs — получить список комнат, на которых играют сырны",
+                     "/reconnect — переподключиться к чатсерверу",
+                     "/ignore [действия] — работа со списком игнорирования. " +
+                     "Пример: `/ignore +1 +3 -2` — добавить 1 и 3 в список и убрать 2 из списка",
+                     "/auth — авторизация",
+                     "/me — отправить сообщение от третьего лица",
+                    ].forEach(line => addLine({message:line}))
                 }
             } else {
                 sendName()
@@ -940,7 +968,7 @@
             }
             submitHistory.push(ca.value)
             ca.value = ""
-            var myCells = map.myCells()
+            var myCells = agar.myCells()
             if (myCells === undefined || myCells.length !== 0)
                 ca.blur()
         }
@@ -948,20 +976,25 @@
     }
 
     function codeWorkaround(e) {
-        /* As of September 2015, `KeyboardEvent.code` is supported only in Firefox */
-        if (e.code === undefined)
-            e.code = {
-                "9": "Tab",
-                "13": "Enter",
-                "27": "Escape",
-                "83": "KeyS",
-                "87": "KeyW",
-                "188": "Comma",
-                "190": "Period",
-                "191": "Slash",
-                "192": "Backquote",
-                "220": "Backslash",
-            }[e.keyCode]
+        // As of September 2015, `KeyboardEvent.code` is supported
+        // only in Firefox.
+        if (e.code !== undefined)
+            return
+        var k = e.keyCode
+        if (k >= 65 && k <= 90)
+            return e.code = `Key${String.fromCharCode(k)}`, undefined
+        if (k >= 48 && k <= 57)
+            return e.code = `Digit${k-48}`, undefined
+        e.code = {
+            "9": "Tab",
+            "13": "Enter",
+            "27": "Escape",
+            "188": "Comma",
+            "190": "Period",
+            "191": "Slash",
+            "192": "Backquote",
+            "220": "Backslash",
+        }[e.keyCode]
     }
 
     function handleEvents() {
@@ -999,7 +1032,7 @@
             }
 
             var active = document.activeElement
-            if (["INPUT", "BUTTON", "SELECT"].indexOf(active.tagName) != -1 &&
+            if (includes(["INPUT", "BUTTON", "SELECT"], active.tagName) &&
                 active.offsetParent !== null)
                 return olddown(e)
 
@@ -1013,7 +1046,7 @@
                     }
                 else {
                     switch(e.code) {
-                    case "Tab": return g("ZCOverlay")?olddown(e):chat.focus(), false
+                    case "Tab": return zc ? olddown(e) : chat.focus(), false
                     case "Enter": return chat.focus(), false
                     case "KeyW": return repeat = 1, false
                     case "Period": return map.toggle(), false
@@ -1051,8 +1084,8 @@
             case 3: return olddown(key_space), oldup(key_space), false
             }
         }
-        g("canvas").onmouseup = g("map").onmouseup = g("notification").onmouseup =
-            g("cbox").onmouseup =
+        g("canvas").onmouseup = g("map").onmouseup =
+            g("notification").onmouseup = g("cbox").onmouseup =
             (e) => { if (e.which === 1) repeatm = false }
         g("canvas").oncontextmenu = g("map").oncontextmenu =
             (e) => !window.bakaconf.mouseControls
@@ -1065,26 +1098,38 @@
         }
         function track(id) {
             function set(k, v) { hovered[k] = v }
-            g(id).addEventListener("mouseenter", set.bind(this, id, true))
-            g(id).addEventListener("mousemove",  set.bind(this, id, true))
-            g(id).addEventListener("mouseleave", set.bind(this, id, false))
+            g(id).addEventListener("mouseenter", () => set(id, true))
+            g(id).addEventListener("mousemove",  () => set(id, true))
+            g(id).addEventListener("mouseleave", () => set(id, false))
         }
         track("canvas"); track("map"), track("notification"), track("cbox")
 
         // Make baka UI mouse-transparent
-        g("map").onmousemove = g("notification").onmousemove = g("cbox").onmousemove =
-            g("canvas").onmousemove
+        g("map").onmousemove = g("notification").onmousemove =
+            g("cbox").onmousemove = g("canvas").onmousemove
         var wheel = [g("canvas"), g("map"), g("notification")]
         for (var i = 0; i < wheel.length; i++) {
             if (window.agar && window.agar.dommousescroll)
-                wheel[i].addEventListener('DOMMouseScroll', window.agar.dommousescroll, false)
+                wheel[i].addEventListener('DOMMouseScroll',
+                                          window.agar.dommousescroll, false)
             else
                 wheel[i].onmousewheel = document.body.onmousewheel
         }
         if (window.agar && window.agar.dommousescroll)
-            document.removeEventListener('DOMMouseScroll', window.agar.dommousescroll, false)
+            document.removeEventListener('DOMMouseScroll',
+                                         window.agar.dommousescroll, false)
         else
             document.body.onmousewheel = null
+
+        // Safety belt
+        window.onbeforeunload = safetyBelt
+        function safetyBelt(e) {
+            if (!e) e = window.event
+            if (e.stopPropagation) {
+                e.stopPropagation()
+                e.preventDefault()
+            }
+        }
     }
 
     function handleOptions() {
@@ -1113,8 +1158,35 @@
             }
         }
         window.setDarkTheme = (n) => { bakaDarkTheme(n); oldSetDarkTheme(n) }
-        if (document.querySelector('label input[onchange*=setDarkTheme]').checked)
+        if (document
+            .querySelector('label input[onchange*=setDarkTheme]').checked)
             bakaDarkTheme(true)
+    }
+
+    var agar = {
+        init() {
+            var a = window.agar
+            if (a === undefined)
+                return
+            if (a.minScale !== undefined)
+                a.minScale = 1/4
+            if (a.showStartupBg !== undefined)
+                a.showStartupBg = false
+        },
+        getViewport() {
+            var v = window.agar.rawViewport
+            if (v) {
+                var dx = 1024 / v.scale, dy = 600 / v.scale
+                return {minX:v.x-dx, minY:v.y-dy, maxX:v.x+dx, maxY:v.y+dy}
+            }
+        },
+        myCells() {
+            var a = window.agar
+            if (a === undefined || a.myCells === undefined ||
+                a.allCells === undefined)
+                return
+            return a.myCells.filter(x => x in a.allCells)
+        },
     }
 
     var map = {
@@ -1127,13 +1199,13 @@
         blinks: {},
         blinkIdsCounter: 0,
         waitReply: true,
-        myCellsAffected: false,
         init() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
 
             document.body.appendChild(this.canvas)
-            this.canvas.onclick = () => { this.blackRibbon = false; this.draw() }
+            this.canvas.onclick =
+                () => { this.blackRibbon = false; this.draw() }
             this.draw()
             setInterval(() => this.send(), 250)
         },
@@ -1179,13 +1251,14 @@
         draw() {
             if (this.hidden)
                 return
-            var size = this.canvas.width = this.canvas.height = window.bakaconf.mapSize
+            var size = this.canvas.width = this.canvas.height =
+                    window.bakaconf.mapSize
             var context = this.canvas.getContext('2d')
-            var myCells = this.myCells() || []
+            var myCells = agar.myCells() || []
             var teams = window.bakaconf.teams
             var idx = {}
             function getAura(cell) {
-                if (myCells.indexOf(cell.i) > -1)
+                if (includes(myCells, cell.i))
                     return window.bakaconf.myAura
                 if (cell.a)
                     return window.bakaconf.bakaAura
@@ -1201,7 +1274,7 @@
                             return teams[i].aura || window.bakaconf.defaultTeamAura
                 }
             }
-            
+
             context.clearRect(0 , 0, canvas.width, canvas.height)
             var proj = window.bakaconf.mapProjection
             if (window.location.hostname === "petridish.pw") {
@@ -1303,57 +1376,44 @@
                 context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
             }
         },
-        myCells() {
-            var a = window.agar
-            if (a === undefined || a.myCells === undefined || a.allCells === undefined)
-                return undefined
-            var myCells = a.myCells.filter((x) => x in a.allCells)
-            if (this.myCellsAffected && myCells.length !== a.myCells.length) {
-                this.myCellsAffected = true
-                send({t:'anime', myCellsAffected:1})
-            }
-            return myCells
-        },
         send() {
-            function getViewport() {
-                var v = a.rawViewport
-                if (v) {
-                    var dx = 1024 / v.scale, dy = 600 / v.scale
-                    return {minX:v.x-dx, minY:v.y-dy, maxX:v.x+dx, maxY:v.y+dy}
-                } else {
-                    var r = {minX:0, maxX:0, minY:0, maxY:0}
-                    allCellsArray.forEach((c, i) => {
-                        if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
-                        if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
-                        if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
-                        if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
-                    })
-                    return r
-                }
+            function getViewportFallback() {
+                var r = {minX:0, maxX:0, minY:0, maxY:0}
+                allCellsArray.forEach((c, i) => {
+                    if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
+                    if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
+                    if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
+                    if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
+                })
+                return r
             }
             var a = window.agar
-            var myCells = this.myCells()
-            if (a === undefined || a.allCells === undefined || myCells === undefined || a.top === undefined || !a.ws) {
+            var myCells = agar.myCells()
+            if (a === undefined || a.allCells === undefined ||
+                myCells === undefined || a.top === undefined || !a.ws) {
                 if (!this.hidden)
                     send({t:'map', reply:1})
                 return
             }
             if (!a.top.length)
                 return
-            var allCellsArray = Object.keys(a.allCells).map((i) => a.allCells[i])
+            var allCellsArray = Object.keys(a.allCells).map(i => a.allCells[i])
             var cells = allCellsArray
-                .filter((c) => c.size >= 32 || myCells.indexOf(c.id) > -1)
-                .map((c) => ({x:c.x,
-                              y:c.y,
-                              i:c.id,
-                              n:c.name,
-                              c:c.color,
-                              s:c.size,
-                              v:c.isVirus?1:0}))
-            var top = a.top.map((x) => [x.id, x.name])
+                .filter(c => c.size >= 32 || includes(myCells, c.id))
+                .map(c => ({x:c.x,
+                            y:c.y,
+                            i:c.id,
+                            n:c.name,
+                            c:c.color,
+                            s:c.size,
+                            v:c.isVirus?1:0}))
+            var top = a.top.map(x => [x.id, x.name])
             var reply = (!this.hidden && !this.waitReply) ? 1 : 0
-            var sent = send({t:'map', all:cells, my:myCells, top:top, reply:reply,
-                             ws:a.ws, range:getViewport(), game:window.location.hostname})
+            var sent = send({t:'map', all:cells, my:myCells, top:top,
+                             reply:reply, ws:a.ws,
+                             game:window.location.hostname,
+                             range:agar.getViewport() || getViewportFallback(),
+                            })
             if (sent && reply)
                 this.waitReply = true
             this.blackRibbon = false
@@ -1362,28 +1422,25 @@
 
     var bakaSkin = {
         cached: {my:null, baka:null},
-        byAttr: {},
+        byAttr: new Map(),
         init() {
             if (!window.agar)
                 return
             this.image('my')
             this.image('baka')
-            window.agar.skinF = this.skinHook.bind(this)
-            if (window.agar.hooks)
-                window.agar.hooks.cellColor = this.cellColorHook.bind(this)
         },
         updateIds(mapCells) {
             if (!window.agar || !window.agar.allCells)
                 return
-            var byAttr = this.byAttr = {}
-            mapCells.forEach((c) => {
+            this.byAttr.clear()
+            mapCells.forEach(c => {
                 if (!c.a)
                     return
                 var o = window.agar.allCells[c.i]
                 if (o)
                     o.baka_isBaka = true
                 if (c.n !== "")
-                    byAttr[c.c + c.n] = c.a
+                    this.byAttr.set(c.c + c.n, c.a)
             })
         },
         image(id) {
@@ -1403,9 +1460,9 @@
         },
         handleCell(cell) {
             if (cell.baka_isBaka === undefined)
-                cell.baka_isBaka = this.byAttr[cell.color + cell.name] ? true : false
+                cell.baka_isBaka = !!this.byAttr.get(cell.color + cell.name)
             if (cell.baka_isMy === undefined)
-                cell.baka_isMy = window.agar.myCells.indexOf(cell.id) !== -1
+                cell.baka_isMy = includes(window.agar.myCells, cell.id)
             cell.baka_skin =
                 cell.baka_isMy ? this.image('my') :
                 cell.baka_isBaka ? this.image('baka') :
@@ -1415,13 +1472,24 @@
                 cell.isVirus ? window.bakaconf.virusColor :
                 undefined
         },
-        skinHook(cell, prev) {
-            if (!window.agar.hooks)
-                this.handleCell(cell)
+    }
+
+    var hooks = {
+        init() {
+            if (!window.agar || !window.agar.hooks)
+                return
+            var prefix = "hook_"
+            Object.keys(this)
+                .filter(name => name.startsWith(prefix))
+                .forEach(name =>
+                         window.agar.hooks[name.substr(prefix.length)] =
+                         this[name].bind(this))
+        },
+        hook_cellSkin(cell, prev) {
             return cell.baka_skin || prev
         },
-        cellColorHook(cell) {
-            this.handleCell(cell)
+        hook_cellColor(cell) {
+            bakaSkin.handleCell(cell)
             return cell.baka_color
         },
     }
@@ -1435,7 +1503,7 @@
             if (e.keyCode < 10) key1 += "00" + e.keyCode
             else if (e.keyCode < 100) key1 += "0" + e.keyCode
             else key1 += e.keyCode
-            var key2 = (mod ? "Shift_" + e.code : e.code)
+            var key2 = (mod ? `Shift_${e.code}` : e.code)
             var show = false
             if (this.state === undefined) {
                 show = true
@@ -1445,7 +1513,7 @@
             if (this.state === undefined || isArray(this.state)) {
                 if (this.state)
                     send({t:"quick", symbol:this.state[0], text:this.state[1],
-                          cells:map.myCells()})
+                          cells:agar.myCells()})
                 this.state = undefined
                 this.hide()
                 return false
@@ -1468,7 +1536,7 @@
                 if (x >= 48 && x <= 57) return ""+(x-48)
                 if (x >= 96 && x <= 105) return "num"+(x-96)
                 if (x >= 65 && x <= 90) return String.fromCharCode(x)
-                return "[" + x + "]"
+                return `[${x}]`
             }
             function list(prefix, what) {
                 var keys = Object.keys(what)
@@ -1476,7 +1544,8 @@
                     var key = keys[i]
                     var keyName = ""
                     if (/^[_S][0-9]{3}$/.test(key))
-                        keyName = (key[0] === '_'?'':'⇧') + keyCodeToName(+key.substr(1))
+                        keyName = (key[0] === '_'?'':'⇧') +
+                        keyCodeToName(+key.substr(1))
                     else
                         keyName = key.startsWith('Shift_')
                         ? '⇧' + codeToName(key.substr(6))
@@ -1511,94 +1580,90 @@
 
     var ignore = {
         style: null,
-        list: {},
+        list: new Set(),
         init() {
             this.style = document.createElement('style')
             this.style.id = 'baka-style-ignore'
             document.head.appendChild(this.style)
         },
         update() {
-            var list = Object.keys(this.list)
-            if (list.length === 0)
+            if (this.list.size === 0)
                 this.style.textContent = ""
             else
-                this.style.textContent = list
-                .map((i) => '#msgsbox > div[bakaid="'+i+'"]')
+                this.style.textContent = Array.from(this.list)
+                .map(i => `#msgsbox > div[bakaid="${i}"]`)
                 .join(',\n') + "{ display:none }"
         },
-        add(i) { this.list[i] = 1; this.update() },
-        remove(i) { delete this.list[i]; this.update() },
-        reset() { this.list = {}; this.update() },
+        add(i) { this.list.add(i); this.update() },
+        remove(i) { this.list.delete(i); this.update() },
+        reset() { this.list.clear(); this.update() },
+    }
+
+    function initStyle() {
+        if (g('baka-style') !== null)
+            return
+        var stl = document.createElement('style')
+        stl.id = 'baka-style'
+        stl.textContent = `
+            #cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; max-width:400px; color:#000; opacity:0.7 }
+            #carea { width:100%; color:black }
+            #form { margin:0 }
+            #msgsbox { overflow:auto; word-wrap:break-word; height:250px }
+            #cbox a { cursor:pointer }
+            #cbox tbody, #cbox tbody tr:first-child, #cbox tbody tr:first-child td:first-child { max-width: inherit }
+            #msgsbox .name.name /* oh my CSS specificity */ { color:#333 }
+            #msgsbox .name.premium { color:#550;font-weight:bold }
+            #msgsbox .higlight { color:#055 }
+            #msgsbox .time { font-size:70%; color:#777 }
+            #msgsbox .greentext { color:#3b5000 }
+            body:not([baka-dark]) #cbox a { color:#275d8b }
+            body[baka-dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }
+            body[baka-dark] #msgsbox .name { color:#CCC }
+            body[baka-dark] #msgsbox .name.premium { color:#EEA }
+            body[baka-dark] #msgsbox .higlight { color:#faa }
+            body[baka-dark] #msgsbox .greentext { color:#789922 }
+            #notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }
+            #quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }
+            #quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }
+            #quickHint .sym { color:#000; float:left; width:2em }
+            #map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }
+            body[dark] #map, body[baka-off] #map { border-color: #aaa }
+            .agario-promo { width: 220px !important; height: 274px !important; background-size: contain }
+            .tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }
+            @keyframes baka-turn-off {
+             0% { transform: scale(1, 1.3) translate3d(0, 0, 0); -webkit-filter: brightness(1); filter: brightness(1); opacity: 1 }
+             60% { transform: scale(1.3, 0.001) translate3d(0, 0, 0); -webkit-filter: brightness(10); filter: brightness(10) }
+             100% { animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06); transform: scale(0, 0.0001) translate3d(0, 0, 0); -webkit-filter: brightness(50); filter: brightness(50) }
+            }
+            body[baka-off] { background-color: black }
+            body[baka-off] #canvas, body[baka-off] #overlays { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }
+            body[baka-off] #cbox { max-width:500px }
+            body[baka-off] #msgsbox { height:600px }
+            .baka-spinner { animation-name:baka-spin; animation-duration:3s; animation-iteration-count:infinite; animation-timing-function:linear }
+            @keyframes baka-spin {
+             from { transform:rotate(0deg) }
+             to { transform: rotate(360deg) }
+            }
+            `
+        document.head.appendChild(stl)
     }
 
     function init() {
-        if (g('baka-style') === null) {
-            var stl = document.createElement('style')
-            stl.id = 'baka-style'
-            stl.textContent =
-                '#cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; max-width:400px; color:#000; opacity:0.7 }' +
-                '#carea { width:100%; color:black }' +
-                '#form { margin:0 }' +
-                '#msgsbox { overflow:auto; word-wrap:break-word; height:250px }' +
-                '#cbox a { cursor:pointer }' +
-                '#cbox tbody, #cbox tbody tr:first-child, #cbox tbody tr:first-child td:first-child { max-width: inherit }' +
-                '#msgsbox .name.name /* oh my CSS specificity */ { color:#333 }' +
-                '#msgsbox .name.premium { color:#550;font-weight:bold }' +
-                '#msgsbox .higlight { color:#055 }' +
-                '#msgsbox .time { font-size:70%; color:#777 }' +
-                '#msgsbox .greentext { color:#3b5000 }' +
-                'body:not([baka-dark]) #cbox a { color:#275d8b }' +
-                'body[baka-dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }' +
-                'body[baka-dark] #msgsbox .name { color:#CCC }' +
-                'body[baka-dark] #msgsbox .name.premium { color:#EEA }' +
-                'body[baka-dark] #msgsbox .higlight { color:#faa }' +
-                'body[baka-dark] #msgsbox .greentext { color:#789922 }' +
-                '#notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }' +
-                '#quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }'+
-                '#quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }' +
-                '#quickHint .sym { color:#000; float:left; width:2em }' +
-                '#map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }' +
-                'body[dark] #map, body[baka-off] #map { border-color: #aaa }' +
-                '.agario-promo { width: 220px !important; height: 274px !important; background-size: contain }' +
-                '.tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }' +
-                '@keyframes baka-turn-off {' +
-                ' 0% { transform: scale(1, 1.3) translate3d(0, 0, 0); -webkit-filter: brightness(1); filter: brightness(1); opacity: 1 }' +
-                ' 60% { transform: scale(1.3, 0.001) translate3d(0, 0, 0); -webkit-filter: brightness(10); filter: brightness(10) }' +
-                ' 100% { animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06); transform: scale(0, 0.0001) translate3d(0, 0, 0); -webkit-filter: brightness(50); filter: brightness(50) }' +
-                '}' +
-                'body[baka-off] { background-color: black }' +
-                'body[baka-off] #canvas, body[baka-off] #overlays { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }' +
-                'body[baka-off] #cbox { max-width:500px }' +
-                'body[baka-off] #msgsbox { height:600px }' +
-                '.baka-spinner { animation-name:baka-spin; animation-duration:3s; animation-iteration-count:infinite; animation-timing-function:linear }' +
-                '@keyframes baka-spin {' +
-                ' from { transform:rotate(0deg) }' +
-                ' to { transform: rotate(360deg) }' +
-                '}' +
-                '/* Sırno en güçlü olduğu! */'
-            document.head.appendChild(stl)
-        }
-
+        initStyle()
+        agar.init()
         chat.init()
         map.init()
         ignore.init()
         connector.status.init()
         notificator.init()
         bakaSkin.init()
-
-        window.onbeforeunload=safetyBelt;
+        hooks.init()
 
         setInterval(() => send({t:'ping'}), 1000)
 
         handleOptions()
         handleEvents()
         connectChat()
-
-        if (window.agar !== undefined && window.agar.minScale !== undefined)
-            window.agar.minScale = 1/4
-
-        if (window.agar !== undefined && agar.showStartupBg !== undefined)
-            agar.showStartupBg = false
     }
 
     function wait() {
