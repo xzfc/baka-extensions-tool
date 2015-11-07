@@ -87,10 +87,17 @@
              bakaSkinBig: false,
              pelletColor: null,
              virusColor: "rgba(128,128,128,0.6)",
+             eatingMassGuide: {
+                 smallColors: ["#00aa00", "#cc66ff"],
+                 bigColors: ["#ffbf3d", "#ff3c3c"],
+             },
+             bgImage: "http://i.imgur.com/E4u6yMZ.jpg",
+             cellOpacity: 0.8,
             })
     var myName = null
     var hasConnected = false
     var nextMessageId = 0
+    var drawPellets = true
     var zc = Boolean(g("ZCOverlay"))
 
     var defaultName = "Безымянная сырно"
@@ -501,12 +508,6 @@
             document.body.setAttribute("baka-off", true)
         else
             document.body.removeAttribute("baka-off")
-    }
-
-    function togglePellets() {
-        if (window.agar === undefined || window.agar.drawPellets === undefined)
-            return console.error("Could not find window.agar.drawPellets")
-        window.agar.drawPellets = !window.agar.drawPellets
     }
 
     function topScreenshot() {
@@ -1046,14 +1047,22 @@
                     case "Comma": return chat.move(), false
                     }
                 else {
+                    if (!zc && e.code !== undefined) {
+                        if (e.code === "Tab")
+                            return activeCell.activate(), false
+                        if (e.code.startsWith("Digit")) {
+                            var digit = +e.code.substr("Digit".length)
+                            if (digit >= 1 && digit <= 8)
+                                return activeCell.activate(digit-1), false
+                        }
+                    }
                     switch(e.code) {
-                    case "Tab": return zc ? olddown(e) : chat.focus(), false
                     case "Enter": return chat.focus(), false
                     case "KeyW": return repeat = 1, false
                     case "Period": return map.toggle(), false
                     case "Comma": return chat.toggle(), false
                     case "Slash": return toggleCanvas(), false
-                    case "Backslash": return togglePellets(), false
+                    case "Backslash": return drawPellets = !drawPellets, false
                     }
                 }
                 if (quick.key(e))
@@ -1170,7 +1179,7 @@
             if (a === undefined)
                 return
             if (a.minScale !== undefined)
-                a.minScale = 1/4
+                a.minScale = 1/32
             if (a.showStartupBg !== undefined)
                 a.showStartupBg = false
         },
@@ -1475,6 +1484,21 @@
         },
     }
 
+    var canvas = {
+        init() {
+            this.ctx = g('canvas').getContext('2d')
+        },
+        drawRectangle(dim, color, width) {
+            this.ctx.beginPath()
+            this.ctx.strokeStyle = color
+            this.ctx.lineWidth = width
+            this.ctx.strokeRect(dim.minX - width/2,
+                                dim.minY - width/2,
+                                dim.maxX - dim.minX + width,
+                                dim.maxY - dim.minY + width)
+        },
+    }
+
     var hooks = {
         init() {
             if (!window.agar || !window.agar.hooks)
@@ -1490,8 +1514,312 @@
             return cell.baka_skin || prev
         },
         hook_cellColor(cell) {
+            if (cell.size >= 32)
+                canvas.ctx.globalAlpha = window.bakaconf.cellOpacity
             bakaSkin.handleCell(cell)
             return cell.baka_color
+        },
+        hook_beforeTransform() {
+            if (zc)
+                return
+            bgImage.draw.apply(bgImage, arguments)
+        },
+        hook_beforeDraw() {
+            if (zc)
+                return
+            var dims
+            if (dims = agar.getViewport())
+                canvas.drawRectangle(dims, "#7f7f7f", 10)
+            if (dims = window.agar.dimensions) {
+                dims = {minX:dims[0], minY:dims[1], maxX:dims[2], maxY:dims[3]}
+                canvas.drawRectangle(dims, "#F44336", 90)
+            }
+            activeCell.calculate()
+            eatingDistanceGuide.calculate()
+        },
+        hook_afterCellStroke(cell) {
+            if (zc || cell.size < 32)
+                return
+            eatingMassGuide.draw(canvas.ctx, cell)
+            activeCell.draw(canvas.ctx, cell)
+            eatingDistanceGuide.draw(canvas.ctx, cell)
+        },
+        hook_skipCellDraw(cell) {
+            return cell.size < 32 && !drawPellets
+        },
+        hook_drawCellMass(cell, prev) {
+            return cell.size >= 32
+        },
+        hook_cellMassText(cell, mass) {
+            return cell.isVirus
+                ? shotsNeeded()
+                : `${mass}${shotsAvailable()}${percent()}`
+
+            function shotsAvailable() {
+                if (!includes(window.agar.myCells, cell.id))
+                    return ""
+                var count = ~~((mass-17)/18)
+                if (count > 7*3)
+                    return ""
+                return ` (${count})`
+            }
+            function shotsNeeded() {
+                return Math.floor((149-cell.size)/7)
+            }
+            function percent() {
+                if (activeCell.cell === null)
+                    return ""
+                var proportions = cell.size / activeCell.cell.size
+                var pct = ~~(100*proportions*proportions)
+                return ` ${pct}%`
+            }
+        },
+        hook_cellMassTextScale(cell, scale) {
+            return cell.isVirus
+                ? 100
+                : scale * 1.5
+        }
+    }
+
+    var bgImage = {
+        init() {
+            this.img = new Image()
+            this.img.crossOrigin = 'anonymous'
+        },
+        draw(ctx, t1x, t1y, s, t2x, t2y) {
+            if (this.img.src !== window.bakaconf.bgImage)
+                this.img.src = window.bakaconf.bgImage
+            if (!this.img.complete || !this.img.naturalWidth)
+                return
+
+            var bgDims = fitDimensions(this.img, ctx.canvas)
+
+            ctx.save()
+            clip()
+            ctx.drawImage(this.img, ...bgDims)
+            ctx.restore()
+
+            function fitDimensions(bounds, d) {
+                var useWidth = bounds.width * d.height < bounds.height * d.width
+                var width = useWidth
+                        ? d.width
+                        : bounds.width * d.height / bounds.height
+                var height = !useWidth
+                        ? d.height
+                        : bounds.height * d.width / bounds.width
+
+                return [(d.width - width) / 2,
+                        (d.height - height) / 2,
+                        width, height]
+            }
+            function clip() {
+                var gameDims = window.agar.dimensions
+                ctx.beginPath()
+                transformedRect(gameDims[0], gameDims[1],
+                                gameDims[2] - gameDims[0],
+                                gameDims[3] - gameDims[0])
+                ctx.rect(...bgDims)
+                ctx.clip("evenodd")
+            }
+            function transformedRect(x, y, w, h) {
+                ctx.rect((x+t2x)*s+t1x, (y+t2y)*s+t1y, w*s, h*s)
+            }
+        },
+    }
+
+    var activeCell = {
+        cell: null,
+        activate(num) {
+            var cells = agar.myCells()
+                    .map(id => window.agar.allCells[id])
+                    .sort((x,y) => y.size - x.size)
+            if (num === undefined) {
+                num = cells.indexOf(this.cell)
+                num = num === -1 ? 0 : (num+1) % cells.length
+            }
+            this.cell =
+                cells.length === 0 ?
+                null :
+                cells[Math.min(num, cells.length-1)]
+        },
+        calculate() {
+            if (!this.cell || !window.agar.allCells[this.cell.id])
+                this.activate(0)
+        },
+        draw(ctx, cell) {
+            if (this.cell !== cell)
+                return
+            var scale = window.agar.drawScale
+            drawAura('#3371FF', 5/scale, cell.size + 10 + 10/scale)
+            drawAura('#FF0000', 2, 660)
+            drawAura('#00FF00', 2, 660 + cell.size)
+
+            function drawAura(color, width, radius) {
+                ctx.strokeStyle = color
+                ctx.lineWidth = width
+                ctx.beginPath()
+                ctx.arc(cell.x, cell.y, radius, 0, 2*Math.PI)
+                ctx.stroke()
+            }
+        },
+    }
+
+    var eatingMassGuide = {
+        splitCount(cellA, cellB) {
+            var coef = 3/4
+            var k = coef * (cellA.size*cellA.size)/(cellB.size*cellB.size)
+            var raw = Math.log2(k)+1
+            var count = Math.floor(raw)
+            var progress = k / Math.pow(2,count-1) - 1
+            return {count, progress}
+        },
+        draw(ctx, cell) {
+            if (activeCell.cell === null
+                || ~window.agar.myCells.indexOf(cell.id))
+                return
+
+            var splits, colors
+            if (activeCell.cell.size > cell.size || cell.isVirus) {
+                splits = this.splitCount(activeCell.cell, cell)
+                colors = window.bakaconf.eatingMassGuide.smallColors
+            } else {
+                splits = this.splitCount(cell, activeCell.cell)
+                colors = window.bakaconf.eatingMassGuide.bigColors
+            }
+            var color = colors[splits.count-1], colorNext = colors[splits.count]
+
+            if (!colorNext)
+                ctx.globalAlpha = 1 - splits.progress/2
+
+            if (color) {
+                ctx.lineWidth = 10 / window.agar.drawScale
+                ctx.strokeStyle = color
+
+                ctx.beginPath()
+                ctx.arc(cell.x, cell.y,
+                        cell.size + 10 + 10/window.agar.drawScale,
+                        0, 2*Math.PI)
+                ctx.stroke()
+            }
+
+            if (colorNext || color) {
+                var angle = Math.atan2(cell.y - activeCell.cell.y,
+                                       cell.x - activeCell.cell.x)
+                var angleW = Math.PI * splits.progress
+
+                ctx.lineWidth = 3/window.agar.drawScale
+                ctx.setLineDash([ctx.lineWidth, ctx.lineWidth])
+                ctx.strokeStyle = colorNext || color
+
+                ctx.beginPath()
+                ctx.arc(cell.x, cell.y,
+                        cell.size + 10 + 18/window.agar.drawScale,
+                        angle-angleW, angle+angleW)
+                ctx.stroke()
+                ctx.setLineDash([])
+            }
+
+            ctx.globalAlpha = 1
+        },
+    }
+
+    var eatingDistanceGuide = {
+        calculate() {
+            var eaten = window.agar.eatenCellsList
+            var alive = window.agar.aliveCellsList
+            if (zc || !eaten || !alive)
+                return
+
+            eaten.forEach(resetEaten)
+            alive.forEach(resetAlive)
+            var bigEnough = alive.filter(o => o.size > 32)
+            handleCells(bigEnough)
+
+            function resetEaten(o) {
+                delete o.baka_eatees
+                delete o.baka_eater
+                delete o.baka_progress
+            }
+            function resetAlive(o) {
+                o.baka_eatees = []
+                o.baka_eater = undefined
+                o.baka_progress = Number.POSITIVE_INFINITY
+            }
+            function handleCells(cells) {
+                cells
+                    .filter(eater => !eater.isVirus)
+                    .forEach(eater =>
+                             cells.forEach(eatee => handlePair(eater, eatee)))
+            }
+            function handlePair(eater, eatee) {
+                if (eater.size <= eatee.size)
+                    return
+
+                var dist_min = eater.size - 0.354*eatee.size + 11
+                var dist_max = eater.size + eatee.size
+                var dist = calcDist()
+                if (dist >= dist_max)
+                    return
+
+                var progress = (dist - dist_min) / (dist_max - dist_min)
+                eater.baka_eatees.push({
+                    cell: eatee,
+                    radius: dist_min,
+                    angle: Math.atan2(eatee.y-eater.y, eatee.x-eater.x),
+                    progress: progress,
+                    max_angle: Math.atan2(eatee.size, dist_max),
+                })
+                if (eatee.baka_eater === undefined ||
+                    eatee.baka_progress > progress) {
+                    eatee.baka_eater = eater
+                    eatee.baka_progress = progress
+                }
+
+                function calcDist() {
+                    var dx = eater.x - eatee.x, dy = eater.y - eatee.y
+                    return Math.sqrt(dx*dx + dy*dy)
+                }
+            }
+        },
+        draw(ctx, cell) {
+            if (!cell.baka_eatees)
+                return
+
+            ctx.strokeStyle = "#000000"
+            ctx.fillStyle = "#000000"
+            cell.baka_eatees.forEach(handleEatee)
+            ctx.globalAlpha = 1
+
+            function handleEatee(eatee) {
+                ctx.globalAlpha = 1 - eatee.progress
+                drawProgressArc()
+                if (eatee.progress < 0)
+                    drawLine()
+                if (cell === eatee.cell.baka_eater)
+                    drawDotInCenterOf(eatee.cell)
+
+                function drawProgressArc() {
+                    var angle = Math.max(0.2, eatee.progress) * eatee.max_angle
+                    ctx.beginPath()
+                    ctx.arc(cell.x, cell.y,
+                            eatee.radius,
+                            eatee.angle-angle, eatee.angle+angle)
+                    ctx.stroke()
+                }
+                function drawLine() {
+                    ctx.lineWidth = 10
+                    ctx.beginPath()
+                    ctx.moveTo(cell.x + eatee.radius*Math.cos(eatee.angle),
+                               cell.y + eatee.radius*Math.sin(eatee.angle))
+                    ctx.lineTo(eatee.cell.x, eatee.cell.y)
+                    ctx.stroke()
+                }
+                function drawDotInCenterOf(cell) {
+                    ctx.beginPath()
+                    ctx.arc(cell.x, cell.y, 20, 0, 2 * Math.PI)
+                    ctx.fill()
+                }
+            }
         },
     }
 
@@ -1657,7 +1985,9 @@
         connector.status.init()
         notificator.init()
         bakaSkin.init()
+        canvas.init()
         hooks.init()
+        bgImage.init()
 
         setInterval(() => send({t:'ping'}), 1000)
 
