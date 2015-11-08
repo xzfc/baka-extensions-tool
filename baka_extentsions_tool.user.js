@@ -218,24 +218,25 @@
         defaultPosition: true,
         usersCount: 0,
         init() {
-            var cbox = document.createElement('table')
-            cbox.cellpadding = cbox.cellspacing = 0
+            var cbox = document.createElement('div')
             cbox.id = 'cbox'
             cbox.innerHTML = `
-                <tr>
-                  <td colspan="2"><div id="msgsbox"></div></td>
-                </tr>
-                <tr height="0">
-                  <td width="100%">
-                    <form id="form"><input id="carea" autocomplete="off"></form>
-                  </td>
-                  <td id="chat_users"></td>
-                </tr>
-                <tr>
-                  <td colspan="2">
-                    <div id="connector" style="display:none"></div>
-                  </td>
-                </tr>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td colspan="2"><div id="msgsbox"></div></td>
+                  </tr>
+                  <tr height="0">
+                    <td width="100%">
+                      <form id="form"><input id="carea" autocomplete="off"></form>
+                    </td>
+                    <td id="chat_users"></td>
+                  </tr>
+                  <tr>
+                    <td colspan="2">
+                      <div id="connector" style="display:none"></div>
+                    </td>
+                  </tr>
+                </table>
                 `
             document.body.appendChild(cbox)
 
@@ -1605,7 +1606,7 @@
         var stl = document.createElement('style')
         stl.id = 'baka-style'
         stl.textContent = `
-            #cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; max-width:400px; color:#000; opacity:0.7 }
+            #cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; max-width:400px; color:#000; border-top-left-radius:10px; border-width:5px 0px 0px 5px; padding:5px 0 0 5px; opacity:0.7 }
             #carea { width:100%; color:black }
             #form { margin:0 }
             #msgsbox { overflow:auto; word-wrap:break-word; height:250px }
