@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.31
+// @version     1.31.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.31"
+    var version = "1.31.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  Backquote: {
@@ -1035,7 +1035,12 @@
         }
 
         // Mouse controls
-        var key_w = {keyCode: 87}, key_space = {keyCode: 32}
+        var key_w = fakeKeyEvent(87), key_space = fakeKeyEvent(32)
+        function fakeKeyEvent(keyCode) {
+            return {keyCode,
+                    target: g("canvas"),
+                    preventDefault: () => undefined}
+        }
         g("canvas").onmousedown = g("map").onmousedown = (e) => {
             if (e.which === 2 && window.agar && window.agar.scale !== undefined)
                 return window.agar.scale = 1, false
