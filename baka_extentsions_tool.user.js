@@ -1135,6 +1135,7 @@
         window.onbeforeunload = safetyBelt
         function safetyBelt(e) {
             if (!e) e = window.event
+            e.returnValue = 'Выйти из agar.io?'
             if (e.stopPropagation) {
                 e.stopPropagation()
                 e.preventDefault()
