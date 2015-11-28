@@ -76,7 +76,7 @@
              bakaAura: "#000",
              defaultTeamAura: "#A55",
              timeFormat: 0,
-             mouseControls: true,
+             mouseControls: false,
              fogOfWar: true,
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
@@ -1135,6 +1135,7 @@
         window.onbeforeunload = safetyBelt
         function safetyBelt(e) {
             if (!e) e = window.event
+            e.returnValue = 'Выйти из agar.io?' //без него нельзя!
             if (e.stopPropagation) {
                 e.stopPropagation()
                 e.preventDefault()
