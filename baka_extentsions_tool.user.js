@@ -90,6 +90,7 @@
              eatingMassGuide: {
                  smallColors: ["#00aa00", "#cc66ff"],
                  bigColors: ["#ffbf3d", "#ff3c3c"],
+                 width: 0.6,
              },
              bgImage: "http://i.imgur.com/E4u6yMZ.jpg",
              cellOpacity: 0.8,
@@ -1684,13 +1685,16 @@
                 || ~window.agar.myCells.indexOf(cell.id))
                 return
 
+            var conf = window.bakaconf.eatingMassGuide
+            var scale = conf.width / window.agar.drawScale
+
             var splits, colors
             if (activeCell.cell.size > cell.size || cell.isVirus) {
                 splits = this.splitCount(activeCell.cell, cell)
-                colors = window.bakaconf.eatingMassGuide.smallColors
+                colors = conf.smallColors
             } else {
                 splits = this.splitCount(cell, activeCell.cell)
-                colors = window.bakaconf.eatingMassGuide.bigColors
+                colors = conf.bigColors
             }
             var color = colors[splits.count-1], colorNext = colors[splits.count]
 
@@ -1698,12 +1702,12 @@
                 ctx.globalAlpha = 1 - splits.progress/2
 
             if (color) {
-                ctx.lineWidth = 10 / window.agar.drawScale
+                ctx.lineWidth = 10 * scale
                 ctx.strokeStyle = color
 
                 ctx.beginPath()
                 ctx.arc(cell.x, cell.y,
-                        cell.size + 10 + 10/window.agar.drawScale,
+                        cell.size + 10 + 10*scale,
                         0, 2*Math.PI)
                 ctx.stroke()
             }
@@ -1713,13 +1717,13 @@
                                        cell.x - activeCell.cell.x)
                 var angleW = Math.PI * splits.progress
 
-                ctx.lineWidth = 3/window.agar.drawScale
+                ctx.lineWidth = 3 * scale
                 ctx.setLineDash([ctx.lineWidth, ctx.lineWidth])
                 ctx.strokeStyle = colorNext || color
 
                 ctx.beginPath()
                 ctx.arc(cell.x, cell.y,
-                        cell.size + 10 + 18/window.agar.drawScale,
+                        cell.size + 10 + 18*scale,
                         angle-angleW, angle+angleW)
                 ctx.stroke()
                 ctx.setLineDash([])
