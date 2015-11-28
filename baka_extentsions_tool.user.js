@@ -93,6 +93,7 @@
              },
              bgImage: "http://i.imgur.com/E4u6yMZ.jpg",
              cellOpacity: 0.8,
+             drawViewport: true,
             })
     var myName = null
     var hasConnected = false
@@ -1531,7 +1532,7 @@
             if (zc)
                 return
             var dims
-            if (dims = agar.getViewport())
+            if (window.bakaconf.drawViewport && (dims = agar.getViewport()))
                 canvas.drawRectangle(dims, "#7f7f7f", 10)
             if (dims = window.agar.dimensions) {
                 dims = {minX:dims[0], minY:dims[1], maxX:dims[2], maxY:dims[3]}
