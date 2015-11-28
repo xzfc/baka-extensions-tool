@@ -1286,7 +1286,7 @@
                 }
             }
 
-            context.clearRect(0 , 0, canvas.width, canvas.height)
+            context.clearRect(0, 0, this.canvas.width, this.canvas.height)
             var proj = window.bakaconf.mapProjection
             if (window.location.hostname === "petridish.pw") {
                 var region = g('region').options[g('region').selectedIndex].text
@@ -1310,7 +1310,7 @@
                 }
                 context.fill()
             } else {
-                context.fillRect(0 , 0, canvas.width, canvas.height)
+                context.fillRect(0, 0, this.canvas.width, this.canvas.height)
             }
 
             if (this.blackRibbon) {
