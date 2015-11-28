@@ -1629,8 +1629,7 @@
             #quickHint .sym { color:#000; float:left; width:2em }
             #map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }
             body[dark] #map, body[baka-off] #map { border-color: #aaa }
-            .agario-promo { width: 220px !important; height: 274px !important; background-size: contain }
-            .tosBox { bottom: initial !important; border-radius: 0px 0px 0px 5px !important }
+            .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agarYoutube, .fb-like { display: none !important }
             @keyframes baka-turn-off {
              0% { transform: scale(1, 1.3) translate3d(0, 0, 0); -webkit-filter: brightness(1); filter: brightness(1); opacity: 1 }
              60% { transform: scale(1.3, 0.001) translate3d(0, 0, 0); -webkit-filter: brightness(10); filter: brightness(10) }
