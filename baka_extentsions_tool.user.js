@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.32.1
+// @version     1.32.2
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.32.1"
+    var version = "1.32.2"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  Backquote: {
@@ -1594,6 +1594,8 @@
             this.img.crossOrigin = 'anonymous'
         },
         draw(ctx, t1x, t1y, s, t2x, t2y) {
+            if (!window.bakaconf.bgImage)
+                return
             if (this.img.src !== window.bakaconf.bgImage)
                 this.img.src = window.bakaconf.bgImage
             if (!this.img.complete || !this.img.naturalWidth)
