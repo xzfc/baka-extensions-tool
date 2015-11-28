@@ -98,6 +98,7 @@
     var hasConnected = false
     var nextMessageId = 0
     var drawPellets = true
+    var drawGuides = true
     var zc = Boolean(g("ZCOverlay"))
 
     var defaultName = "Безымянная сырно"
@@ -1058,6 +1059,7 @@
                     }
                     switch(e.code) {
                     case "Enter": return chat.focus(), false
+                    case "KeyC": return drawGuides = !drawGuides, false
                     case "KeyW": return repeat = 1, false
                     case "Period": return map.toggle(), false
                     case "Comma": return chat.toggle(), false
@@ -1541,8 +1543,10 @@
         hook_afterCellStroke(cell) {
             if (zc || cell.size < 32)
                 return
-            eatingMassGuide.draw(canvas.ctx, cell)
-            activeCell.draw(canvas.ctx, cell)
+            if (drawGuides) {
+                eatingMassGuide.draw(canvas.ctx, cell)
+                activeCell.draw(canvas.ctx, cell)
+            }
             eatingDistanceGuide.draw(canvas.ctx, cell)
         },
         hook_skipCellDraw(cell) {
