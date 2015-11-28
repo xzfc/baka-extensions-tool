@@ -76,7 +76,7 @@
              bakaAura: "#000",
              defaultTeamAura: "#A55",
              timeFormat: 0,
-             mouseControls: true,
+             mouseControls: false,
              fogOfWar: true,
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
