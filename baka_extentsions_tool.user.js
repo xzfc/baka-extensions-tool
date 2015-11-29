@@ -385,8 +385,9 @@
                 else
                     namesList.push(nonameCount + " безымянных сырно" +
                                    (myName === ""?" (включая тебя)":""))
+                var chatmsg = ["В чате ", ...join(namesList), "."];
                 addLine({time:d.T,
-                         message:["В чате ", ...join(namesList), "."]})
+                         message:chatmsg})
                 chat.setUsersCount(false, d.names.length)
                 break
             case "message":
