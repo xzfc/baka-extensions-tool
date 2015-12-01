@@ -312,7 +312,7 @@
         var welcomed = false
         ws.binaryType = "arraybuffer"
         ws.onopen = (evt) => {
-            map.reset()
+            mapSender.reset()
             send({t: "version", version: version,
                   expose: (window.agar===undefined?0:1) })
             var auth_token = storage.get('auth_token')
@@ -420,6 +420,9 @@
                 break
             case "map":
                 map.update(d.data, d.range)
+                break
+            case "map-reset":
+                mapSender.reset()
                 break
             case "join":
                 if (!window.bakaconf.hideJoinLeaveMessages)
@@ -654,7 +657,9 @@
 
     function send(a) {
         if (websocket.readyState === 1) {
-            websocket.send(JSON.stringify(a))
+            if (!(a instanceof ArrayBuffer))
+                a = JSON.stringify(a)
+            websocket.send(a)
             return true
         }
         return false
@@ -1203,6 +1208,11 @@
                 return
             return a.myCells.filter(x => x in a.allCells)
         },
+        cellIsMy(cell) {
+            if (cell.baka_isMy === undefined)
+                cell.baka_isMy = includes(window.agar.myCells, cell.id)
+            return cell.baka_isMy
+        },
     }
 
     var map = {
@@ -1214,7 +1224,6 @@
         defaultPosition: true,
         blinks: {},
         blinkIdsCounter: 0,
-        waitReply: true,
         init() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
@@ -1223,10 +1232,6 @@
             this.canvas.onclick =
                 () => { this.blackRibbon = false; this.draw() }
             this.draw()
-            setInterval(() => this.send(), 250)
-        },
-        reset() {
-            this.waitReply = false
         },
         toggle() {
             this.hidden = !this.hidden
@@ -1244,7 +1249,7 @@
             }
         },
         update(data, range) {
-            this.waitReply = false
+            mapSender.waitReply = false
             this.data = data
             this.range = range
             bakaSkin.updateIds(data)
@@ -1392,47 +1397,209 @@
                 context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
             }
         },
+    }
+
+    var mapSender = {
+        waitReply: false,
+        buffer: new ArrayBuffer(1024),
+        init() {
+            this.reset()
+            setInterval(() => this.send(), 250)
+        },
+        reset() {
+            this.waitReply = false
+            this.sent = {}
+            this.sent.topNames = new Map
+            for (var id in window.agar.allCells)
+                delete window.agar.allCells[id].baka_old
+        },
         send() {
-            function getViewportFallback() {
-                var r = {minX:0, maxX:0, minY:0, maxY:0}
-                allCellsArray.forEach((c, i) => {
-                    if (!i || r.minX > c.x+c.size/2) r.minX = c.x+c.size/2
-                    if (!i || r.maxX < c.x-c.size/2) r.maxX = c.x-c.size/2
-                    if (!i || r.minY > c.y+c.size/2) r.minY = c.y+c.size/2
-                    if (!i || r.maxY < c.y-c.size/2) r.maxY = c.y-c.size/2
-                })
-                return r
-            }
             var a = window.agar
             var myCells = agar.myCells()
-            if (a === undefined || a.allCells === undefined ||
-                myCells === undefined || a.top === undefined || !a.ws) {
-                if (!this.hidden)
+            if (!checkExpose()) {
+                if (!map.hidden)
                     send({t:'map', reply:1})
                 return
             }
             if (!a.top.length)
                 return
-            var allCellsArray = Object.keys(a.allCells).map(i => a.allCells[i])
-            var cells = allCellsArray
-                .filter(c => c.size >= 32 || includes(myCells, c.id))
-                .map(c => ({x:c.x,
-                            y:c.y,
-                            i:c.id,
-                            n:c.name,
-                            c:c.color,
-                            s:c.size,
-                            v:c.isVirus?1:0}))
-            var top = a.top.map(x => [x.id, x.name])
-            var reply = (!this.hidden && !this.waitReply) ? 1 : 0
-            var sent = send({t:'map', all:cells, my:myCells, top:top,
-                             reply:reply, ws:a.ws,
-                             game:window.location.hostname,
-                             range:agar.getViewport() || getViewportFallback(),
-                            })
+
+            var offset = 0
+            var d = new DataView(this.buffer)
+            var reply = !map.hidden && !this.waitReply
+            putAll()
+            var sent = send(truncateBuffer())
             if (sent && reply)
                 this.waitReply = true
-            this.blackRibbon = false
+            if (!sent)
+                this.reset()
+            map.blackRibbon = false
+
+            function checkExpose() {
+                return a !== undefined &&
+                    a.allCells !== undefined &&
+                    myCells !== undefined &&
+                    a.top !== undefined &&
+                    a.ws
+            }
+
+            function putAll() {
+                var flagsOffset = reserve(1)
+                var flags
+                flags |= !mapSender.waitReply << 0
+                flags |= !map.hidden << 1
+                flags |= putGame() << 2
+                flags |= putTop() << 3
+                putAllCells()
+                putViewport()
+                d.setUint8(flagsOffset, flags)
+            }
+
+            function putGame() {
+                var s = mapSender.sent
+                if (s.ws === a.ws && s.hostname === window.location.hostname)
+                    return false
+                putString(s.ws = a.ws)
+                putString(s.hostname = window.location.hostname)
+                return true
+            }
+
+            function putTop() {
+                if (topsIsSame(a.top, mapSender.sent.top, false))
+                    return false
+
+                var infoOffset = reserve(2)
+                var info = a.top.length
+                var shift = 4
+
+                var sentTopNames = new Map
+                for (var e of a.top) {
+                    putUint32(e.id)
+                    if (mapSender.sent.topNames.get(e.id) !== e.name) {
+                        putString(e.name)
+                        info |= 1 << shift
+                    }
+                    shift++
+                    sentTopNames.set(e.id, e.name)
+
+                }
+                d.setUint16(infoOffset, info)
+                mapSender.sent.topNames = sentTopNames
+                mapSender.sent.top = a.top
+                return true
+            }
+
+            function topsIsSame(a, b) {
+                if (a === b)
+                    return true
+                if (!a || !b || a.length != b.length)
+                    return false
+                for (var i = 0; i < a.length; i++)
+                    if (a[i].id !== b[i].id || a[i].name !== b[i].name)
+                        return false
+                return true
+            }
+
+            function putAllCells() {
+                var prevId = 0
+                var ids = Object.keys(a.allCells).map(x=>+x).sort((x,y) => x-y)
+                for (var id of ids) {
+                    var cell = a.allCells[id]
+                    agar.cellIsMy(cell)
+                    if (cell.size < 32 && !cell.baka_isMy)
+                        continue
+
+                    var flagsOffset = reserve(1)
+                    var flags = 1
+                    flags |= cell.isVirus << 1
+                    flags |= cell.baka_isMy << 2
+
+                    putUint(id - prevId)
+                    prevId = id
+
+                    var p = window.agar.cellProp
+                    var old = cell.baka_old
+                    if (typeof old === 'undefined')
+                        old = cell.baka_old = {}
+                    if (old.s !== cell[p.nSize]) {
+                        putUint16(old.s = cell[p.nSize])
+                        flags |= 1 << 3
+                    }
+                    if (old.x !== cell[p.nx] || old.y !== cell[p.ny]) {
+                        putInt16(old.x = cell[p.nx])
+                        putInt16(old.y = cell[p.ny])
+                        flags |= 1 << 4
+                    }
+                    if (old.n !== cell.name || old.c !== cell.color) {
+                        putColor(old.c = cell.color)
+                        putString(old.n = cell.name)
+                        flags |= 1 << 5
+                    }
+
+                    d.setUint8(flagsOffset, flags)
+                }
+                putUint8(0)
+            }
+
+            function putColor(value) {
+                putUint8(parseInt(value.substr(1, 2), 16))
+                putUint8(parseInt(value.substr(3, 2), 16))
+                putUint8(parseInt(value.substr(5, 2), 16))
+            }
+
+            function putViewport() {
+                var viewport = agar.getViewport()
+                putFloat32(viewport.minX)
+                putFloat32(viewport.minY)
+                putFloat32(viewport.maxX)
+                putFloat32(viewport.maxY)
+            }
+
+            function putUint8  (value) { d.setUint8  (reserve(1), value) }
+            function putUint16 (value) { d.setUint16 (reserve(2), value) }
+            function putUint32 (value) { d.setUint32 (reserve(4), value) }
+            function putInt16  (value) { d.setInt16  (reserve(2), value) }
+            function putFloat32(value) { d.setFloat32(reserve(4), value) }
+
+            function putString (str) {
+                var offset = reserve(str.length*2 + 2)
+                for (var i = 0; i <= str.length; i++)
+                    d.setUint16(offset + i*2, str.charCodeAt(i) || 0)
+            }
+
+            function putUint(value) {
+                do {
+                    var v = 0x7f & value
+                    var hasNext = (value ^ v) !== 0
+                    putUint8(v | hasNext << 7)
+                    value >>= 7
+                } while (value)
+            }
+
+            function reserve(count) {
+                if (offset + count + 4 > mapSender.buffer.byteLength)
+                    enlargeBuffer()
+                offset += count
+                return offset - count
+            }
+
+            function enlargeBuffer() {
+                var newBuf = new ArrayBuffer(mapSender.buffer.byteLength*2)
+                copyBufferInto(newBuf)
+                d = new DataView(mapSender.buffer = newBuf)
+            }
+
+            function truncateBuffer() {
+                var result = new ArrayBuffer(offset)
+                copyBufferInto(result)
+                return result
+            }
+
+            function copyBufferInto(to) {
+                var from = new Uint8Array(mapSender.buffer, 0, offset)
+                to = new Uint8Array(to)
+                to.set(from)
+            }
         },
     }
 
@@ -1477,8 +1644,7 @@
         handleCell(cell) {
             if (cell.baka_isBaka === undefined)
                 cell.baka_isBaka = !!this.byAttr.get(cell.color + cell.name)
-            if (cell.baka_isMy === undefined)
-                cell.baka_isMy = includes(window.agar.myCells, cell.id)
+            agar.cellIsMy(cell)
             cell.baka_skin =
                 cell.baka_isMy ? this.image('my') :
                 cell.baka_isBaka ? this.image('baka') :
@@ -2001,6 +2167,7 @@
         canvas.init()
         hooks.init()
         bgImage.init()
+        mapSender.init()
 
         setInterval(() => send({t:'ping'}), 1000)
 
