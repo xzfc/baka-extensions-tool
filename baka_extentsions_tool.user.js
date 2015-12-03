@@ -225,7 +225,6 @@
     var chat = {
         hidden: false,
         active: false,
-        defaultPosition: true,
         usersCount: 0,
         init() {
             var cbox = document.createElement('div')
@@ -267,12 +266,7 @@
                 }
             }
         },
-        move() {
-            var dp = this.defaultPosition = !this.defaultPosition
-            var stl = g('cbox').style
-            stl.bottom = stl.right = dp?'0':''
-            stl.top    = stl.left  = dp?'' :'0'
-        },
+        move() { toggleAttribute(g('cbox'), 'data-alt-position') },
         toggle(show) {
             this.hidden = show === undefined ? !this.hidden : !show
             g('cbox').style.visibility = (this.hidden ? 'hidden' : '')
@@ -610,6 +604,7 @@
 
     function addLine(p) {
         var d = document.createElement('div')
+        d.className = 'baka-line'
 
         if (p.time !== undefined) {
             var time = document.createElement('span')
@@ -1166,19 +1161,15 @@
         }
         var oldSetDarkTheme = window.setDarkTheme
         var parity = false
-        function bakaDarkTheme(n) {
+        window.setDarkTheme = (n) => {
             if (n)
-                document.body.setAttribute("dark", "")
+                document.body.setAttribute("data-dark", "")
             else
-                document.body.removeAttribute("dark")
-            if (parity = !parity) {
-                if (document.body.hasAttribute("baka-dark"))
-                    document.body.removeAttribute("baka-dark")
-                else
-                    document.body.setAttribute("baka-dark", "")
-            }
+                document.body.removeAttribute("data-dark")
+            if (parity = !parity)
+                toggleAttribute(document.body, "data-baka-dark")
+            oldSetDarkTheme(n)
         }
-        window.setDarkTheme = (n) => { bakaDarkTheme(n); oldSetDarkTheme(n) }
         if (document
             .querySelector('label input[onchange*=setDarkTheme]').checked)
             bakaDarkTheme(true)
@@ -1221,7 +1212,6 @@
         range: [],
         blackRibbon: true,
         hidden: false,
-        defaultPosition: true,
         blinks: {},
         blinkIdsCounter: 0,
         init() {
@@ -1237,17 +1227,7 @@
             this.hidden = !this.hidden
             g('map').style.visibility = (this.hidden ? 'hidden' : '')
         },
-        move() {
-            var stl = this.canvas.style
-            if (this.defaultPosition = !this.defaultPosition) {
-                stl.bottom = stl.left  = '5px'
-                stl.top    = stl.right = 'initial'
-            } else {
-                stl.bottom = stl.left  = 'initial'
-                stl.top = '5px'
-                stl.right = '220px'
-            }
-        },
+        move() { toggleAttribute(this.canvas, 'data-alt-position') },
         update(data, range) {
             mapSender.waitReply = false
             this.data = data
@@ -1827,8 +1807,8 @@
                 return
             var scale = window.agar.drawScale
             drawAura('#3371FF', 5/scale, cell.size + 10 + 10/scale)
-            drawAura('#FF0000', 2, 660)
-            drawAura('#00FF00', 2, 660 + cell.size)
+            drawAura('#00FF00', 2, 660)
+            drawAura('#FF0000', 2, 660 + cell.size)
 
             function drawAura(color, width, radius) {
                 ctx.strokeStyle = color
@@ -2107,36 +2087,47 @@
         reset() { this.list.clear(); this.update() },
     }
 
+    function toggleAttribute(element, attributeName) {
+        if (element.hasAttribute(attributeName))
+            element.removeAttribute(attributeName)
+        else
+            element.setAttribute(attributeName, '')
+    }
+
     function initStyle() {
         if (g('baka-style') !== null)
             return
         var stl = document.createElement('style')
         stl.id = 'baka-style'
         stl.textContent = `
-            #cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; bottom:0; right:0; max-width:400px; color:#000; border-top-left-radius:10px; border-width:5px 0px 0px 5px; padding:5px 0 0 5px; opacity:0.7 }
+            #cbox { background:rgba(255,255,255,0.5); position:fixed; z-index:205; max-width:400px; color:#000; opacity:0.7 }
+            #cbox:not([data-alt-position]) { bottom:0; right:0; border-top-left-radius:10px; padding:5px 0 0 5px }
+            #cbox[data-alt-position] { top:0; left:0; border-bottom-right-radius:10px; padding:0 5px 5px 0 }
             #carea { width:100%; color:black }
             #form { margin:0 }
-            #msgsbox { overflow:auto; word-wrap:break-word; height:250px }
+            #msgsbox { overflow:auto; word-wrap:break-word; width:395px; height:250px }
             #cbox a { cursor:pointer }
-            #cbox tbody, #cbox tbody tr:first-child, #cbox tbody tr:first-child td:first-child { max-width: inherit }
             #msgsbox .name.name /* oh my CSS specificity */ { color:#333 }
             #msgsbox .name.premium { color:#550;font-weight:bold }
             #msgsbox .higlight { color:#055 }
             #msgsbox .time { font-size:70%; color:#777 }
             #msgsbox .greentext { color:#3b5000 }
-            body:not([baka-dark]) #cbox a { color:#275d8b }
-            body[baka-dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }
-            body[baka-dark] #msgsbox .name { color:#CCC }
-            body[baka-dark] #msgsbox .name.premium { color:#EEA }
-            body[baka-dark] #msgsbox .higlight { color:#faa }
-            body[baka-dark] #msgsbox .greentext { color:#789922 }
+            body:not([data-baka-dark]) #cbox a { color:#275d8b }
+            body[data-baka-dark] #cbox { background:rgba(0,0,0,0.5); color:#fff }
+            body[data-baka-dark] #msgsbox .name { color:#CCC }
+            body[data-baka-dark] #msgsbox .name.premium { color:#EEA }
+            body[data-baka-dark] #msgsbox .higlight { color:#faa }
+            body[data-baka-dark] #msgsbox .greentext { color:#789922 }
             #notification { background:red; position:fixed; z-index:205; bottom:5px; right:5px; opacity:0.5; color:white }
             #quickHint { background:#777; position:fixed; z-index:210; top:0; left:0; color:white }
             #quickHint .key { font-weight:bold; margin-right:1em; float:left; width:4em }
             #quickHint .sym { color:#000; float:left; width:2em }
-            #map { position:fixed; bottom:5px; left:5px; z-index:205; border:1px black solid }
-            body[dark] #map, body[baka-off] #map { border-color: #aaa }
+            #map { position:fixed; z-index:205; border:1px black solid }
+            #map:not([data-alt-position]) { bottom:5px; left:5px }
+            #map[data-alt-position] { top:5px; right:220px }
+            body[data-dark] #map, body[baka-off] #map { border-color: #aaa }
             .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agarYoutube, .fb-like { display: none !important }
+            .agario-panel, .form-control { background-color:AliceBlue }
             @keyframes baka-turn-off {
              0% { transform: scale(1, 1.3) translate3d(0, 0, 0); -webkit-filter: brightness(1); filter: brightness(1); opacity: 1 }
              60% { transform: scale(1.3, 0.001) translate3d(0, 0, 0); -webkit-filter: brightness(10); filter: brightness(10) }
