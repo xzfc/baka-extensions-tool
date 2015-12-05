@@ -1063,6 +1063,7 @@
                     switch(e.code) {
                     case "Enter": return chat.focus(), false
                     case "KeyC": return drawGuides = !drawGuides, false
+                    case "KeyM": return mouseLines.toggle(), false
                     case "KeyW": return repeat = 1, false
                     case "Period": return map.toggle(), false
                     case "Comma": return chat.toggle(), false
@@ -1168,6 +1169,7 @@
                 document.body.removeAttribute("data-dark")
             if (parity = !parity)
                 toggleAttribute(document.body, "data-baka-dark")
+            canvas.dark = n
             oldSetDarkTheme(n)
         }
         if (document
@@ -1637,7 +1639,10 @@
     }
 
     var canvas = {
+        transform: {scale:1, x:0, y:0},
+        dark: false,
         init() {
+            this.element = g('canvas')
             this.ctx = g('canvas').getContext('2d')
         },
         drawRectangle(dim, color, width) {
@@ -1649,6 +1654,11 @@
                                 dim.maxX - dim.minX + width,
                                 dim.maxY - dim.minY + width)
         },
+        toWorldCoords(pixelCoords) {
+            var x = (pixelCoords.x - this.transform.x) / this.transform.scale
+            var y = (pixelCoords.y - this.transform.y) / this.transform.scale
+            return {x, y}
+        }
     }
 
     var hooks = {
@@ -1671,7 +1681,8 @@
             bakaSkin.handleCell(cell)
             return cell.baka_color
         },
-        hook_beforeTransform() {
+        hook_beforeTransform(ctx, t1x, t1y, s, t2x, t2y) {
+            canvas.transform = {scale:s, x:t2x*s + t1x, y:t2y*s + t1y}
             if (zc)
                 return
             bgImage.draw.apply(bgImage, arguments)
@@ -1688,6 +1699,9 @@
             }
             activeCell.calculate()
             eatingDistanceGuide.calculate()
+        },
+        hook_afterDraw() {
+            mouseLines.draw()
         },
         hook_afterCellStroke(cell) {
             if (zc || cell.size < 32)
@@ -1982,6 +1996,58 @@
         },
     }
 
+    var mouseLines = {
+        enabled: false,
+        cursor: {x:0, y:0},
+        showCursor: true,
+        init() {
+            if (!window.agar)
+                this.draw = () => {}
+            document.addEventListener("mousemove", e => {
+                this.cursor.x = e.clientX
+                this.cursor.y = e.clientY
+            })
+        },
+        toggle() { this.enabled = !this.enabled },
+        draw() {
+            var that = this
+            if (!this.enabled)
+                return updateCursor(true)
+            var myCells = agar.myCells().map(id => window.agar.allCells[id])
+            if (myCells.length === 0)
+                return updateCursor(true)
+            var coords = canvas.toWorldCoords(this.cursor)
+
+            updateCursor(false)
+            draw(canvas.ctx)
+
+            function updateCursor(showCursor) {
+                if (showCursor === that.showCursor)
+                    return
+                that.showCursor = showCursor
+                canvas.element.style.cursor = map.canvas.style.cursor =
+                    showCursor ? '' : 'none'
+            }
+            function draw(ctx) {
+                var scale = window.agar.drawScale
+                ctx.strokeStyle = ctx.fillStyle = canvas.dark ? "#fff" : '#000'
+                ctx.lineWidth = 3/scale
+                ctx.lineCap = "round"
+                ctx.globalAlpha = .5
+                ctx.beginPath()
+                for (var cell of myCells) {
+                    ctx.moveTo(cell.x, cell.y)
+                    ctx.lineTo(coords.x, coords.y)
+                }
+                ctx.stroke()
+
+                ctx.beginPath()
+                ctx.arc(coords.x, coords.y, 10/scale, 0, 2*Math.PI, false)
+                ctx.fill()
+            }
+        }
+    }
+
     var quick = {
         state: undefined,
         key(e, state) {
@@ -2159,6 +2225,7 @@
         hooks.init()
         bgImage.init()
         mapSender.init()
+        mouseLines.init()
 
         setInterval(() => send({t:'ping'}), 1000)
 
