@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.33
+// @version     1.33.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function() {
-    var version = "1.33"
+    var version = "1.33.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  Backquote: {
@@ -2202,7 +2202,7 @@
             body[baka-off] { background-color: black }
             body[baka-off] #canvas, body[baka-off] #overlays { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }
             body[baka-off] #cbox { max-width:500px }
-            body[baka-off] #msgsbox { height:600px }
+            body[baka-off] #msgsbox { height:600px; width:495px }
             .baka-spinner { animation-name:baka-spin; animation-duration:3s; animation-iteration-count:infinite; animation-timing-function:linear }
             @keyframes baka-spin {
              from { transform:rotate(0deg) }
