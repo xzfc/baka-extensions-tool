@@ -2235,6 +2235,8 @@
     }
 
     function wait() {
+        if (window.top != window.self)
+            return
         if (!window.onkeydown || !window.onkeyup ||
             !window.setNick || !g("canvas").onmousemove)
             return setTimeout(wait, 100)
