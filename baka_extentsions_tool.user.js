@@ -1783,16 +1783,34 @@
                         width, height]
             }
             function clip() {
-                var gameDims = window.agar.dimensions
+                var gameDims = getGameDims()
                 ctx.beginPath()
-                transformedRect(gameDims[0], gameDims[1],
-                                gameDims[2] - gameDims[0],
-                                gameDims[3] - gameDims[0])
+                rect(gameDims)
+                if (!map.hidden) {
+                    var mapDims = getMapDims()
+                    rect(mapDims)
+                    rectIntersection(gameDims, mapDims)
+                }
                 ctx.rect(...bgDims)
                 ctx.clip("evenodd")
             }
-            function transformedRect(x, y, w, h) {
-                ctx.rect((x+t2x)*s+t1x, (y+t2y)*s+t1y, w*s, h*s)
+            function rectIntersection(a, b) {
+                var r = [Math.max(a[0], b[0]), Math.max(a[1], b[1]),
+                         Math.min(a[2], b[2]), Math.min(a[3], b[3])]
+                if (r[0] < r[2] && r[1] < r[3])
+                    rect(r)
+            }
+            function getMapDims() {
+                var d = map.canvas.getBoundingClientRect()
+                return [d.left, d.top, d.right, d.bottom]
+            }
+            function getGameDims() {
+                var d = window.agar.dimensions
+                return [(d[0]+t2x)*s+t1x, (d[1]+t2y)*s+t1y,
+                        (d[2]+t2x)*s+t1x, (d[3]+t2y)*s+t1y]
+            }
+            function rect(d) {
+                ctx.rect(d[0], d[1], d[2]-d[0], d[3]-d[1])
             }
         },
     }
