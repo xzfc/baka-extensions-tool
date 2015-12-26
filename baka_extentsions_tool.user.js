@@ -35,6 +35,29 @@
                  _104: ['↑', 'Центр сверху'],
                  _105: ['↗', 'Правый верхний угол'],
              },
+             keys: {
+                 Shift_Comma:        "move_chat",
+                 Shift_Period:       "move_map",
+                 Shift_Tab:          "focus_chat",
+                 Backslash:          "toggle_pellets",
+                 Comma:              "toggle_chat",
+                 Enter:              "focus_chat",
+                 KeyC:              ["toggle_eating_mass_guide",
+                                     "toggle_active_cell"],
+                 KeyM:               "toggle_mouse_lines",
+                 Period:             "toggle_map",
+                 Slash:              "toggle_canvas",
+                 Tab:                "activate_cell",
+                 Digit1:             "activate_cell 0",
+                 Digit2:             "activate_cell 1",
+                 Digit3:             "activate_cell 2",
+                 Digit4:             "activate_cell 3",
+                 Digit5:             "activate_cell 4",
+                 Digit6:             "activate_cell 5",
+                 Digit7:             "activate_cell 6",
+                 Digit8:             "activate_cell 7",
+                 Digit9:             "activate_cell 15",
+             },
              teams:{
                  baka:{aura: "#00f",
                        names: [/⑨/]},
@@ -100,7 +123,6 @@
     var hasConnected = false
     var nextMessageId = 0
     var drawPellets = true
-    var drawGuides = true
     var zc = Boolean(g("ZCOverlay"))
 
     var defaultName = "Безымянная сырно"
@@ -1053,34 +1075,14 @@
                 return olddown(e)
 
             if (!e.altKey && !e.ctrlKey && !e.metaKey) {
-                if (e.shiftKey)
-                    switch(e.code) {
-                    case "Tab": return chat.focus(), false
-                    case "KeyW": return olddown(key_w)
-                    case "Period": return map.move(), false
-                    case "Comma": return chat.move(), false
-                    }
-                else {
-                    if (!zc && e.code !== undefined) {
-                        if (e.code === "Tab")
-                            return activeCell.activate(), false
-                        if (e.code.startsWith("Digit")) {
-                            var digit = +e.code.substr("Digit".length)
-                            if (digit >= 1 && digit <= 8)
-                                return activeCell.activate(digit-1), false
-                        }
-                    }
-                    switch(e.code) {
-                    case "Enter": return chat.focus(), false
-                    case "KeyC": return drawGuides = !drawGuides, false
-                    case "KeyM": return mouseLines.toggle(), false
-                    case "KeyW": return repeat = 1, false
-                    case "Period": return map.toggle(), false
-                    case "Comma": return chat.toggle(), false
-                    case "Slash": return toggleCanvas(), false
-                    case "Backslash": return drawPellets = !drawPellets, false
-                    }
+                if (e.code === "KeyW") {
+                    if (e.shiftKey)
+                        return olddown(key_w)
+                    else
+                        return repeat = 1, false
                 }
+                if (keys.key(e))
+                    return false
                 if (quick.key(e))
                     return extended = true, false
             }
@@ -1728,10 +1730,8 @@
         hook_afterCellStroke(cell) {
             if (zc || cell.size < 32)
                 return
-            if (drawGuides) {
-                eatingMassGuide.draw(canvas.ctx, cell)
-                activeCell.draw(canvas.ctx, cell)
-            }
+            eatingMassGuide.draw(canvas.ctx, cell)
+            activeCell.draw(canvas.ctx, cell)
             eatingDistanceGuide.draw(canvas.ctx, cell)
         },
         hook_skipCellDraw(cell) {
@@ -1843,6 +1843,7 @@
 
     var activeCell = {
         cell: null,
+        drawEnabled: true,
         activate(num) {
             var cells = agar.myCells()
                     .map(id => window.agar.allCells[id])
@@ -1860,8 +1861,9 @@
             if (!this.cell || !window.agar.allCells[this.cell.id])
                 this.activate(0)
         },
+        toggleDraw() { this.drawEnabled = !this.drawEnabled },
         draw(ctx, cell) {
-            if (this.cell !== cell)
+            if (!this.drawEnabled || this.cell !== cell)
                 return
             var scale = window.agar.drawScale
             drawAura('#3371FF', 5/scale, cell.size + 10 + 10/scale)
@@ -1879,6 +1881,7 @@
     }
 
     var eatingMassGuide = {
+        enabled: true,
         splitCount(cellA, cellB) {
             var coef = 3/4
             var k = coef * (cellA.size*cellA.size)/(cellB.size*cellB.size)
@@ -1887,8 +1890,10 @@
             var progress = k / Math.pow(2,count-1) - 1
             return {count, progress}
         },
+        toggle() { this.enabled = !this.enabled },
         draw(ctx, cell) {
-            if (activeCell.cell === null
+            if (!this.enabled
+                || activeCell.cell === null
                 || ~window.agar.myCells.indexOf(cell.id))
                 return
 
@@ -1941,10 +1946,12 @@
     }
 
     var eatingDistanceGuide = {
+        enabled: true,
+        toggle() { this.enabled = !this.enabled },
         calculate() {
             var eaten = window.agar.eatenCellsList
             var alive = window.agar.aliveCellsList
-            if (zc || !eaten || !alive)
+            if (!this.enabled || zc || !eaten || !alive)
                 return
 
             eaten.forEach(resetEaten)
@@ -1999,7 +2006,7 @@
             }
         },
         draw(ctx, cell) {
-            if (!cell.baka_eatees)
+            if (!this.enabled || !cell.baka_eatees)
                 return
 
             ctx.strokeStyle = "#000000"
@@ -2167,22 +2174,64 @@
         },
     }
 
+    function keyToStr(e) {
+        var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
+        var key1 = mod ? "S" : "_"
+        if (e.keyCode < 10) key1 += "00" + e.keyCode
+        else if (e.keyCode < 100) key1 += "0" + e.keyCode
+        else key1 += e.keyCode
+        var key2 = (mod ? `Shift_${e.code}` : e.code)
+        return [key1, key2]
+    }
+
+    var keys = {
+        actions: {
+            focus_chat() { chat.focus() },
+            toggle_eating_mass_guide() { eatingMassGuide.toggle() },
+            toggle_eating_distance_guide() { eatingDistanceGuide.toggle() },
+            toggle_active_cell() { activeCell.toggleDraw() },
+            toggle_mouse_lines() { mouseLines.toggle() },
+            toggle_map() { map.toggle() },
+            toggle_chat() { chat.toggle() },
+            toggle_canvas() { toggleCanvas() },
+            toggle_pellets() { drawPellets = !drawPellets },
+            focus_chat() { chat.focus() },
+            move_chat() { chat.move() },
+            move_map() { map.move() },
+            activate_cell(n) { activeCell.activate(n) },
+        },
+        key(e) {
+            var conf = window.bakaconf.keys
+            var action = conf[keyToStr(e).find(e => conf[e])]
+            if (action === undefined)
+                return false
+            if (typeof action === 'string')
+                executeAction(action)
+            else if (isArray(action))
+                action.forEach(executeAction)
+            return true
+
+            function executeAction(str) {
+                var args = str.trim().split(/ +/)
+                var action = keys.actions[args.shift()]
+                if (action === undefined)
+                    return
+                action(...args.map(JSON.parse))
+            }
+        },
+    }
+
     var quick = {
         state: undefined,
         key(e, state) {
             if (e.keyCode >= 16 && e.keyCode <= 18 && e.keyCode) return
-            var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
-            var key1 = mod ? "S" : "_"
-            if (e.keyCode < 10) key1 += "00" + e.keyCode
-            else if (e.keyCode < 100) key1 += "0" + e.keyCode
-            else key1 += e.keyCode
-            var key2 = (mod ? `Shift_${e.code}` : e.code)
+            var keys = keyToStr(e)
             var show = false
             if (this.state === undefined) {
                 show = true
                 this.state = window.bakaconf.quickTemplates
             }
-            this.state = this.state[key1] || this.state[key2]
+            this.state = this.state[keys[0]] || this.state[keys[1]]
             if (this.state === undefined || isArray(this.state)) {
                 if (this.state)
                     send({t:"quick", symbol:this.state[0], text:this.state[1],
