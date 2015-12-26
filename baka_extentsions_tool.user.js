@@ -2328,6 +2328,19 @@
             element.setAttribute(attributeName, '')
     }
 
+    function workarounds() {
+        // On Firefox, `window.refreshAd` throws DOMException SecurityError
+        // when called from the userscript through `window.onkeydown`
+        // substitute.
+        var refreshAd = window.refreshAd
+        window.refreshAd = function() {
+            try {
+                refreshAd.apply(window, arguments)
+            } catch (e) {
+            }
+        }
+    }
+
     function initStyle() {
         if (g('baka-style') !== null)
             return
@@ -2401,6 +2414,7 @@
 
         setInterval(() => send({t:'ping'}), 1000)
 
+        workarounds()
         handleOptions()
         handleEvents()
         connectChat()
