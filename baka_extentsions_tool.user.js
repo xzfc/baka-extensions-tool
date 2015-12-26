@@ -1392,8 +1392,9 @@
             this.waitReply = false
             this.sent = {}
             this.sent.topNames = new Map
-            for (var id in window.agar.allCells)
-                delete window.agar.allCells[id].baka_old
+            if (window.agar && window.agar.allCells)
+                for (var id in window.agar.allCells)
+                    delete window.agar.allCells[id].baka_old
         },
         send() {
             var a = window.agar
