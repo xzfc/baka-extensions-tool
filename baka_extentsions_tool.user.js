@@ -1305,9 +1305,12 @@
             function s(v) { return v * proj[1] }         // scale
             var i
 
-            context.globalAlpha = 0.5
-            context.fillStyle = "#777"
             if (window.bakaconf.fogOfWar) {
+                context.globalAlpha = 0.3
+                context.fillStyle = "#000"
+                context.fillRect(0, 0, this.canvas.width, this.canvas.height)
+                context.globalAlpha = 0.7
+                context.fillStyle = "#777"
                 context.beginPath()
                 for (i = 0; i < this.range.length; i++) {
                     var d = this.range[i]
@@ -1317,6 +1320,8 @@
                 }
                 context.fill()
             } else {
+                context.globalAlpha = 0.5
+                context.fillStyle = "#777"
                 context.fillRect(0, 0, this.canvas.width, this.canvas.height)
             }
 
