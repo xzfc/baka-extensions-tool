@@ -2411,6 +2411,12 @@
             }
             `
         document.head.appendChild(stl)
+
+        // Make main_out.js resize helloContainer
+        g("helloContainer").style.height = ''
+        $(".agario-shop-panel").show()
+        window.onresize()
+        $(".agario-shop-panel").hide()
     }
 
     function init() {
