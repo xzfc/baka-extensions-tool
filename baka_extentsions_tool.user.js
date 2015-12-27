@@ -266,7 +266,10 @@
                 }
             }
         },
-        move() { toggleAttribute(g('cbox'), 'data-alt-position') },
+        move() {
+            toggleAttribute(g('cbox'), 'data-alt-position')
+            toggleAttribute(g('baka-labels'), 'data-alt-position')
+        },
         toggle(show) {
             this.hidden = show === undefined ? !this.hidden : !show
             g('cbox').style.visibility = (this.hidden ? 'hidden' : '')
@@ -497,6 +500,12 @@
                 range.push(r)
             }
             map.update(data, range)
+            var aliveBakas = getUint8()
+            var totalBakas = getUint8()
+            if (totalBakas > 2)
+                labels.set('bakas', `${aliveBakas}/${totalBakas}`)
+            else
+                labels.set('bakas')
         }
         websocket = ws
     }
@@ -505,9 +514,10 @@
         if (window.agar === undefined ||
             window.agar.disableRendering === undefined)
             return console.error("Could not find window.agar.disableRendering")
-        if (window.agar.disableRendering = !window.agar.disableRendering)
+        if (window.agar.disableRendering = !window.agar.disableRendering) {
             document.body.setAttribute("baka-off", true)
-        else
+            fpsMeter.disable()
+        } else
             document.body.removeAttribute("baka-off")
     }
 
@@ -1090,7 +1100,7 @@
                     target: g("canvas"),
                     preventDefault: () => undefined}
         }
-        g("canvas").onmousedown = g("map").onmousedown = (e) => {
+        function onMouseDown(e) {
             if (e.which === 2 && window.agar && window.agar.scale !== undefined)
                 return window.agar.scale = 1, false
             if (!window.bakaconf.mouseControls)
@@ -1100,11 +1110,16 @@
             case 3: return olddown(key_space), oldup(key_space), false
             }
         }
-        g("canvas").onmouseup = g("map").onmouseup =
-            g("notification").onmouseup = g("cbox").onmouseup =
-            (e) => { if (e.which === 1) repeatm = false }
-        g("canvas").oncontextmenu = g("map").oncontextmenu =
-            (e) => !window.bakaconf.mouseControls
+        function onMouseUp(e) {
+            if (e.which === 1) repeatm = false
+        }
+        ;["canvas", "map", "baka-labels"]
+            .forEach(id => {
+                g(id).onmousedown = onMouseDown
+                g(id).oncontextmenu = (e) => !window.bakaconf.mouseControls
+            })
+        ;["canvas", "map", "notification", "cbox", "baka-labels"]
+            .forEach(id => g(id).onmouseup = onMouseUp)
 
         // Mouse controls: hover tracker
         var hovered = {}
@@ -1118,19 +1133,19 @@
             g(id).addEventListener("mousemove",  () => set(id, true))
             g(id).addEventListener("mouseleave", () => set(id, false))
         }
-        track("canvas"); track("map"), track("notification"), track("cbox")
+        var elements = ["canvas", "map", "cbox", "notification", "baka-labels"]
+        elements.forEach(track)
 
         // Make baka UI mouse-transparent
-        g("map").onmousemove = g("notification").onmousemove =
-            g("cbox").onmousemove = g("canvas").onmousemove
-        var wheel = [g("canvas"), g("map"), g("notification")]
-        for (var i = 0; i < wheel.length; i++) {
-            if (window.agar && window.agar.dommousescroll)
-                wheel[i].addEventListener('DOMMouseScroll',
-                                          window.agar.dommousescroll, false)
-            else
-                wheel[i].onmousewheel = document.body.onmousewheel
-        }
+        elements.forEach(id => g(id).onmousemove = g("canvas").onmousemove)
+        ;["canvas", "map", "notification", "baka-labels"]
+            .forEach(id => {
+                if (window.agar && window.agar.dommousescroll)
+                    g(id).addEventListener('DOMMouseScroll',
+                                           window.agar.dommousescroll, false)
+                else
+                    g(id).onmousewheel = document.body.onmousewheel
+            })
         if (window.agar && window.agar.dommousescroll)
             document.removeEventListener('DOMMouseScroll',
                                          window.agar.dommousescroll, false)
@@ -1683,6 +1698,7 @@
             return cell.baka_color
         },
         hook_beforeTransform(ctx, t1x, t1y, s, t2x, t2y) {
+            fpsMeter.tick()
             canvas.transform = {scale:s, x:t2x*s + t1x, y:t2y*s + t1y}
             if (zc)
                 return
@@ -1747,7 +1763,11 @@
             return cell.isVirus
                 ? 100
                 : scale * 1.5
-        }
+        },
+        hook_drawScore(mass) {
+            massMeter.update(mass)
+            return true
+        },
     }
 
     var bgImage = {
@@ -2067,6 +2087,81 @@
         }
     }
 
+    var labels = {
+        lines: {},
+        visibleLinesCount: 0,
+        init() {
+            this.element = document.createElement('div')
+            this.element.id = 'baka-labels'
+            this.element.style.display = 'none'
+            document.body.appendChild(this.element)
+
+            addLine('bakas', 'Дуры')
+            addLine('mass', 'Масса')
+            addLine('cells', 'Шары')
+            addLine('fps', 'FPS')
+
+            function addLine(lineName, text) {
+                var div = document.createElement('div')
+                div.style.display = 'none'
+                div.appendChild(document.createTextNode(text + ': '))
+                var span = document.createElement('span')
+                div.appendChild(span)
+                labels.element.appendChild(div)
+                labels.lines[lineName] = {div, span}
+            }
+        },
+        set(lineName, value) {
+            var line = this.lines[lineName]
+            if (!line)
+                return
+            line.span.textContent = value
+            if (line.div.style.display === 'none' && value !== undefined) {
+                line.div.style.display = ''
+                ++this.visibleLinesCount
+                this.element.style.display = ''
+            } else if (line.div.style.display === '' && value === undefined) {
+                line.div.style.display = 'none'
+                if (--this.visibleLinesCount === 0)
+                    this.element.style.display = 'none'
+            }
+        },
+        move() { }
+    }
+
+    var fpsMeter = {
+        frames: 1,
+        start: Date.now(),
+        disable() {
+            labels.set('fps')
+        },
+        tick() {
+            var now = Date.now()
+            if (now - this.start > 1000) {
+                labels.set('fps', ~~(this.frames / (now-this.start) * 10000)/10)
+                this.start = now
+                this.frames = 1
+            } else {
+                this.frames++
+            }
+        },
+    }
+    var massMeter = {
+        max: 0,
+        update(mass) {
+            if (mass === 0) {
+                this.max = 0
+                labels.set('mass')
+                labels.set('cells')
+            } else {
+                mass = ~~(mass/100)
+                this.max = Math.max(mass, this.max)
+                labels.set('mass', `${mass}/${this.max}`)
+                labels.set('cells', agar.myCells().length)
+            }
+        },
+    }
+
     var quick = {
         state: undefined,
         key(e, state) {
@@ -2211,6 +2306,9 @@
             #map:not([data-alt-position]) { bottom:5px; left:5px }
             #map[data-alt-position] { top:5px; right:220px }
             body[data-dark] #map, body[baka-off] #map { border-color: #aaa }
+            #baka-labels { position:absolute; z-index:200; padding:0.2em 0.5em; color:white; background-color:rgba(0,0,0,0.4); }
+            #baka-labels:not([data-alt-position]) { top:10px; left:10px }
+            #baka-labels[data-alt-position] { bottom:10px; right:10px }
             .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agarYoutube, .fb-like { display: none !important }
             .agario-panel, .form-control { background-color:AliceBlue }
             @keyframes baka-turn-off {
@@ -2245,6 +2343,7 @@
         bgImage.init()
         mapSender.init()
         mouseLines.init()
+        labels.init()
 
         setInterval(() => send({t:'ping'}), 1000)
 
