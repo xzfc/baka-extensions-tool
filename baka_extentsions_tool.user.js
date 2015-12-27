@@ -2393,7 +2393,7 @@
             #baka-labels:not([data-alt-position]) { top:10px; left:10px }
             #baka-labels[data-alt-position] { bottom:10px; right:10px }
             #baka-connector a { float:right; margin:0 0.5em }
-            .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agarYoutube, .fb-like { display: none !important }
+            .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agario-web-incentive, #agarYoutube, .fb-like { display: none !important }
             .agario-panel, .form-control { background-color:AliceBlue }
             @keyframes baka-turn-off {
              0% { transform: scale(1, 1.3) translate3d(0, 0, 0); -webkit-filter: brightness(1); filter: brightness(1); opacity: 1 }
