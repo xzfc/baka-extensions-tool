@@ -1194,14 +1194,17 @@
             oldSetNick(n)
         }
         var oldSetDarkTheme = window.setDarkTheme
-        var parity = false
         window.setDarkTheme = (n) => {
             if (n)
+            {
+                document.body.setAttribute("data-baka-dark", "")
                 document.body.setAttribute("data-dark", "")
+            }
             else
+            {
+                document.body.removeAttribute("data-baka-dark")
                 document.body.removeAttribute("data-dark")
-            if (parity = !parity)
-                toggleAttribute(document.body, "data-baka-dark")
+            }
             canvas.dark = n
             oldSetDarkTheme(n)
         }
