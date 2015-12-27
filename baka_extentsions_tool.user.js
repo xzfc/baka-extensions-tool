@@ -264,7 +264,7 @@
                   </tr>
                   <tr>
                     <td colspan="2">
-                      <div id="connector" style="display:none"></div>
+                      <div id="baka-connector" style="display:none"></div>
                     </td>
                   </tr>
                 </table>
@@ -828,22 +828,38 @@
             }
         },
         status: {
+            timer: null,
             init() {
                 var t = this
-                t._element = g("connector")
-                t._stop = aButton("стоп", () => connector.stop())
-                t._close = aButton("закрыть",
-                                   () => {t._element.style.display = 'none'})
-                t._text = document.createElement('span')
+                this._element = g("baka-connector")
+                this._estop = aButton("стоп", () => connector.stop())
+                this._eclose = aButton("закрыть", this._close.bind(this))
+                this._etext = document.createElement('span')
 
-                ;["_text", "_close", "_stop"]
-                    .forEach(e => t._element.appendChild(t[e]))
+                ;["_etext", "_eclose", "_estop"]
+                    .forEach(e => this._element.appendChild(t[e]))
             },
-            _set(text, stop) {
+            _close() {
+                this._element.style.display = 'none'
+            },
+            _set(text, stop, autohide) {
                 this._element.style.display = ''
-                this._text.textContent = text
-                this._stop.style.display = stop ? '' : 'none'
-                this._close.style.display = stop ? 'none' : ''
+                this._etext.textContent = text
+                this._estop.style.display = stop ? '' : 'none'
+                this._eclose.style.display = stop ? 'none' : ''
+                stop_timer.call(this)
+                if (autohide)
+                    start_timer.call(this)
+
+                function stop_timer() {
+                    if (this.timer === null)
+                        return
+                    window.clearTimeout(this.timer)
+                    this.timer = null
+                }
+                function start_timer() {
+                    this.timer = window.setTimeout(this._close.bind(this), 2000)
+                }
             },
             trying() {
                 var attempt = `[${connector.attempt}/${connector.maxAttempts}] `
@@ -856,7 +872,7 @@
                 else if (connector.state === 'check')
                     this._set(`Проверяю... ${attempt}`, true)
             },
-            ok() { this._set("Подключился! ", false) },
+            ok() { this._set("Подключился! ", false, true) },
             fail() { this._set("Не удалось подключиться. ", false) },
             stop() { this._set("Подключение прервано. ", false) }
         },
@@ -2376,6 +2392,7 @@
             #baka-labels { position:absolute; z-index:200; padding:0.2em 0.5em; color:white; background-color:rgba(0,0,0,0.4); }
             #baka-labels:not([data-alt-position]) { top:10px; left:10px }
             #baka-labels[data-alt-position] { bottom:10px; right:10px }
+            #baka-connector a { float:right; margin:0 0.5em }
             .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agarYoutube, .fb-like { display: none !important }
             .agario-panel, .form-control { background-color:AliceBlue }
             @keyframes baka-turn-off {
