@@ -1193,6 +1193,11 @@
             }
             oldSetNick(n)
         }
+        var oldSetDarkTheme = window.setDarkTheme
+        window.setDarkTheme = (n) => {
+            canvas.dark = n
+            oldSetDarkTheme(n)
+        }
         if (document
             .querySelector('label input[onchange*=setDarkTheme]').checked)
             bakaDarkTheme(true)
