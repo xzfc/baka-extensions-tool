@@ -995,8 +995,8 @@
                             else
                                 ignore.remove(id)
                         }
-                    addLine({message: ["Список игнорирования: ",
-                                       ...join(ignore.list)]})
+                    var chatmsg = ["Список игнорирования: ", ...join(ignore.list)];
+                    addLine({message: chatmsg});
                     break
                 case "/auth":
                     if (tokens[1] !== undefined) {
