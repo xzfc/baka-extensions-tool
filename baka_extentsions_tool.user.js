@@ -2412,21 +2412,25 @@
         $(".agario-shop-panel").hide()
     }
 
-    function ModifyUI()
+    function appendSetting(id, func, capt, state) //state can potentially be used to point to defaults/stored values
     {
         var optdiv = document.getElementById("options");
-        
-        var cbchatdark = document.createElement("input");
-        var lbchatdark = document.createElement("label");
-        var spanchatdark = document.createElement("span");
-        cbchatdark.type="checkbox";
-        cbchatdark.onchange=function(){$(this).is(':checked')?document.body.setAttribute('data-baka-dark', '') : document.body.removeAttribute('data-baka-dark');}
-        cbchatdark.checked=false;
-        spanchatdark.innerText="Chat dark theme";
-        lbchatdark.appendChild(cbchatdark);
-        lbchatdark.appendChild(spanchatdark);
-        
-        optdiv.appendChild(lbchatdark);
+        var cb = document.createElement("input");
+        var lb = document.createElement("label");
+        var spn = document.createElement("span");
+        cb.id = id;
+        cb.type="checkbox";
+        cb.onchange = func;
+        cb.checked = state;
+        spn.innerText = capt;
+        lb.appendChild(cb);
+        lb.appendChild(spn);
+        optdiv.appendChild(lb);
+    }
+
+    function ModifyUI()
+    {
+        appendSetting("chat_dark", function(){$(this).is(':checked')?document.body.setAttribute('data-baka-dark', '') : document.body.removeAttribute('data-baka-dark');}, "Chat dark theme", false);
     }
     
     function init() {
