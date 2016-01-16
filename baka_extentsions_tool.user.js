@@ -4,8 +4,6 @@
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @include     http://agar.io/*
-// @include     http://petridish.pw/*
-// @include     http://fxia.me/agar/
 // @grant       none
 // ==/UserScript==
 
@@ -1187,8 +1185,6 @@
         window.setNick = (n) => {
             if (n !== myName) {
                 myName = n
-                if (window.location.hostname === 'petridish.pw')
-                    myName = myName.replace(/:::::.*?:::::[0-3]$/, '')
                 send({t: "name", "name": myName})
             }
             oldSetNick(n)
@@ -1306,10 +1302,7 @@
 
             context.clearRect(0, 0, this.canvas.width, this.canvas.height)
             var proj = window.bakaconf.mapProjection
-            if (window.location.hostname === "petridish.pw") {
-                var region = g('region').options[g('region').selectedIndex].text
-                proj = [0, parseFloat(region.replace(/.*\bMap([0-9.]+)K\b.*/, "$1"))*1000]
-            } else if ((window.agar||{}).dimensions)
+            if ((window.agar||{}).dimensions)
                 proj = [window.agar.dimensions[0], window.agar.dimensions[2]]
             proj = [proj[0], size/(proj[1]-proj[0])]
             function t(v) { return (v-proj[0])*proj[1] } // shift+scale
@@ -2147,7 +2140,6 @@
                     this.element.style.display = 'none'
             }
         },
-        move() { }
     }
 
     var fpsMeter = {
@@ -2195,7 +2187,6 @@
 
     var keys = {
         actions: {
-            focus_chat() { chat.focus() },
             toggle_eating_mass_guide() { eatingMassGuide.toggle() },
             toggle_eating_distance_guide() { eatingDistanceGuide.toggle() },
             toggle_active_cell() { activeCell.toggleDraw() },
