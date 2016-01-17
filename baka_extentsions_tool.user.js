@@ -55,6 +55,7 @@
                  Digit7:             "activate_cell 6",
                  Digit8:             "activate_cell 7",
                  Digit9:             "activate_cell 15",
+                 F11:                "toggle_fullscreen",
              },
              teams:{
                  baka:{aura: "#00f",
@@ -1064,6 +1065,7 @@
         var extended = false
         window.onkeydown = (e) => {
             codeWorkaround(e)
+            var nonText = /^(F[0-9]+)$/.test(e.code)
 
             if (extended) {
                 if (quick.key(e) === false)
@@ -1074,7 +1076,7 @@
             if (chat.active) {
                 if (e.code === "Escape" || e.code === "Tab")
                     return chat.blur(), false
-                else
+                else if (!nonText)
                     return true
             }
 
@@ -1085,6 +1087,7 @@
 
             var active = document.activeElement
             if (includes(["INPUT", "BUTTON", "SELECT"], active.tagName) &&
+                !nonText &&
                 active.offsetParent !== null)
                 return olddown(e)
 
@@ -2177,6 +2180,15 @@
         },
     }
 
+    function toggleFullscreen() {
+        if (document.mozFullScreen == false)
+            document.body.mozRequestFullScreen()
+        else if (document.mozFullScreen == true)
+            document.mozCancelFullScreen()
+        else
+            return false
+    }
+
     function keyToStr(e) {
         var mod = e.shiftKey || e.altKey || e.ctrlKey || e.metaKey
         var key1 = mod ? "S" : "_"
@@ -2201,24 +2213,27 @@
             move_chat() { chat.move() },
             move_map() { map.move() },
             activate_cell(n) { activeCell.activate(n) },
+            toggle_fullscreen() { return toggleFullscreen() },
         },
         key(e) {
             var conf = window.bakaconf.keys
             var action = conf[keyToStr(e).find(e => conf[e])]
             if (action === undefined)
                 return false
+            var result = true
             if (typeof action === 'string')
-                executeAction(action)
+                result = executeAction(action)
             else if (isArray(action))
                 action.forEach(executeAction)
-            return true
+            return result
 
             function executeAction(str) {
                 var args = str.trim().split(/ +/)
                 var action = keys.actions[args.shift()]
                 if (action === undefined)
                     return
-                action(...args.map(JSON.parse))
+                if (action(...args.map(JSON.parse)) === false)
+                    result = false
             }
         },
     }
