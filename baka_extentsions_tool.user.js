@@ -1206,6 +1206,8 @@
                 return
             if (a.minScale !== undefined)
                 a.minScale = 1/32
+            if (a.simpleCellDraw !== undefined)
+                a.simpleCellDraw = true
             if (a.showStartupBg !== undefined)
                 a.showStartupBg = false
         },
