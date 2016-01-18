@@ -1758,7 +1758,13 @@
             return cell.size < 32 && !drawPellets
         },
         hook_drawCellMass(cell, prev) {
-            return cell.size >= 32
+            if (cell.isVirus)
+                return true
+            if (cell.size < 32)
+                return false
+            var fontSize = Math.max(~~(.3 * cell.size), 24) *
+                window.agar.drawScale
+            return fontSize > 10.5
         },
         hook_cellMassText(cell, mass) {
             return cell.isVirus
