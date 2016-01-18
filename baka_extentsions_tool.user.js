@@ -1051,17 +1051,31 @@
     }
 
     function handleEvents() {
+        // Original key event handlers
+        var olddown = window.onkeydown, oldup = window.onkeyup
+        var fakeKeyEvent = {
+            esc() { this._(27) },
+            space() { this._(32) },
+            q() { this._(81) },
+            w() { this._(87) },
+            _(keyCode) {
+                var e = {keyCode,
+                         target: canvas.element,
+                         preventDefault: () => undefined}
+                olddown(e)
+                oldup(e)
+            },
+        }
+
         // Autofire
         var repeat = 0, repeatm = 0
         setInterval(() => {
             if (!repeat && !repeatm) return
             if (!isHovered()) return repeat = repeatm = false
-            olddown(key_w)
-            oldup(key_w)
+            fakeKeyEvent.w()
         }, 50)
 
         // Keyboard controls
-        var olddown = window.onkeydown, oldup = window.onkeyup
         var extended = false
         window.onkeydown = (e) => {
             codeWorkaround(e)
@@ -1094,7 +1108,7 @@
             if (!e.altKey && !e.ctrlKey && !e.metaKey) {
                 if (e.code === "KeyW") {
                     if (e.shiftKey)
-                        return olddown(key_w)
+                        return fakeKeyEvent.w()
                     else
                         return repeat = 1, false
                 }
@@ -1113,12 +1127,6 @@
         }
 
         // Mouse controls
-        var key_w = fakeKeyEvent(87), key_space = fakeKeyEvent(32)
-        function fakeKeyEvent(keyCode) {
-            return {keyCode,
-                    target: g("canvas"),
-                    preventDefault: () => undefined}
-        }
         function onMouseDown(e) {
             if (e.which === 2 && window.agar && window.agar.scale !== undefined)
                 return window.agar.scale = 1, false
@@ -1126,7 +1134,7 @@
                 return true
             switch (e.which) {
             case 1: return repeatm = true, false
-            case 3: return olddown(key_space), oldup(key_space), false
+            case 3: return fakeKeyEvent.space(), false
             }
         }
         function onMouseUp(e) {
