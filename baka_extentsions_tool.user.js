@@ -111,8 +111,8 @@
              pelletColor: null,
              virusColor: "rgba(128,128,128,0.6)",
              eatingMassGuide: {
-                 smallColors: ["#00aa00", "#cc66ff"],
-                 bigColors: ["#ffbf3d", "#ff3c3c"],
+                 smallColors: [null, "#00aa00", "#cc66ff"],
+                 bigColors: [null, "#ffbf3d", "#ff3c3c"],
                  width: 0.6,
              },
              bgImage: "http://i.imgur.com/E4u6yMZ.jpg",
@@ -1924,7 +1924,7 @@
                 splits = this.splitCount(cell, activeCell.cell)
                 colors = conf.bigColors
             }
-            var color = colors[splits.count-1], colorNext = colors[splits.count]
+            var color = colors[splits.count], colorNext = colors[splits.count+1]
 
             if (!colorNext)
                 ctx.globalAlpha = 1 - splits.progress/2
