@@ -121,6 +121,7 @@
              cellOpacity: 0.8,
              viewportBox: {color: "#7f7f7f", width: 10},
              worldBox: {color: "#f44336", width: 90},
+             replaceCursor: true,
             })
     var myName = null
     var hasConnected = false
@@ -1744,8 +1745,6 @@
             }
             activeCell.calculate()
             eatingDistanceGuide.calculate()
-        },
-        hook_afterDraw() {
             mouseLines.draw()
         },
         hook_afterCellStroke(cell) {
@@ -2123,6 +2122,8 @@ return
             draw(canvas.ctx)
 
             function updateCursor(showCursor) {
+                if (!window.bakaconf.replaceCursor)
+                    showCursor = true
                 if (showCursor === that.showCursor)
                     return
                 that.showCursor = showCursor
@@ -2142,9 +2143,13 @@ return
                 }
                 ctx.stroke()
 
-                ctx.beginPath()
-                ctx.arc(coords.x, coords.y, 10/scale, 0, 2*Math.PI, false)
-                ctx.fill()
+                if (window.bakaconf.replaceCursor) {
+                    ctx.beginPath()
+                    ctx.arc(coords.x, coords.y, 10/scale, 0, 2*Math.PI, false)
+                    ctx.fill()
+                }
+
+                ctx.globalAlpha = 1
             }
         }
     }
