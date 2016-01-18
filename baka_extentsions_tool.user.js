@@ -42,6 +42,7 @@
                  Enter:              "focus_chat",
                  KeyC:              ["toggle_eating_mass_guide",
                                      "toggle_active_cell"],
+                 Shift_KeyC:         "toggle_split_guide",
                  KeyM:               "toggle_mouse_lines",
                  Shift_KeyM:         "toggle_stop",
                  Period:             "toggle_map",
@@ -1863,6 +1864,7 @@
     var activeCell = {
         cell: null,
         drawEnabled: true,
+        splitGuideEnabled: true,
         activate(num) {
             var cells = agar.myCells()
                     .map(id => window.agar.allCells[id])
@@ -1881,13 +1883,17 @@
                 this.activate(0)
         },
         toggleDraw() { this.drawEnabled = !this.drawEnabled },
+        toggleSplitGuide() { this.splitGuideEnabled = !this.splitGuideEnabled },
         draw(ctx, cell) {
-            if (!this.drawEnabled || this.cell !== cell)
+            if (this.cell !== cell)
                 return
             var scale = window.agar.drawScale
-            drawAura('#3371FF', 5/scale, cell.size + 10 + 10/scale)
-            drawAura('#00FF00', 2, 660)
-            drawAura('#FF0000', 2, 660 + cell.size)
+            if (this.drawEnabled)
+                drawAura('#3371FF', 5/scale, cell.size + 10 + 10/scale)
+            if (this.splitGuideEnabled) {
+                drawAura('#00FF00', 2, 660)
+                drawAura('#FF0000', 2, 660 + cell.size)
+            }
 
             function drawAura(color, width, radius) {
                 ctx.strokeStyle = color
@@ -2233,6 +2239,7 @@ return
             toggle_eating_mass_guide() { eatingMassGuide.toggle() },
             toggle_eating_distance_guide() { eatingDistanceGuide.toggle() },
             toggle_active_cell() { activeCell.toggleDraw() },
+            toggle_split_guide() { activeCell.toggleSplitGuide() },
             toggle_mouse_lines() { mouseLines.toggle() },
             toggle_map() { map.toggle() },
             toggle_chat() { chat.toggle() },
