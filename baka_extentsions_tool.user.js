@@ -1756,7 +1756,8 @@
             eatingDistanceGuide.draw(canvas.ctx, cell)
         },
         hook_skipCellDraw(cell) {
-            return cell.size < 32 && !drawPellets
+            return !drawPellets &&
+                (cell.size < 37 || cell.name !== '' && cell.size < 43)
         },
         hook_drawCellMass(cell, prev) {
             if (cell.isVirus)
