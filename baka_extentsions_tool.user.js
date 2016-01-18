@@ -1433,7 +1433,7 @@
             this.sent.topNames = new Map
             if (window.agar && window.agar.allCells)
                 for (var id in window.agar.allCells)
-                    delete window.agar.allCells[id].baka_old
+                    window.agar.allCells[id].baka_old = undefined
         },
         send() {
             var a = window.agar
@@ -1973,17 +1973,12 @@
             if (!this.enabled || zc || !eaten || !alive)
                 return
 
-            eaten.forEach(resetEaten)
-            alive.forEach(resetAlive)
+            eaten.forEach(reset)
+            alive.forEach(reset)
             var bigEnough = alive.filter(o => o.size > 32)
             handleCells(bigEnough)
 
-            function resetEaten(o) {
-                delete o.baka_eatees
-                delete o.baka_eater
-                delete o.baka_progress
-            }
-            function resetAlive(o) {
+            function reset(o) {
                 o.baka_eatees = []
                 o.baka_eater = undefined
                 o.baka_progress = Number.POSITIVE_INFINITY
