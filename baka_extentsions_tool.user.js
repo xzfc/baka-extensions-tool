@@ -117,7 +117,8 @@
              },
              bgImage: "http://i.imgur.com/E4u6yMZ.jpg",
              cellOpacity: 0.8,
-             drawViewport: true,
+             viewportBox: {color: "#7f7f7f", width: 10},
+             worldBox: {color: "#f44336", width: 90},
             })
     var myName = null
     var hasConnected = false
@@ -1730,12 +1731,14 @@
         hook_beforeDraw() {
             if (zc)
                 return
-            var dims
-            if (window.bakaconf.drawViewport && (dims = agar.getViewport()))
-                canvas.drawRectangle(dims, "#7f7f7f", 10)
-            if (dims = window.agar.dimensions) {
+            var dims, box
+            if ((box = window.bakaconf.viewportBox) &&
+                (dims = agar.getViewport()))
+                canvas.drawRectangle(dims, box.color, box.width)
+            if ((box = window.bakaconf.worldBox) &&
+                (dims = window.agar.dimensions)) {
                 dims = {minX:dims[0], minY:dims[1], maxX:dims[2], maxY:dims[3]}
-                canvas.drawRectangle(dims, "#F44336", 90)
+                canvas.drawRectangle(dims, box.color, box.width)
             }
             activeCell.calculate()
             eatingDistanceGuide.calculate()
