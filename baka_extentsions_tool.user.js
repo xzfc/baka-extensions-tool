@@ -43,6 +43,7 @@
                  KeyC:              ["toggle_eating_mass_guide",
                                      "toggle_active_cell"],
                  Shift_KeyC:         "toggle_split_guide",
+                 KeyX:               "toggle_eating_distance_guide",
                  KeyM:               "toggle_mouse_lines",
                  Shift_KeyM:         "toggle_stop",
                  Period:             "toggle_map",
