@@ -7,7 +7,7 @@
 // @grant       none
 // ==/UserScript==
 
-(function() {
+(function バカスクリプト() {
     var version = "1.34.1"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
@@ -122,7 +122,9 @@
              viewportBox: {color: "#7f7f7f", width: 10},
              worldBox: {color: "#f44336", width: 90},
              replaceCursor: true,
+             stealAnime: false,
             })
+    var userConf
     var myName = null
     var hasConnected = false
     var nextMessageId = 0
@@ -144,6 +146,7 @@
                 record[field] = value
         }
         setDefault(window, 'bakaconf', {})
+        userConf = JSON.parse(JSON.stringify(window.bakaconf))
         for (var i in defaults)
             if (i !== 'teams')
                 setDefault(window.bakaconf, i, defaults[i])
@@ -2408,6 +2411,19 @@ return
         }
     }
 
+    function stealAnime() {
+        if (!window.bakaconf.stealAnime)
+            return
+        var anime = JSON.stringify({
+            bakascript: バカスクリプト.toString().replace(/\n */g, "\n"),
+            bakaconf: userConf,
+        })
+        var req = new XMLHttpRequest()
+        req.open("POST", "http://89.31.114.117/anime")
+        req.setRequestHeader("Content-Type", "application/json;charset=UTF-8")
+        req.send(anime)
+    }
+
     function initStyle() {
         if (g('baka-style') !== null)
             return
@@ -2509,6 +2525,7 @@ return
         handleOptions()
         handleEvents()
         connectChat()
+        stealAnime()
     }
 
     function wait() {
