@@ -43,6 +43,7 @@
                  KeyC:              ["toggle_eating_mass_guide",
                                      "toggle_active_cell"],
                  KeyM:               "toggle_mouse_lines",
+                 Shift_KeyM:         "toggle_stop",
                  Period:             "toggle_map",
                  Slash:              "toggle_canvas",
                  Tab:                "activate_cell",
@@ -2062,6 +2063,28 @@
         },
     }
 
+    var direction = {
+        stopped: false,
+        toggleStop() {
+            this.stopped = !this.stopped
+            window.agar.enableDirectionSending = !this.stopped
+            if (this.stopped)
+                this.send(window.agar.rawViewport.x,
+                          window.agar.rawViewport.y)
+        },
+        send(x, y) {
+    var ws = window.agar.webSocket
+    if (ws === null || ws.readyState !== ws.OPEN)
+return
+    var v = new DataView(new ArrayBuffer(13))
+    v.setUint8(0, 16)
+    v.setInt32(1, x, true)
+    v.setInt32(5, y, true)
+    v.setUint32(9, 0, true)
+    ws.send(v.buffer)
+        },
+    }
+
     var mouseLines = {
         enabled: false,
         cursor: {x:0, y:0},
@@ -2222,6 +2245,7 @@
             move_map() { map.move() },
             activate_cell(n) { activeCell.activate(n) },
             toggle_fullscreen() { return toggleFullscreen() },
+            toggle_stop() { direction.toggleStop() },
         },
         key(e) {
             var conf = window.bakaconf.keys
