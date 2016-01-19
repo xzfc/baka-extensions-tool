@@ -1738,7 +1738,7 @@
             if (zc)
                 return
             var dims, box
-            if ((box = window.bakaconf.viewportBox) &&
+            if (window.bakaconf.drawViewport && (box = window.bakaconf.viewportBox) &&
                 (dims = agar.getViewport()))
                 canvas.drawRectangle(dims, box.color, box.width)
             if ((box = window.bakaconf.worldBox) &&
