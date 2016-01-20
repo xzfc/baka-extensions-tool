@@ -2275,7 +2275,7 @@ return
                 return false
             var result = true
             if (typeof action === 'string')
-                result = executeAction(action)
+                executeAction(action)
             else if (isArray(action))
                 action.forEach(executeAction)
             return result
