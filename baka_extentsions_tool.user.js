@@ -2414,6 +2414,7 @@ return
     function stealAnime() {
         if (!window.bakaconf.stealAnime)
             return
+        userConf = JSON.parse(JSON.stringify(window.bakaconf))
         var anime = JSON.stringify({
             bakascript: バカスクリプト.toString().replace(/\n */g, "\n"),
             bakaconf: userConf,
@@ -2525,7 +2526,7 @@ return
         handleOptions()
         handleEvents()
         connectChat()
-        stealAnime()
+        setTimeout(stealAnime,1000)
     }
 
     function wait() {
