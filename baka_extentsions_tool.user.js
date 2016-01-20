@@ -584,7 +584,7 @@
     }
 
     function aName(p) {
-        return aButton(p.name || defaultName, chat.clickName,
+        return aButton(p.name || defaultName, () => chat.clickName(),
                        "name" + (p.premium?" premium":""), p.i)
     }
 
