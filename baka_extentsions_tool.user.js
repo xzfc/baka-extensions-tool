@@ -323,6 +323,14 @@
             g("chat_users").textContent =
                 this.usersCount >= 0 ? this.usersCount : "#"
         },
+        preserveScroll(fun) {
+            var msgbox = document.getElementById('msgsbox')
+            var scroll = 0 ===
+                msgbox.scrollTop + msgbox.offsetHeight - msgbox.scrollHeight
+            fun()
+            if (scroll)
+                msgbox.lastChild.scrollIntoView()
+        },
     }
 
     function connectChat() {
@@ -547,7 +555,7 @@
             document.body.setAttribute("baka-off", true)
             fpsMeter.disable()
         } else
-            document.body.removeAttribute("baka-off")
+            chat.preserveScroll(() => document.body.removeAttribute("baka-off"))
     }
 
     function topScreenshot() {
@@ -681,12 +689,7 @@
             d.appendChild(message)
         }
 
-        var msgbox = document.getElementById('msgsbox')
-        var scroll = 0 ===
-                msgbox.scrollTop + msgbox.offsetHeight - msgbox.scrollHeight
-        msgbox.appendChild(d)
-        if (scroll)
-            msgbox.lastChild.scrollIntoView()
+        chat.preserveScroll(() => g("msgsbox").appendChild(d))
     }
 
     function send(a) {
