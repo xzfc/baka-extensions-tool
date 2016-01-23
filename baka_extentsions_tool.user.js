@@ -1111,6 +1111,12 @@
             }
 
             var active = document.activeElement
+            if (active.id === 'baka-leaderboard-title') {
+                if (includes(["Escape", "Enter", "Tab"], e.code))
+                    return active.blur(), false
+                else
+                    return true
+            }
             if (includes(["INPUT", "BUTTON", "SELECT"], active.tagName) &&
                 !nonText &&
                 active.offsetParent !== null)
@@ -1806,6 +1812,10 @@
             massMeter.update(mass)
             return true
         },
+        hook_updateLeaderboard() {
+            leaderboard.update()
+            return true
+        },
     }
 
     var bgImage = {
@@ -2234,6 +2244,59 @@
         },
     }
 
+    var leaderboard = {
+        initialized: false,
+        init() {
+            if (this.initialized)
+                return
+            this.initialized = true
+
+            var div = document.createElement('div')
+            div.id = 'baka-leaderboard'
+            document.body.appendChild(div)
+
+            var title = document.createElement('input')
+            title.id = 'baka-leaderboard-title'
+            title.value = storage.get('leaderboard-title') || 'Leaderboard'
+            title.oninput = () => storage.set('leaderboard-title', title.value)
+            title.maxLength = 40
+            div.appendChild(title)
+
+            var items = document.createElement('ol')
+            items.id = 'baka-leaderboard-items'
+            div.appendChild(items)
+
+            div.appendChild(document.createElement('span'))
+
+            this.title = title
+            this.items = items
+        },
+        setItems(items) {
+            ensureThereAreNNodes(items.length)
+            for(var i = 0; i < items.length; i++) {
+                var item = leaderboard.items.childNodes[i]
+                item.className = includes(window.agar.myCells, items[i].id) ?
+                    'baka-leaderboard-me' : ''
+                item.textContent = items[i].name || 'An unnamed cell'
+            }
+
+            function ensureThereAreNNodes(n) {
+                var items = leaderboard.items
+                var childs = items.childNodes.length
+                if (childs < n)
+                    for (var i = childs; i < n; i++)
+                        items.appendChild(document.createElement('li'))
+                else if (childs > n)
+                    for (var i = childs - n; i > 0; i--)
+                        items.removeChild(items.lastChild)
+            }
+        },
+        update() {
+            this.init()
+            this.setItems(window.agar.top)
+        },
+    }
+
     function toggleFullscreen() {
         if (document.mozFullScreen == false)
             document.body.mozRequestFullScreen()
@@ -2464,6 +2527,10 @@
             #baka-labels:not([data-alt-position]) { top:10px; left:10px }
             #baka-labels[data-alt-position] { bottom:10px; right:10px }
             #baka-connector a { float:right; margin:0 0.5em }
+            #baka-leaderboard { position:absolute; top:5px; right:5px; font-family:ubuntu; color:white; background-color: rgba(0,0,0,0.4); border-radius:10px; width:200px; z-index:201 }
+            #baka-leaderboard-title { font-size:20px; padding-top:5px; text-align:center; background-color:rgba(0,0,0,0); border:none; outline:none; color:white; width:100% }
+            #baka-leaderboard-items { font-size:16px; margin:0; padding:0 5px 5px 30px; overflow:hidden; white-space:nowrap }
+            .baka-leaderboard-me { color:#FFAAAA }
             .tosBox, div#mainPanel>center, div#mainPanel>hr, #instructions, .agario-promo, #agario-web-incentive, #agarYoutube, .fb-like { display: none !important }
             .agario-panel, .form-control { background-color:AliceBlue }
             @keyframes baka-turn-off {
@@ -2472,7 +2539,7 @@
              100% { animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06); transform: scale(0, 0.0001) translate3d(0, 0, 0); -webkit-filter: brightness(50); filter: brightness(50) }
             }
             body[baka-off] { background-color: black }
-            body[baka-off] #canvas, body[baka-off] #overlays { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }
+            body[baka-off] #canvas, body[baka-off] #overlays, body[baka-off] #baka-leaderboard { animation: baka-turn-off 0.55s cubic-bezier(0.23, 1, 0.32, 1); animation-fill-mode: forwards }
             body[baka-off] #cbox { max-width:500px }
             body[baka-off] #msgsbox { height:600px; width:495px }
             .baka-spinner { animation-name:baka-spin; animation-duration:3s; animation-iteration-count:infinite; animation-timing-function:linear }
