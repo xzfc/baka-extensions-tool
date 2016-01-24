@@ -367,7 +367,7 @@
             }
             if (hasConnected) {
                 hasConnected = false
-                return setTimeout(connectChat, 1000)
+                return window.setTimeout(connectChat, 1000)
             } else {
                 addLine({message:[
                     "Вебсокет закрыт. ",
@@ -383,7 +383,7 @@
         ws.reconnect = () => {
             reconnect = true
             ws.close()
-            setTimeout(() => {
+            window.setTimeout(() => {
                 if (closed) return
                 closed = true
                 addLine({message:['Переподключаюсь~~']})
@@ -796,7 +796,7 @@
                 else
                     window.createParty()
                 this.state = 'check'
-                this.timer = setTimeout(thisMethod, 2500)
+                this.timer = window.setTimeout(thisMethod, 2500)
             } else {
                 var partyState = g('helloContainer')
                         .getAttribute('data-party-state')
@@ -808,7 +808,7 @@
                         this.status.trying()
                         this.attempt++
                         this.state = 'connect'
-                        this.timer = setTimeout(thisMethod, 2500)
+                        this.timer = window.setTimeout(thisMethod, 2500)
                     } else {
                         this.status.fail()
                     }
@@ -1080,7 +1080,7 @@
 
         // Autofire
         var repeat = 0, repeatm = 0
-        setInterval(() => {
+        window.setInterval(() => {
             if (!repeat && !repeatm) return
             if (!isHovered()) return repeat = repeatm = false
             fakeKeyEvent.w()
@@ -1434,7 +1434,7 @@
         buffer: new ArrayBuffer(1024),
         init() {
             this.reset()
-            setInterval(() => this.send(), 250)
+            window.setInterval(() => this.send(), 250)
         },
         reset() {
             this.waitReply = false
@@ -2090,15 +2090,15 @@
                           window.agar.rawViewport.y)
         },
         send(x, y) {
-    var ws = window.agar.webSocket
-    if (ws === null || ws.readyState !== ws.OPEN)
-return
-    var v = new DataView(new ArrayBuffer(13))
-    v.setUint8(0, 16)
-    v.setInt32(1, x, true)
-    v.setInt32(5, y, true)
-    v.setUint32(9, 0, true)
-    ws.send(v.buffer)
+            var ws = window.agar.webSocket
+            if (ws === null || ws.readyState !== ws.OPEN)
+                return
+            var v = new DataView(new ArrayBuffer(13))
+            v.setUint8(0, 16)
+            v.setInt32(1, x, true)
+            v.setInt32(5, y, true)
+            v.setUint32(9, 0, true)
+            ws.send(v.buffer)
         },
     }
 
@@ -2442,7 +2442,7 @@ return
             #msgsbox { overflow:auto; word-wrap:break-word; width:395px; height:250px }
             #cbox a { cursor:pointer }
             #msgsbox .name.name /* oh my CSS specificity */ { color:#333 }
-            #msgsbox .name.premium { color:#550;font-weight:bold }
+            #msgsbox .name.premium { color:#550; font-weight:bold }
             #msgsbox .higlight { color:#055 }
             #msgsbox .time { font-size:70%; color:#777 }
             #msgsbox .greentext { color:#3b5000 }
@@ -2490,23 +2490,27 @@ return
         $(".agario-shop-panel").hide()
     }
 
-    function ModifyUI()
-    {
-        var optdiv = document.getElementById("options");
-        
-        var cbchatdark = document.createElement("input");
-        var lbchatdark = document.createElement("label");
-        var spanchatdark = document.createElement("span");
-        cbchatdark.type="checkbox";
-        cbchatdark.onchange=function(){$(this).is(':checked')?document.body.setAttribute('data-baka-dark', '') : document.body.removeAttribute('data-baka-dark');}
-        cbchatdark.checked=false;
-        spanchatdark.innerText="Chat dark theme";
-        lbchatdark.appendChild(cbchatdark);
-        lbchatdark.appendChild(spanchatdark);
-        
-        optdiv.appendChild(lbchatdark);
+    function modifyUI() {
+        var optdiv = document.getElementById("options")
+
+        var cbchatdark = document.createElement("input")
+        var lbchatdark = document.createElement("label")
+        var spanchatdark = document.createElement("span")
+        cbchatdark.type = "checkbox"
+        cbchatdark.onchange = function(){
+            if (this.checked)
+                document.body.setAttribute('data-baka-dark', '')
+            else
+                document.body.removeAttribute('data-baka-dark')
+        }
+        cbchatdark.checked = false
+        spanchatdark.textContent = "Chat dark theme"
+        lbchatdark.appendChild(cbchatdark)
+        lbchatdark.appendChild(spanchatdark)
+
+        optdiv.appendChild(lbchatdark)
     }
-    
+
     function init() {
         initStyle()
         agar.init()
@@ -2522,14 +2526,14 @@ return
         mapSender.init()
         mouseLines.init()
         labels.init()
-        ModifyUI()
-        setInterval(() => send({t:'ping'}), 1000)
+        modifyUI()
+        window.setInterval(() => send({t:'ping'}), 1000)
 
         workarounds()
         handleOptions()
         handleEvents()
         connectChat()
-        setTimeout(stealAnime,1000)
+        window.setTimeout(stealAnime,1000)
     }
 
     function wait() {
@@ -2537,7 +2541,7 @@ return
             return
         if (!window.onkeydown || !window.onkeyup ||
             !window.setNick || !g("canvas").onmousemove)
-            return setTimeout(wait, 100)
+            return window.setTimeout(wait, 100)
         init()
     }
     wait()
