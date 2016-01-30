@@ -559,28 +559,6 @@
             chat.preserveScroll(() => document.body.removeAttribute("baka-off"))
     }
 
-    function topScreenshot() {
-        var canvas = document.getElementById("canvas")
-        var data = canvas.getContext('2d')
-                .getImageData(canvas.width-220, 0, 220, 320)
-
-        var top_canvas = document.createElement("canvas")
-        top_canvas.width = 220
-        top_canvas.height = 320
-        top_canvas.getContext('2d').putImageData(data, 0, 0)
-        return top_canvas.toDataURL()
-    }
-
-    function downloadTopScreenshot() {
-        var a = document.createElement('a')
-        a.setAttribute('download', 'top.png')
-        a.setAttribute('href', topScreenshot())
-        a.style.display = 'none'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-    }
-
     function aButton(text, action, className, tooltip) {
         var a = document.createElement('a')
         if (className)
@@ -976,11 +954,6 @@
                     return chat.blur(), false
                 else if (!nonText)
                     return true
-            }
-
-            if (e.ctrlKey && e.code === "KeyS") {
-                downloadTopScreenshot()
-                return false
             }
 
             var active = document.activeElement
