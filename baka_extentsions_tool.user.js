@@ -59,6 +59,8 @@
                  Digit8:             "activate_cell 7",
                  Digit9:             "activate_cell 15",
                  F11:                "toggle_fullscreen",
+                 KeyE:               "double_split",
+                 Shift_KeyE:         "quadruple_split",
              },
              teams:{
                  baka:{aura: "#00f",
@@ -457,6 +459,9 @@
                 break
             case "map-reset":
                 mapSender.reset()
+                break
+            case "point":
+                points.put(d.coords)
                 break
             case "join":
                 if (!window.bakaconf.hideJoinLeaveMessages)
@@ -1063,27 +1068,14 @@
 
     function handleEvents() {
         // Original key event handlers
-        var olddown = window.onkeydown, oldup = window.onkeyup
-        var fakeKeyEvent = {
-            esc() { this._(27) },
-            space() { this._(32) },
-            q() { this._(81) },
-            w() { this._(87) },
-            _(keyCode) {
-                var e = {keyCode,
-                         target: canvas.element,
-                         preventDefault: () => undefined}
-                olddown(e)
-                oldup(e)
-            },
-        }
+        originalKeyEvent.init()
 
         // Autofire
         var repeat = 0, repeatm = 0
         window.setInterval(() => {
             if (!repeat && !repeatm) return
             if (!isHovered()) return repeat = repeatm = false
-            fakeKeyEvent.w()
+            originalKeyEvent.w()
         }, 50)
 
         // Keyboard controls
@@ -1120,27 +1112,29 @@
             if (includes(["INPUT", "BUTTON", "SELECT"], active.tagName) &&
                 !nonText &&
                 active.offsetParent !== null)
-                return olddown(e)
+                return originalKeyEvent.down(e)
 
             if (!e.altKey && !e.ctrlKey && !e.metaKey) {
                 if (e.code === "KeyW") {
                     if (e.shiftKey)
-                        return fakeKeyEvent.w()
+                        return originalKeyEvent.w()
                     else
                         return repeat = 1, false
                 }
-                if (keys.key(e))
+                if (keys.keyDown(e))
                     return false
                 if (quick.key(e))
                     return extended = true, false
             }
-            return olddown(e)
+            return originalKeyEvent.down(e)
         }
         window.onkeyup = (e) => {
             codeWorkaround(e)
+            if (keys.keyUp(e))
+                return false
             if (e.code == "KeyW")
                 repeat = 0
-            return oldup(e)
+            return originalKeyEvent.up(e)
         }
 
         // Mouse controls
@@ -1151,7 +1145,7 @@
                 return true
             switch (e.which) {
             case 1: return repeatm = true, false
-            case 3: return fakeKeyEvent.space(), false
+            case 3: return originalKeyEvent.space(), false
             }
         }
         function onMouseUp(e) {
@@ -1693,6 +1687,51 @@
         },
     }
 
+    function Point(coords) {
+        var start = Date.now()
+        this.draw = () => {
+            var t = Date.now() - start
+            for (var i = 0; i < 3; i++)
+                drawCircle(t - 200*i)
+            return t <= 1400
+        }
+
+        function drawCircle(t) {
+            if (t < 0 || t > 1000)
+                return
+            canvas.ctx.globalAlpha = 1 - t/1000
+
+            var rad = 200000/(2000-t)-200000/2000
+            var width = 1 + t/100
+
+            canvas.ctx.beginPath()
+            canvas.ctx.lineWidth = width / window.agar.drawScale
+            canvas.ctx.arc(coords.x, coords.y,
+                           rad / window.agar.drawScale,
+                           0, 2*Math.PI)
+            canvas.ctx.stroke()
+        }
+    }
+
+    var points = {
+        points: new Set(),
+        send() {
+            send({t:'point', coords:canvas.toWorldCoords(mouseLines.cursor)})
+        },
+        put(coords) {
+            this.points.add(new Point(coords))
+        },
+        draw() {
+            canvas.ctx.globalCompositeOperation = "difference"
+            canvas.ctx.strokeStyle = "white"
+            for (var point of this.points)
+                if (!point.draw())
+                    this.points.delete(point)
+            canvas.ctx.globalAlpha = 1
+            canvas.ctx.globalCompositeOperation = "source-over"
+        },
+    }
+
     var canvas = {
         transform: {scale:1, x:0, y:0},
         dark: false,
@@ -1758,6 +1797,9 @@
             activeCell.calculate()
             eatingDistanceGuide.calculate()
             mouseLines.draw()
+        },
+        hook_afterDraw() {
+            points.draw()
         },
         hook_afterCellStroke(cell) {
             if (zc || cell.size < 32)
@@ -2112,6 +2154,29 @@
         },
     }
 
+    function multiSplit(count) {
+       for (var i = 0; i < count; i++)
+           window.setTimeout(() => originalKeyEvent.space(), i*50)
+   }
+
+    var originalKeyEvent = {
+        init() {
+            this.down = window.onkeydown
+            this.up = window.onkeyup
+        },
+        esc() { this._(27) },
+        space() { this._(32) },
+        q() { this._(81) },
+        w() { this._(87) },
+        _(keyCode) {
+            var e = {keyCode,
+                     target: canvas.element,
+                     preventDefault: () => undefined}
+            this.down(e)
+            this.up(e)
+        },
+    }
+
     var mouseLines = {
         enabled: false,
         cursor: {x:0, y:0},
@@ -2317,7 +2382,7 @@
     }
 
     var keys = {
-        actions: {
+        actionsDown: {
             toggle_eating_mass_guide() { eatingMassGuide.toggle() },
             toggle_eating_distance_guide() { eatingDistanceGuide.toggle() },
             toggle_active_cell() { activeCell.toggleDraw() },
@@ -2333,8 +2398,19 @@
             activate_cell(n) { activeCell.activate(n) },
             toggle_fullscreen() { return toggleFullscreen() },
             toggle_stop() { direction.toggleStop() },
+            double_split() { multiSplit(2) },
+            quadruple_split() { points.send() },
         },
-        key(e) {
+        actionsUp: {
+            quadruple_split() { multiSplit(4) },
+        },
+        keyDown(e) {
+            if (e.repeat)
+                return true
+            return this.key(e, this.actionsDown)
+        },
+        keyUp(e) { return this.key(e, this.actionsUp) },
+        key(e, actions) {
             var conf = window.bakaconf.keys
             var action = conf[keyToStr(e).find(e => conf[e])]
             if (action === undefined)
@@ -2348,7 +2424,7 @@
 
             function executeAction(str) {
                 var args = str.trim().split(/ +/)
-                var action = keys.actions[args.shift()]
+                var action = actions[args.shift()]
                 if (action === undefined)
                     return
                 if (action(...args.map(JSON.parse)) === false)
