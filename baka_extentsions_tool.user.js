@@ -3,6 +3,7 @@
 // @version     1.35.1
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
+// @require     http://xregexp.com/v/3.0.0/xregexp-min.js
 // @include     http://agar.io/*
 // @grant       none
 // ==/UserScript==
@@ -270,11 +271,6 @@
                       <form id="form"><input id="carea" autocomplete="off"></form>
                     </td>
                     <td id="chat_users"></td>
-                  </tr>
-                  <tr>
-                    <td colspan="2">
-                      <div id="baka-connector" style="display:none"></div>
-                    </td>
                   </tr>
                 </table>
                 `
@@ -596,19 +592,24 @@
         return a
     }
 
+    function aWs(text, ws, region) {
+        return aButton(text, () => window.connect(ws, ''), 'Подключиться')
+    }
+
     function aName(p) {
         return aButton(p.name || defaultName, () => chat.clickName(),
                        "name" + (p.premium?" premium":""), p.i)
     }
 
     function formatMessage(text) {
-        var re = /(https?:\/\/[^ ]*[^. ,\(\)]|:noel:)/
-            var i, node, result = text.split(re)
-        if (text.indexOf(g('nick').value||defaultName) > -1)
-            result.higlight = true
-        for (i = 1; i < result.length; i += 2) {
-            var el
-            if (result[i] === ':noel:') {
+        var re = rx`( (?<noel> :noel: )
+                    | (?: (?: ws://
+                            | http://agar\.io/\?ip= )
+                          (?<ws> [\w+.]+:[0-9]+\/? ))
+                    | (?<link> https?://[^\ ]*[^.\ ,\(\)] ))`
+        var result = splitReplace(text, re, function(m) {
+            var match = m[0], el = m[0]
+            if (m.noel) {
                 el = document.createElement("img")
                 el.src = "data: image/ gif; base64, R0lG"+
                     "O                                  "+
@@ -629,18 +630,34 @@
                     "H            7aX218ULq0            "+
                     "B                                  "+
                     "PAMmJYgCenVoD1BSuFwUGbNQ2QwazN/EQA7";
-                el.title = el.alt = result[i]
-            } else {
+                el.title = el.alt = match
+            } else if (m.ws) {
+                el = aWs(match, 'ws://' + m.ws)
+            } else if (m.link) {
                 el = document.createElement('a')
-                el.textContent = result[i]
-                el.href = result[i]
+                el.textContent = el.href = match
                 el.target = "_blank"
             }
-            result[i] = el
-        }
+            return el
+        })
+        if (text.indexOf(g('nick').value||defaultName) > -1)
+            result.higlight = true
         if (text.trim()[0] === '>')
             result.greentext = true
+
         return result
+
+        function rx(s) { return XRegExp(s.raw, 'x') }
+        function splitReplace(text, re, fun) {
+            var res = [], pos = 0
+            XRegExp.forEach(text, re, a => {
+                res.push(text.substring(pos, a.index))
+                res.push(fun(a))
+                pos = a.index + a[0].length
+            })
+            res.push(text.substring(pos))
+            return res
+        }
     }
 
     function br() {
@@ -773,161 +790,25 @@
         },
     }
 
-    var connector = {
-        maxAttempts: 10,
-        autoConnectParty(ws, token, region, top) {
-            if (!this.checkExpose()) {
-                token && joinParty(token)
-                return
-            }
-            this.stop()
-            this.attempt = token ? 0 : 1
-            this.ws = ws
-            this.token = token
-            window.setRegion(region.replace(/:.*$/, ""))
-            this.region = region
-            this.top = top
-            this.state = 'connect'
-            this.autoConnectIteration()
-        },
-        autoConnectIteration() {
-            var thisMethod = () => this.autoConnectIteration()
-            if (this.timer !== undefined)
-                delete this.timer
-            if (this.state === 'connect') {
-                this.status.trying()
-                if (this.attempt === 0)
-                    window.joinParty(this.token)
-                else
-                    window.createParty()
-                this.state = 'check'
-                this.timer = window.setTimeout(thisMethod, 2500)
-            } else {
-                var partyState = g('helloContainer')
-                        .getAttribute('data-party-state')
-                if (partyState === '5' ||
-                    partyState === '1' && this.checkConnection()) {
-                    this.status.ok()
-                } else {
-                    if (this.attempt !== this.maxAttempts-1) {
-                        this.status.trying()
-                        this.attempt++
-                        this.state = 'connect'
-                        this.timer = window.setTimeout(thisMethod, 2500)
-                    } else {
-                        this.status.fail()
-                    }
-                }
-            }
-        },
-        checkConnection() {
-            var top1 = window.agar.top, top2 = this.top
-            for (var i = 0; i < top1.length; i++)
-                for (var j = 0; j < top2.length; j++)
-                    if (top1[i].id === top2[j].id &&
-                        top1[i].name === top2[j].name)
-                        return true
-            return false
-        },
-        checkExpose() {
-            return window.agar !== undefined &&
-                window.agar.ws !== undefined &&
-                window.agar.region !== undefined &&
-                window.agar.top !== undefined
-        },
-        stop() {
-            if (this.timer !== undefined) {
-                this.status.stop()
-                clearTimeout(this.timer)
-                delete this.timer
-            }
-        },
-        status: {
-            timer: null,
-            init() {
-                var t = this
-                this._element = g("baka-connector")
-                this._estop = aButton("стоп", () => connector.stop())
-                this._eclose = aButton("закрыть", this._close.bind(this))
-                this._etext = document.createElement('span')
-
-                ;["_etext", "_eclose", "_estop"]
-                    .forEach(e => this._element.appendChild(t[e]))
-            },
-            _close() {
-                this._element.style.display = 'none'
-            },
-            _set(text, stop, autohide) {
-                this._element.style.display = ''
-                this._etext.textContent = text
-                this._estop.style.display = stop ? '' : 'none'
-                this._eclose.style.display = stop ? 'none' : ''
-                stop_timer.call(this)
-                if (autohide)
-                    start_timer.call(this)
-
-                function stop_timer() {
-                    if (this.timer === null)
-                        return
-                    window.clearTimeout(this.timer)
-                    this.timer = null
-                }
-                function start_timer() {
-                    this.timer = window.setTimeout(this._close.bind(this), 2000)
-                }
-            },
-            trying() {
-                var attempt = `[${connector.attempt}/${connector.maxAttempts}] `
-                if (connector.state === 'connect') {
-                    if (connector.attempt === 0)
-                        this._set(`Подключаюсь к ${connector.token}... ${attempt}`, true)
-                    else
-                        this._set(`Перебираю в ${connector.region}... ${attempt}`, true)
-                }
-                else if (connector.state === 'check')
-                    this._set(`Проверяю... ${attempt}`, true)
-            },
-            ok() { this._set("Подключился! ", false, true) },
-            fail() { this._set("Не удалось подключиться. ", false) },
-            stop() { this._set("Подключение прервано. ", false) }
-        },
-    }
-
     function joinTop(top) {
         return top.map(x => x.name || "An unnamed cell").join(", ")
     }
 
     function showAddr(context, addr) {
-        var addrElem
+        var addrElem = aWs(addr.ws, addr.ws)
+        var regionElem = document.createElement('span')
         var spinner_ = spinner()
-        var region
-        if (addr.token) {
-            addrElem = aButton(addr.token + ' ', click)
-        } else {
-            addrElem = document.createElement('span')
-            addrElem.textContent = `!brute ${addr.ws} `
-        }
         context.message = [
             `${addr.alive}/${addr.players} Топ: ${joinTop(addr.top)}`, br(),
-            addrElem, spinner_,
+            addrElem, regionElem, spinner_,
         ]
         addLine(context)
         fullInfo.region(addr.ws.replace(/^wss?:\/\//, ''), update)
 
-        function click() {
-            if (region)
-                connector.autoConnectParty(addr.ws, addr.token,
-                                           region, addr.top)
-        }
-        function update(region_) {
+        function update(region) {
             spinner_.parentNode.removeChild(spinner_)
-            region = region_
-            if (region && addrElem.tagName === 'SPAN' &&
-                region.endsWith(':party'))
-                addrElem.parentNode.replaceChild(aButton(region, click),
-                                                 addrElem)
-            else
-                addrElem.textContent += region || "???"
+            if (region !== undefined)
+                regionElem.textContent = ' ' + region
         }
     }
 
@@ -2602,7 +2483,6 @@
             #baka-labels { position:absolute; z-index:200; padding:0.2em 0.5em; color:white; background-color:rgba(0,0,0,0.4); }
             #baka-labels:not([data-alt-position]) { top:10px; left:10px }
             #baka-labels[data-alt-position] { bottom:10px; right:10px }
-            #baka-connector a { float:right; margin:0 0.5em }
             #baka-leaderboard { position:absolute; top:5px; right:5px; font-family:ubuntu; color:white; background-color: rgba(0,0,0,0.4); border-radius:10px; width:200px; z-index:201 }
             #baka-leaderboard-title { font-size:20px; padding-top:5px; text-align:center; background-color:rgba(0,0,0,0); border:none; outline:none; color:white; width:100% }
             #baka-leaderboard-items { font-size:16px; margin:0; padding:0 5px 5px 30px; overflow:hidden; white-space:nowrap }
@@ -2660,7 +2540,6 @@
         chat.init()
         map.init()
         ignore.init()
-        connector.status.init()
         notificator.init()
         bakaSkin.init()
         canvas.init()
