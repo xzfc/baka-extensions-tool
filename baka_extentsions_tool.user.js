@@ -1179,12 +1179,20 @@
             }
 
             context.clearRect(0, 0, this.canvas.width, this.canvas.height)
-            var proj = window.bakaconf.mapProjection
+            var projx = window.bakaconf.mapProjection
+            var projy = projx
             if ((window.agar||{}).dimensions)
-                proj = [window.agar.dimensions[0], window.agar.dimensions[2]]
-            proj = [proj[0], size/(proj[1]-proj[0])]
-            function t(v) { return (v-proj[0])*proj[1] } // shift+scale
-            function s(v) { return v * proj[1] }         // scale
+            {
+                projx = [window.agar.dimensions[0], window.agar.dimensions[2]]
+                projy = [window.agar.dimensions[1], window.agar.dimensions[3]]
+            }
+            projx = [projx[0], size/(projx[1]-projx[0])]
+            projy = [projy[0], size/(projy[1]-projy[0])]
+            console.log(projx, projy);
+            
+            function tx(v) { return (v-projx[0])*projx[1] } // shift+scale
+            function ty(v) { return (v-projy[0])*projy[1] } // shift+scale
+            function s(v) { return v * projx[1] }         // scale
             var i
 
             if (window.bakaconf.fogOfWar) {
@@ -1196,7 +1204,7 @@
                 context.beginPath()
                 for (i = 0; i < this.range.length; i++) {
                     var d = this.range[i]
-                    context.rect(t(d.minX), t(d.minY),
+                    context.rect(tx(d.minX), ty(d.minY),
                                  s(d.maxX-d.minX),
                                  s(d.maxY-d.minY))
                 }
@@ -1225,7 +1233,7 @@
                 if (aura) {
                     context.fillStyle = aura
                     context.beginPath()
-                    context.arc(t(d.x), t(d.y), s(d.s)+4,
+                    context.arc(tx(d.x), ty(d.y), s(d.s)+4,
                                 0, 2 * Math.PI, false)
                     context.fill()
                 }
@@ -1237,7 +1245,7 @@
             for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 context.beginPath()
-                context.arc(t(d.x), t(d.y), s(d.s),
+                context.arc(tx(d.x), ty(d.y), s(d.s),
                             0, 2 * Math.PI, false)
                 context.globalAlpha = 1
                 context.fillStyle = d.c
@@ -1267,7 +1275,7 @@
                     if (j === 0 || maxX < d.x*2+d.s) maxX = d.x*2+d.s
                     if (j === 0 || minY > d.y*2-d.s) minY = d.y*2-d.s
                     if (j === 0 || maxY < d.y*2+d.s) maxY = d.y*2+d.s
-                    context.arc(t(d.x), t(d.y), s(d.s)+6,
+                    context.arc(tx(d.x), ty(d.y), s(d.s)+6,
                                 0, 2 * Math.PI, false)
                     context.closePath()
                 }
@@ -1278,7 +1286,7 @@
                 context.textAlign = 'center'
                 context.textBaseline = 'middle'
                 context.fillStyle = '#0ff'
-                context.fillText(blink.sym, t((minX+maxX)/4), t((minY+maxY)/4))
+                context.fillText(blink.sym, tx((minX+maxX)/4), ty((minY+maxY)/4))
             }
         },
     }
