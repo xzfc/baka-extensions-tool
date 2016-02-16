@@ -1116,13 +1116,27 @@
         hidden: false,
         blinks: {},
         blinkIdsCounter: 0,
+        projx: [0,0],
+        projy: [0,0],
+        norm: [0,0],
+        GNS: false, //Gensoukyou Navigation Satellite
+        updateProjection() {
+            spectate()
+            this.projx = [window.agar.dimensions[0], window.agar.dimensions[2]];
+            this.projy = [window.agar.dimensions[1], window.agar.dimensions[3]];
+            this.norm=[this.projx[0]+(this.projx[1]-this.projx[0])/2,this.projy[0]+(this.projy[1]-this.projy[0])/2];
+        },
         init() {
             this.canvas = document.createElement("canvas")
             this.canvas.id = "map"
 
             document.body.appendChild(this.canvas)
             this.canvas.onclick =
-                () => { this.blackRibbon = false; this.draw() }
+                () => { 
+                this.blackRibbon = false;
+                this.updateProjection()
+                this.draw() 
+            }
             this.draw()
         },
         toggle() {
@@ -1179,19 +1193,12 @@
             }
 
             context.clearRect(0, 0, this.canvas.width, this.canvas.height)
-            var projx = window.bakaconf.mapProjection
-            var projy = projx
-            if ((window.agar||{}).dimensions)
-            {
-                projx = [window.agar.dimensions[0], window.agar.dimensions[2]]
-                projy = [window.agar.dimensions[1], window.agar.dimensions[3]]
-            }
-            projx = [projx[0], size/(projx[1]-projx[0])]
-            projy = [projy[0], size/(projy[1]-projy[0])]
-            console.log(projx, projy);
+           var projx, projy
+            projx = [this.projx[0], size/(this.projx[1]-this.projx[0])]
+            projy = [this.projy[0], size/(this.projy[1]-this.projy[0])]
             
-            function tx(v) { return (v-projx[0])*projx[1] } // shift+scale
-            function ty(v) { return (v-projy[0])*projy[1] } // shift+scale
+            function tx(v) { return (v-projx[0]+map.norm[0])*projx[1] } // shift+scale
+            function ty(v) { return (v-projy[0]+map.norm[1])*projy[1] } // shift+scale
             function s(v) { return v * projx[1] }         // scale
             var i
 
@@ -1418,9 +1425,9 @@
                         putUint16(old.s = cell[p.nSize])
                         flags |= 1 << 3
                     }
-                    if (old.x !== cell[p.nx] || old.y !== cell[p.ny]) {
-                        putInt16(old.x = cell[p.nx])
-                        putInt16(old.y = cell[p.ny])
+                    if (old.x !== cell[p.nx]-map.norm[0] || old.y !== cell[p.ny]-map.norm[1]) {
+                        putInt16(old.x = cell[p.nx]-map.norm[0])
+                        putInt16(old.y = cell[p.ny]-map.norm[1])
                         flags |= 1 << 4
                     }
                     if (old.n !== cell.name || old.c !== cell.color) {
@@ -1442,10 +1449,10 @@
 
             function putViewport() {
                 var viewport = agar.getViewport()
-                putFloat32(viewport.minX)
-                putFloat32(viewport.minY)
-                putFloat32(viewport.maxX)
-                putFloat32(viewport.maxY)
+                putFloat32(viewport.minX-map.norm[0])
+                putFloat32(viewport.minY-map.norm[1])
+                putFloat32(viewport.maxX-map.norm[0])
+                putFloat32(viewport.maxY-map.norm[1])
             }
 
             function putUint8  (value) { d.setUint8  (reserve(1), value) }
