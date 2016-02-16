@@ -1188,7 +1188,6 @@
             }
             projx = [projx[0], size/(projx[1]-projx[0])]
             projy = [projy[0], size/(projy[1]-projy[0])]
-            console.log(projx, projy);
             
             function tx(v) { return (v-projx[0])*projx[1] } // shift+scale
             function ty(v) { return (v-projy[0])*projy[1] } // shift+scale
