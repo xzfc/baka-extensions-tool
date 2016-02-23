@@ -1072,7 +1072,7 @@
         }
         if (document
             .querySelector('label input[onchange*=setDarkTheme]').checked)
-            bakaDarkTheme(true)
+            window.setDarkTheme(true)
     }
 
     var agar = {
