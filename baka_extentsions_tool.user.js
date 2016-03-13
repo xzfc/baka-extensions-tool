@@ -926,9 +926,6 @@
     }
 
     function handleEvents() {
-        // Original key event handlers
-        originalKeyEvent.init()
-
         // Autofire
         var repeat = 0, repeatm = 0
         window.setInterval(() => {
@@ -939,56 +936,71 @@
 
         // Keyboard controls
         var extended = false
-        window.onkeydown = (e) => {
+        window.addEventListener('keydown', (e) => {
             codeWorkaround(e)
             var nonText = /^(F[0-9]+)$/.test(e.code)
 
             if (extended) {
                 if (quick.key(e) === false)
                     extended = false
-                return false
+                stop(e)
+                return
             }
 
             if (chat.active) {
-                if (e.code === "Escape" || e.code === "Tab")
-                    return chat.blur(), false
-                else if (!nonText)
-                    return true
+                if (e.code === "Escape" || e.code === "Tab") {
+                    chat.blur()
+                    stop(e)
+                    return
+                }
+                if (!nonText)
+                    return
             }
 
             var active = document.activeElement
             if (active.id === 'baka-leaderboard-title') {
-                if (includes(["Escape", "Enter", "Tab"], e.code))
-                    return active.blur(), false
-                else
-                    return true
+                if (includes(["Escape", "Enter", "Tab"], e.code)) {
+                    active.blur()
+                    stop(e)
+                }
+                return
             }
             if (includes(["INPUT", "BUTTON", "SELECT"], active.tagName) &&
                 !nonText &&
-                active.offsetParent !== null)
-                return originalKeyEvent.down(e)
+                active.offsetParent !== null) {
+                return
+            }
 
             if (!e.altKey && !e.ctrlKey && !e.metaKey) {
                 if (e.code === "KeyW") {
-                    if (e.shiftKey)
-                        return originalKeyEvent.w()
-                    else
-                        return repeat = 1, false
+                    if (!e.shiftKey) {
+                        e.stopPropagation()
+                        repeat = 1
+                    }
+                    return
                 }
-                if (keys.keyDown(e))
-                    return false
-                if (quick.key(e))
-                    return extended = true, false
+                if (keys.keyDown(e)) {
+                    stop(e)
+                    return
+                }
+                if (quick.key(e)) {
+                    extended = true
+                    stop(e)
+                    return
+                }
             }
-            return originalKeyEvent.down(e)
-        }
-        window.onkeyup = (e) => {
+            return
+        }, true)
+        window.addEventListener('keyup', (e) => {
             codeWorkaround(e)
             if (keys.keyUp(e))
-                return false
+                stop(e)
             if (e.code == "KeyW")
                 repeat = 0
-            return originalKeyEvent.up(e)
+        }, true)
+        function stop(e) {
+            e.stopPropagation()
+            e.preventDefault()
         }
 
         // Mouse controls
@@ -2058,10 +2070,6 @@
    }
 
     var originalKeyEvent = {
-        init() {
-            this.down = window.onkeydown
-            this.up = window.onkeyup
-        },
         esc() { this._(27) },
         space() { this._(32) },
         q() { this._(81) },
@@ -2070,8 +2078,10 @@
             var e = {keyCode,
                      target: canvas.element,
                      preventDefault: () => undefined}
-            this.down(e)
-            this.up(e)
+            if (window.onkeydown)
+                window.onkeydown(e)
+            if (window.onkeyup)
+                window.onkeyup(e)
         },
     }
 
@@ -2578,8 +2588,7 @@
     function wait() {
         if (window.top != window.self)
             return
-        if (!window.onkeydown || !window.onkeyup ||
-            !window.setNick || !g("canvas").onmousemove)
+        if (!window.setNick || !g("canvas").onmousemove)
             return window.setTimeout(wait, 100)
         init()
     }
