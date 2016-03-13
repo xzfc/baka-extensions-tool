@@ -1108,6 +1108,34 @@
         },
     }
 
+    var dimensions = {
+        relative: null,
+        absolute: null,
+        shift: null,
+        reset() {
+            this.relative = this.shift = null
+        },
+        update(minX, minY, maxX, maxY) {
+            var w = maxX - minX, h = maxY - minY
+            if (w < (5760 + 1) && h < (3240 + 1))
+                return
+            var s = {x: (minX + maxX) / 2,
+                     y: (minY + maxY) / 2}
+            this.relative = [minX, minY, maxX, maxY]
+            this.absolute = [minX-s.x, minY-s.y, maxX-s.x, maxY-s.y]
+            this.shift = s
+        },
+        getRelative() {
+            return this.relative || window.agar.dimensions
+        },
+        getAbsolute() {
+            return this.absolute || window.agar.dimensions
+        },
+        getShift() {
+            return this.shift || {x:0, y:0}
+        },
+    }
+
     var map = {
         canvas: null,
         data: [],
@@ -1179,20 +1207,21 @@
             }
 
             context.clearRect(0, 0, this.canvas.width, this.canvas.height)
-            var projx = window.bakaconf.mapProjection
-            var projy = projx
-            if ((window.agar||{}).dimensions)
-            {
-                projx = [window.agar.dimensions[0], window.agar.dimensions[2]]
-                projy = [window.agar.dimensions[1], window.agar.dimensions[3]]
-            }
-            projx = [projx[0], size/(projx[1]-projx[0])]
-            projy = [projy[0], size/(projy[1]-projy[0])]
-            
-            function tx(v) { return (v-projx[0])*projx[1] } // shift+scale
-            function ty(v) { return (v-projy[0])*projy[1] } // shift+scale
-            function s(v) { return v * projx[1] }         // scale
+            var t = getTransform()
             var i
+
+            function getTransform() {
+                var d = dimensions.getAbsolute()
+                var x0 = d[0], y0 = d[1], x1 = d[2], y1 = d[3]
+                var w = map.canvas.width, h = map.canvas.height
+                var mx = w / (x1-x0), bx = -mx * x0
+                var my = w / (x1-x0), by = -my * y0
+                return {
+                    x: v => mx*v + bx,
+                    y: v => my*v + by,
+                    s: v => v * mx,
+                }
+            }
 
             if (window.bakaconf.fogOfWar) {
                 context.globalAlpha = 0.3
@@ -1203,9 +1232,9 @@
                 context.beginPath()
                 for (i = 0; i < this.range.length; i++) {
                     var d = this.range[i]
-                    context.rect(tx(d.minX), ty(d.minY),
-                                 s(d.maxX-d.minX),
-                                 s(d.maxY-d.minY))
+                    context.rect(t.x(d.minX), t.y(d.minY),
+                                 t.s(d.maxX-d.minX),
+                                 t.s(d.maxY-d.minY))
                 }
                 context.fill()
             } else {
@@ -1232,7 +1261,7 @@
                 if (aura) {
                     context.fillStyle = aura
                     context.beginPath()
-                    context.arc(tx(d.x), ty(d.y), s(d.s)+4,
+                    context.arc(t.x(d.x), t.y(d.y), t.s(d.s)+4,
                                 0, 2 * Math.PI, false)
                     context.fill()
                 }
@@ -1244,7 +1273,7 @@
             for (i = 0; i < this.data.length; i++) {
                 var d = this.data[i]
                 context.beginPath()
-                context.arc(tx(d.x), ty(d.y), s(d.s),
+                context.arc(t.x(d.x), t.y(d.y), t.s(d.s),
                             0, 2 * Math.PI, false)
                 context.globalAlpha = 1
                 context.fillStyle = d.c
@@ -1274,7 +1303,7 @@
                     if (j === 0 || maxX < d.x*2+d.s) maxX = d.x*2+d.s
                     if (j === 0 || minY > d.y*2-d.s) minY = d.y*2-d.s
                     if (j === 0 || maxY < d.y*2+d.s) maxY = d.y*2+d.s
-                    context.arc(tx(d.x), ty(d.y), s(d.s)+6,
+                    context.arc(t.x(d.x), t.y(d.y), t.s(d.s)+6,
                                 0, 2 * Math.PI, false)
                     context.closePath()
                 }
@@ -1285,7 +1314,7 @@
                 context.textAlign = 'center'
                 context.textBaseline = 'middle'
                 context.fillStyle = '#0ff'
-                context.fillText(blink.sym, tx((minX+maxX)/4), ty((minY+maxY)/4))
+                context.fillText(blink.sym, t.x((minX+maxX)/4), t.y((minY+maxY)/4))
             }
         },
     }
@@ -1338,12 +1367,13 @@
             function putAll() {
                 var flagsOffset = reserve(1)
                 var flags
+                var dimsShift = dimensions.getShift()
                 flags |= !mapSender.waitReply << 0
                 flags |= !map.hidden << 1
                 flags |= putGame() << 2
                 flags |= putTop() << 3
-                putAllCells()
-                putViewport()
+                putAllCells(dimsShift)
+                putViewport(dimsShift)
                 d.setUint8(flagsOffset, flags)
             }
 
@@ -1392,7 +1422,7 @@
                 return true
             }
 
-            function putAllCells() {
+            function putAllCells(shift) {
                 var prevId = 0
                 var ids = Object.keys(a.allCells).map(x=>+x).sort((x,y) => x-y)
                 for (var id of ids) {
@@ -1417,9 +1447,10 @@
                         putUint16(old.s = cell[p.nSize])
                         flags |= 1 << 3
                     }
-                    if (old.x !== cell[p.nx] || old.y !== cell[p.ny]) {
-                        putInt16(old.x = cell[p.nx])
-                        putInt16(old.y = cell[p.ny])
+                    var x = cell[p.nx] - shift.x, y = cell[p.ny] - shift.y
+                    if (old.x !== x || old.y !== y) {
+                        putInt16(old.x = x)
+                        putInt16(old.y = y)
                         flags |= 1 << 4
                     }
                     if (old.n !== cell.name || old.c !== cell.color) {
@@ -1439,12 +1470,12 @@
                 putUint8(parseInt(value.substr(5, 2), 16))
             }
 
-            function putViewport() {
+            function putViewport(shift) {
                 var viewport = agar.getViewport()
-                putFloat32(viewport.minX)
-                putFloat32(viewport.minY)
-                putFloat32(viewport.maxX)
-                putFloat32(viewport.maxY)
+                putFloat32(viewport.minX - shift.x)
+                putFloat32(viewport.minY - shift.y)
+                putFloat32(viewport.maxX - shift.x)
+                putFloat32(viewport.maxY - shift.y)
             }
 
             function putUint8  (value) { d.setUint8  (reserve(1), value) }
@@ -1651,7 +1682,7 @@
                 (dims = agar.getViewport()))
                 canvas.drawRectangle(dims, box.color, box.width)
             if ((box = window.bakaconf.worldBox) &&
-                (dims = window.agar.dimensions)) {
+                (dims = dimensions.getRelative())) {
                 dims = {minX:dims[0], minY:dims[1], maxX:dims[2], maxY:dims[3]}
                 canvas.drawRectangle(dims, box.color, box.width)
             }
@@ -1719,6 +1750,12 @@
             leaderboard.update()
             return true
         },
+        hook_connect() {
+            dimensions.reset()
+        },
+        hook_dimensionsUpdated(minX, minY, maxX, maxY) {
+            dimensions.update(minX, minY, maxX, maxY)
+        },
     }
 
     var bgImage = {
@@ -1777,7 +1814,7 @@
                 return [d.left, d.top, d.right, d.bottom]
             }
             function getGameDims() {
-                var d = window.agar.dimensions
+                var d = dimensions.getRelative()
                 return [(d[0]+t2x)*s+t1x, (d[1]+t2y)*s+t1y,
                         (d[2]+t2x)*s+t1x, (d[3]+t2y)*s+t1y]
             }
