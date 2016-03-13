@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.36.2
+// @version     1.36.3
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @require     http://xregexp.com/v/3.0.0/xregexp-min.js
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function バカスクリプト() {
-    var version = "1.36.2"
+    var version = "1.36.3"
     setConf({wsUri: "ws://89.31.114.117:8000/",
              quickTemplates: {
                  Backquote: {
@@ -1128,7 +1128,7 @@
         },
         update(minX, minY, maxX, maxY) {
             var w = maxX - minX, h = maxY - minY
-            if (w < (5760 + 1) && h < (3240 + 1))
+            if (w < 6000 && h < 3400)
                 return
             var s = {x: (minX + maxX) / 2,
                      y: (minY + maxY) / 2}
