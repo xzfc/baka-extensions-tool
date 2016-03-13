@@ -1507,7 +1507,7 @@
                     var v = 0x7f & value
                     var hasNext = (value ^ v) !== 0
                     putUint8(v | hasNext << 7)
-                    value >>= 7
+                    value >>>= 7
                 } while (value)
             }
 
