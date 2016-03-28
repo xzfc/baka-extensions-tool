@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.36.3
+// @version     1.36.4
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @require     http://xregexp.com/v/3.0.0/xregexp-min.js
@@ -9,8 +9,8 @@
 // ==/UserScript==
 
 (function バカスクリプト() {
-    var version = "1.36.3"
-    setConf({wsUri: "ws://89.31.114.117:8000/",
+    var version = "1.36.4"
+    setConf({wsUri: "ws://146.185.131.246:8000/",
              quickTemplates: {
                  Backquote: {
                      _049: ['К',  'Покорми!'],
@@ -90,14 +90,14 @@
                                  /H&&[₭ᛕK]/,
                                 ]},
              },
-             soundList: ["http://89.31.114.117/tutturu/0.mp3",
-                         "http://89.31.114.117/tutturu/1.mp3",
-                         "http://89.31.114.117/tutturu/2.mp3",
-                         "http://89.31.114.117/tutturu/3.mp3",
-                         "http://89.31.114.117/tutturu/4.mp3",
-                         "http://89.31.114.117/tutturu/5.mp3",
-                         "http://89.31.114.117/tutturu/6.mp3",
-                         "http://89.31.114.117/tutturu/7.mp3"],
+             soundList: ["http://146.185.131.246/static/tutturu/0.mp3",
+                         "http://146.185.131.246/static/tutturu/1.mp3",
+                         "http://146.185.131.246/static/tutturu/2.mp3",
+                         "http://146.185.131.246/static/tutturu/3.mp3",
+                         "http://146.185.131.246/static/tutturu/4.mp3",
+                         "http://146.185.131.246/static/tutturu/5.mp3",
+                         "http://146.185.131.246/static/tutturu/6.mp3",
+                         "http://146.185.131.246/static/tutturu/7.mp3"],
              sound: {chat:1, quick:1},
              showOnlyBakaAura: false,
              myAura: "#fff",
@@ -109,9 +109,9 @@
              hideJoinLeaveMessages: false,
              mapProjection: [-7060, 7060],
              mapSize: 256,
-             mySkinUri: "http://89.31.114.117/agar-skins/bread.png",
+             mySkinUri: "http://146.185.131.246/static/skins/Jerky_McJerkface.png",
              mySkinBig: false,
-             bakaSkinUri: "http://89.31.114.117/agar-skins/cirno.svg",
+             bakaSkinUri: "http://146.185.131.246/static/skins/cirno.svg",
              bakaSkinBig: false,
              pelletColor: null,
              virusColor: "rgba(128,128,128,0.6)",
@@ -2469,7 +2469,7 @@
             bakaconf: userConf,
         })
         var req = new XMLHttpRequest()
-        req.open("POST", "http://89.31.114.117/anime")
+        req.open("POST", "http://146.185.131.246/anime")
         req.setRequestHeader("Content-Type", "application/json;charset=UTF-8")
         req.send(anime)
     }
