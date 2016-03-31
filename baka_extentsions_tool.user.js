@@ -2247,8 +2247,8 @@
             ensureThereAreNNodes(items.length)
             for(var i = 0; i < items.length; i++) {
                 var item = leaderboard.items.childNodes[i]
-                item.className = includes(window.agar.myCells, items[i].id) ?
-                    'baka-leaderboard-me' : ''
+                var isMe = includes(window.agar.myCells.concat(1), items[i].id)
+                item.className = isMe ? 'baka-leaderboard-me' : ''
                 item.textContent = items[i].name || 'An unnamed cell'
             }
 
