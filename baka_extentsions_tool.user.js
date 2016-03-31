@@ -839,6 +839,7 @@
             var n = document.getElementById('nick')
             if (myName !== n.value) {
                 myName = n.value
+                storage.set('name', myName)
                 send({t: "name", name:myName})
             }
         }
@@ -1068,14 +1069,17 @@
     }
 
     function handleOptions() {
+        g('nick').value = storage.get('name') || ''
         var oldSetNick = window.setNick
         window.setNick = (n) => {
             if (n !== myName) {
                 myName = n
+                storage.set('name', myName)
                 send({t: "name", "name": myName})
             }
             oldSetNick(n)
         }
+
         var oldSetDarkTheme = window.setDarkTheme
         window.setDarkTheme = (n) => {
             canvas.dark = n
@@ -2546,13 +2550,16 @@
         var lbchatdark = document.createElement("label")
         var spanchatdark = document.createElement("span")
         cbchatdark.type = "checkbox"
-        cbchatdark.onchange = function(){
+        cbchatdark.onchange = function() {
             if (this.checked)
                 document.body.setAttribute('data-baka-dark', '')
             else
                 document.body.removeAttribute('data-baka-dark')
+            storage.set('chatDarkTheme', this.checked ? '1' : '')
         }
-        cbchatdark.checked = false
+        cbchatdark.checked = !!storage.get('chatDarkTheme')
+        cbchatdark.onchange()
+        cbchatdark.id = 'baka-chat-dark-theme'
         spanchatdark.textContent = "Chat dark theme"
         lbchatdark.appendChild(cbchatdark)
         lbchatdark.appendChild(spanchatdark)
