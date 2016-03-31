@@ -954,6 +954,7 @@
                     e.preventDefault()
                 }
                 e.stopPropagation()
+                g('carea').onkeydown(e)
                 return
             }
 
