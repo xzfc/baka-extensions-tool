@@ -194,13 +194,13 @@
             if (typeof GM_getValue === 'function')
                 return GM_getValue(key, null)
             else
-                return localStorage.getItem(key)
+                return localStorage.getItem('baka_' + key)
         },
         set(key, value) {
             if (typeof GM_setValue === 'function')
                 GM_setValue(key, value)
             else
-                localStorage.setItem(key, value)
+                localStorage.setItem('baka_' + key, value)
         }
     }
 
