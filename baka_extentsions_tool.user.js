@@ -1141,10 +1141,16 @@
             this.shift = s
         },
         getRelative() {
-            return this.relative || window.agar.dimensions
+            return this.relative || this.getExposedDimensions()
         },
         getAbsolute() {
-            return this.absolute || window.agar.dimensions
+            return this.absolute || this.getExposedDimensions()
+        },
+        getExposedDimensions() {
+            if (window.agar && window.agar.dimensions)
+                return window.agar.dimensions
+            var mp = window.bakaconf.mapProjection[0]
+            return [mp[0], mp[0], mp[1], mp[1]]
         },
         getShift() {
             return this.shift || {x:0, y:0}
@@ -2050,7 +2056,7 @@
         toggleStop() {
             this.stopped = !this.stopped
             window.agar.enableDirectionSending = !this.stopped
-            if (this.stopped)
+            if (this.stopped && window.agar && window.agar.rawViewport)
                 this.send(window.agar.rawViewport.x,
                           window.agar.rawViewport.y)
         },
