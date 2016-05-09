@@ -571,7 +571,7 @@
     }
 
     function aWs(text, ws, region) {
-        return aButton(text, () => window.connect(ws, ''), 'Подключиться')
+        return aButton(text, () => window.core.connect(ws, ''), 'Подключиться')
     }
 
     function aName(p) {
@@ -1071,8 +1071,8 @@
 
     function handleOptions() {
         g('nick').value = storage.get('name') || ''
-        var oldSetNick = window.setNick
-        window.setNick = (n) => {
+        var oldSetNick = window.MC.setNick
+        window.MC.setNick = (n) => {
             if (n !== myName) {
                 myName = n
                 storage.set('name', myName)
@@ -1081,13 +1081,12 @@
             oldSetNick(n)
         }
 
-        var oldSetDarkTheme = window.setDarkTheme
-        window.setDarkTheme = (n) => {
+        var oldSetDarkTheme = window.core.setDarkTheme
+        window.core.setDarkTheme = (n) => {
             canvas.dark = n
             oldSetDarkTheme(n)
         }
-        if (document
-            .querySelector('label input[onchange*=setDarkTheme]').checked)
+        if (g('darkTheme').checked)
             window.setDarkTheme(true)
     }
 
@@ -2595,7 +2594,7 @@
     function wait() {
         if (window.top != window.self)
             return
-        if (!window.setNick || !g("canvas").onmousemove)
+        if (!window.MC.setNick || !g("canvas").onmousemove)
             return window.setTimeout(wait, 100)
         init()
     }
