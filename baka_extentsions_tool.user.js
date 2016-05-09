@@ -339,7 +339,7 @@
         }
         ignore.reset()
         var reconnect = false, closed = false
-        var ws = new WebSocket(window.bakaconf.wsUri)
+        var ws = new (OriginalWebSocket || WebSocket)(window.bakaconf.wsUri)
         var myId = null
         var welcomed = false
         ws.binaryType = "arraybuffer"
