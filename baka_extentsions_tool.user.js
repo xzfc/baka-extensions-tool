@@ -793,7 +793,7 @@
     function showAddrs(addrs, time) {
         addrs = addrs.filter(x => (x.alive || x.players > 2) && x.ws)
         if (addrs.length === 0)
-            return addLine({time:time, message:["Сырны нигде не играют."]})
+            return addLine({time:time, message:['¯\\_(ツ)_/¯']})
         addLine({time:time, message:["Сырны играют тут:"]})
         addrs.sort((x, y) => {
             if (x.alive > y.alive) return +1
