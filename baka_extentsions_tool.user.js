@@ -1086,8 +1086,7 @@
             canvas.dark = n
             oldSetDarkTheme(n)
         }
-        if (g('darkTheme').checked)
-            window.setDarkTheme(true)
+        canvas.dark = g('darkTheme').checked
 
         memScannerCallbacks.push(() => {
             var playerZoom = window.core.playerZoom
@@ -2685,7 +2684,7 @@
     function wait() {
         if (window.top != window.self)
             return
-        if (!window.MC.setNick || !g("canvas").onmousemove)
+        if (!window.MC.setNick || !g("canvas").onmousemove || !window.core)
             return window.setTimeout(wait, 100)
         init()
     }
