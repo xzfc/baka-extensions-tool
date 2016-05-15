@@ -1090,6 +1090,24 @@
             window.setDarkTheme(true)
     }
 
+    var memScannerState = 0
+    var memScannerCallbacks = []
+    function memScannerDone() {
+        if (!window.agar.runMemScanner)
+            return true
+        switch (memScannerState) {
+        case 0:
+            memScannerState = 1
+            memScannerCallbacks.push(() => memScannerState = 2)
+            window.agar.runMemScanner(
+                () => memScannerCallbacks.forEach(f => f()))
+        case 1:
+            return false
+        case 2:
+            return true
+        }
+    }
+
     var agar = {
         init() {
             var a = window.agar
