@@ -1832,6 +1832,37 @@
         },
     }
 
+    function interceptCanvasMethods() {
+        var ctx = g('canvas').getContext('2d')
+        var arc = ctx.arc
+        var fill = ctx.fill
+
+        ctx.arc = function(x, y, s, e, ccw) {
+            if (s < 20) {
+                if (!drawPellets)
+                    return
+                if (window.bakaconf.pelletColor) {
+                    arc.call(this, x, y, s, e, ccw)
+                    this.fillStyle = window.bakaconf.pelletColor
+                    fill.call(this)
+                    this.beginPath()
+                    return
+                }
+            }
+            arc.call(this, x, y, s, e, ccw)
+        }
+
+        ctx.fill = function() {
+            if (window.bakaconf.virusColor) {
+                if (this.fillStyle == '#33ff33' ||
+                    this.fillStyle == '#2de52d')
+                    this.strokeStyle = this.fillStyle =
+                        window.bakaconf.virusColor
+            }
+            fill.call(this)
+        }
+    }
+
     var bgImage = {
         init() {
             this.img = new Image()
@@ -2645,6 +2676,7 @@
 
         workarounds()
         interceptEventHandlers()
+        interceptCanvasMethods()
         handleEvents()
         connectChat()
         window.setTimeout(stealAnime,1000)
