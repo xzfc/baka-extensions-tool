@@ -1122,17 +1122,20 @@
         },
         getViewport() {
             var v = window.agar.rawViewport
+            var scale = v.scale || 1
             if (v) {
-                var dx = 1024 / v.scale, dy = 600 / v.scale
+                var dx = 1024 / scale, dy = 600 / scale
                 return {minX:v.x-dx, minY:v.y-dy, maxX:v.x+dx, maxY:v.y+dy}
             }
         },
         myCells() {
             var a = window.agar
-            if (a === undefined || a.myCells === undefined ||
-                a.allCells === undefined)
+            if (a === undefined || a.myCells === undefined)
                 return
-            return a.myCells.filter(x => x in a.allCells)
+            if (a.version.epoch === 0 && a.allCells)
+                return a.myCells.filter(x => x in a.allCells)
+            if (a.version.epoch === 1)
+                return a.myCells
         },
         cellIsMy(cell) {
             if (cell.baka_isMy === undefined)
@@ -1383,6 +1386,8 @@
             }
             if (!a.top.length)
                 return
+            if (!memScannerDone())
+                return
 
             var offset = 0
             var d = new DataView(this.buffer)
@@ -1397,8 +1402,9 @@
 
             function checkExpose() {
                 return a !== undefined &&
-                    a.allCells !== undefined &&
-                    myCells !== undefined &&
+                    (a.allCells !== undefined &&
+                     myCells !== undefined ||
+                     a.version.epoch === 1) &&
                     a.top !== undefined &&
                     a.ws
             }
@@ -1411,7 +1417,10 @@
                 flags |= !map.hidden << 1
                 flags |= putGame() << 2
                 flags |= putTop() << 3
-                putAllCells(dimsShift)
+                if (a.version.epoch === 0)
+                    putAllCells(dimsShift)
+                else
+                    putMyCoord(dimsShift)
                 putViewport(dimsShift)
                 d.setUint8(flagsOffset, flags)
             }
@@ -1499,6 +1508,20 @@
                     }
 
                     d.setUint8(flagsOffset, flags)
+                }
+                putUint8(0)
+            }
+
+            function putMyCoord(shift) {
+                var cellId = myCells[0]
+                if (cellId !== undefined) {
+                    putUint8(1<<0 | 1<<2 | 1<<3 | 1<<4 | 1<<5)
+                    putUint(cellId)
+                    putUint16(64)
+                    putInt16(a.rawViewport.x - shift.x)
+                    putInt16(a.rawViewport.y - shift.y)
+                    putColor("#7f7f7f")
+                    putString(myName || "")
                 }
                 putUint8(0)
             }
