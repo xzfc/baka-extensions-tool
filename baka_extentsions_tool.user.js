@@ -1069,7 +1069,7 @@
         }
     }
 
-    function handleOptions() {
+    function interceptEventHandlers() {
         g('nick').value = storage.get('name') || ''
         var oldSetNick = window.MC.setNick
         window.MC.setNick = (n) => {
@@ -1088,6 +1088,18 @@
         }
         if (g('darkTheme').checked)
             window.setDarkTheme(true)
+
+        memScannerCallbacks.push(() => {
+            var playerZoom = window.core.playerZoom
+            window.core.playerZoom = (z) => {
+                var zoom = window.agar.scale * Math.pow(0.9, z)
+                if (zoom >= 1)
+                    return playerZoom(z)
+                if (zoom < 0.5)
+                    zoom = 0.5
+                window.agar.scale = zoom
+            }
+        })
     }
 
     var memScannerState = 0
@@ -2632,7 +2644,7 @@
         window.setInterval(() => send({t:'ping'}), 1000)
 
         workarounds()
-        handleOptions()
+        interceptEventHandlers()
         handleEvents()
         connectChat()
         window.setTimeout(stealAnime,1000)
