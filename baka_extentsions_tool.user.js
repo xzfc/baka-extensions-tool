@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.37
+// @version     1.40
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @require     http://xregexp.com/v/3.0.0/xregexp-min.js
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 (function バカスクリプト() {
-    var version = "1.37"
+    var version = "1.40"
     setConf({wsUri: "ws://146.185.131.246:8000/",
              quickTemplates: {
                  Backquote: {
@@ -2312,6 +2312,9 @@
             toggle_stop() { direction.toggleStop() },
             double_split() { multiSplit(2) },
             quadruple_split() { points.send() },
+            toggle_skins() { g('noSkins').click() },
+            toggle_names() { g('noNames').click() },
+            toggle_mass() { g('showMass').click() },
         },
         actionsUp: {
             quadruple_split() { multiSplit(4) },
