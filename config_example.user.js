@@ -3,7 +3,9 @@
 // @version     1.0
 // @namespace   baka-extensions-tool
 // @include     http://agar.io/*
+// @match       http://ogar.mivabe.nl/?ip=*
 // @grant       none
+// @run-at      document-start
 // ==/UserScript==
 
 if (window.bakaconf === undefined) window.bakaconf = {};

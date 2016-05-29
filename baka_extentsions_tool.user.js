@@ -5,7 +5,9 @@
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @require     http://xregexp.com/v/3.0.0/xregexp-min.js
 // @include     http://agar.io/*
+// @match       http://ogar.mivabe.nl/?ip=*
 // @grant       none
+// @run-at      document-start
 // ==/UserScript==
 
 (function バカスクリプト() {
@@ -346,6 +348,7 @@
         ws.onopen = (evt) => {
             mapSender.reset()
             send({t: "version", version: version,
+                  v72: (window.v72===undefined?0:1),
                   expose: (window.agar===undefined?0:1) })
             var auth_token = storage.get('auth_token')
             if (auth_token !== null)
@@ -2572,6 +2575,8 @@
     }
 
     function init() {
+        if (window.v72 && !window.agar)
+            window.agar = window.v72
         initStyle()
         agar.init()
         chat.init()
