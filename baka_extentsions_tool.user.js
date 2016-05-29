@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Baka extensions tool
-// @version     1.40
+// @version     1.41
 // @namespace   baka-extensions-tool
 // @updateURL   https://raw.githubusercontent.com/xzfc/baka-extensions-tool/master/baka_extentsions_tool.user.js
 // @require     http://xregexp.com/v/3.0.0/xregexp-min.js
@@ -11,7 +11,7 @@
 // ==/UserScript==
 
 (function バカスクリプト() {
-    var version = "1.40"
+    var version = "1.41"
     setConf({wsUri: "ws://146.185.131.246:8000/",
              quickTemplates: {
                  Backquote: {
