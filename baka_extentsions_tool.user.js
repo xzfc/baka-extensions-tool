@@ -1696,6 +1696,8 @@
         hook_beforeDraw() {
             if (zc)
                 return
+            if (window.agar && window.agar.webSocket === null)
+                return
             var dims, box
             if ((box = window.bakaconf.viewportBox) &&
                 (dims = agar.getViewport()))
@@ -1811,14 +1813,14 @@
                         width, height]
             }
             function clip() {
-                var gameDims = getGameDims()
+                var mapDims, gameDims
                 ctx.beginPath()
-                rect(gameDims)
-                if (!map.hidden) {
-                    var mapDims = getMapDims()
-                    rect(mapDims)
+                if (!map.hidden)
+                    rect(mapDims = getMapDims())
+                if (window.agar.webSocket !== null)
+                    rect(gameDims = getGameDims())
+                if (mapDims && gameDims)
                     rectIntersection(gameDims, mapDims)
-                }
                 ctx.rect(...bgDims)
                 ctx.clip("evenodd")
             }
