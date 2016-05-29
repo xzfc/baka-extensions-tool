@@ -1687,6 +1687,7 @@
             return cell.baka_color
         },
         hook_beforeTransform(ctx, t1x, t1y, s, t2x, t2y) {
+            canvas.ctx.globalAlpha = 1
             fpsMeter.tick()
             canvas.transform = {scale:s, x:t2x*s + t1x, y:t2y*s + t1y}
             if (zc)
