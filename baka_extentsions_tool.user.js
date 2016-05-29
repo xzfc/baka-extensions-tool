@@ -1410,11 +1410,11 @@
                     return false
 
                 var infoOffset = reserve(2)
-                var info = a.top.length
+                var top = a.top.slice(0, 10)
+                var info = top.length
                 var shift = 4
-
                 var sentTopNames = new Map
-                for (var e of a.top) {
+                for (var e of top) {
                     putUint32(e.id)
                     if (mapSender.sent.topNames.get(e.id) !== e.name) {
                         putString(e.name)
@@ -1426,7 +1426,7 @@
                 }
                 d.setUint16(infoOffset, info)
                 mapSender.sent.topNames = sentTopNames
-                mapSender.sent.top = a.top
+                mapSender.sent.top = top
                 return true
             }
 
