@@ -64,6 +64,7 @@
                  F11:                "toggle_fullscreen",
                  KeyE:               "double_split",
                  Shift_KeyE:         "quadruple_split",
+                 Space:              "new_split",
              },
              teams:{
                  baka:{aura: "#00f",
@@ -128,6 +129,7 @@
              worldBox: {color: "#f44336", width: 90},
              replaceCursor: true,
              stealAnime: false,
+             autoMassGuide: false,
             })
     var userConf
     var myName = null
@@ -2314,6 +2316,7 @@
             move_chat() { chat.move() },
             move_map() { map.move() },
             activate_cell(n) { activeCell.activate(n) },
+            new_split() { multiSplit(1); if(window.bakaconf.autoMassGuide)return setTimeout(function(){activeCell.activate(0)},500) },
             toggle_fullscreen() { return toggleFullscreen() },
             toggle_stop() { direction.toggleStop() },
             double_split() { multiSplit(2) },
