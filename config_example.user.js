@@ -18,6 +18,28 @@ function bakaStyle() {
     document.head.appendChild(stl);
 }
 
+//Множитель сдвига имен клеток по oY
+//window.bakaconf.cellNameOffsetY=-0.5;
+
+//Множитель сдвига массы клеток по oY
+//window.bakaconf.cellMassOffsetY=-1.3;
+
+//Множитель размера шрифта для массы
+//window.bakaconf.cellMassScale=1.8;
+
+//Координаты поля Score
+//window.bakaconf.scoreX=0;
+//window.bakaconf.scoreY=0;
+
+//Толщина сплитгайдов
+//window.bakaconf.splitGuideWidth=6;
+
+//Цвет точечек
+//window.bakaconf.pelletColor: "#ADD8E6",
+
+//Цвет вирусов
+//window.bakaconf.virusColor: "rgba(128,128,128,0.6)",
+
 // Добавить (или заменить) команду, члены которой будут отмечены на карте цветной аурой
 // window.bakaconf.teams.ww2leaders = {names: ["Stalin", "Hitler"], color: "#00F"};
 
